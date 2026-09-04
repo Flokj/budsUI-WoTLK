@@ -244,6 +244,7 @@ local function Local(o)
 	if o == "UIConfigSkinsCLCRet" then o = L_GUI_SKINS_CLCR end
 	if o == "UIConfigSkinsDBM" then o = L_GUI_SKINS_DBM end
 	if o == "UIConfigSkinsMinimapButtons" then o = L_GUI_SKINS_MINIMAP_BUTTONS end
+	if o == "UIConfigSkinsRaidRoll" then o = L_GUI_SKINS_RAIDROLL end
 	if o == "UIConfigSkinsRecount" then o = L_GUI_SKINS_RECOUNT end
 	if o == "UIConfigSkinsSkada" then o = L_GUI_SKINS_SKADA end
 	if o == "UIConfigSkinsSpy" then o = L_GUI_SKINS_SPY end
