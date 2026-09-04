@@ -1,0 +1,12 @@
+## Interface: 30300
+## Title: |cff388bdbbudsUI|r
+## Notes: |cff388bdbbudsUI|r - Based on KkthnxUI
+## Author: Budtender3000 (Based on KkthnxUI by Shestak & Kkthnx)
+## Version: 0.7.1
+## DefaultState: Enabled
+## OptionalDeps: budsUI_Config, Blizzard_CombatText, Blizzard_DebugTools, CLCRet, DBM-Core, Recount, Skada, Spy, WeakAuras
+## SavedVariables: budsUIData, SavedOptions
+## Website: https://github.com/Budtender3000/budsUI
+## License: The MIT License (MIT) Copyright (c) 2012 - 2016 Josh "Kkthnx" Russell
+
+budsUI.xml

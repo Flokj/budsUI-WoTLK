@@ -1,0 +1,11 @@
+## Interface: 30300
+## Title: |cff388bdbbudsUI Config|r
+## Notes: |cff388bdbbudsUI|r Config GUI
+## Author: Budtender3000
+## Version: 0.7.1
+## SavedVariables: budsUIData, SavedOptions
+
+Locales\enUS.lua
+Locales\deDE.lua
+
+budsUI_Config.lua
