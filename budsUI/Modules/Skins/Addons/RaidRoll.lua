@@ -69,19 +69,6 @@ local function SkinCheckBox(box)
 	box.styled = true
 end
 
-local function SkinSlider(slider)
-	if not slider or slider.styled then return end
-	slider:StripTextures()
-	slider:CreateBackdrop(2)
-	local thumb = slider:GetThumbTexture()
-	if thumb then
-		thumb:SetTexture(C.Media.Texture)
-		thumb:SetVertexColor(K.Color.r, K.Color.g, K.Color.b)
-	end
-	slider:SetHitRectInsets(0, 0, 0, 0)
-	slider.styled = true
-end
-
 local function SkinFonts(...)
 	for i = 1, select("#", ...) do
 		local fs = select(i, ...)
@@ -104,8 +91,6 @@ local function SkinRaidRoll()
 	end
 
 	if _G.RR_Close_Button then SkinCloseButton(_G.RR_Close_Button, _G.RR_RollFrame) end
-
-	if _G.RaidRoll_Slider_ID then SkinSlider(_G.RaidRoll_Slider_ID) end
 
 	SkinButton(_G.RaidRoll_AnnounceWinnerButton)
 	SkinButton(_G.RR_Roll_5SecAndAnnounce)
@@ -178,8 +163,6 @@ local function SkinLootTracker()
 	if not _G.RR_LOOT_FRAME then return end
 
 	SkinFrame(_G.RR_LOOT_FRAME)
-
-	if _G.RaidRoll_Loot_Slider_ID then SkinSlider(_G.RaidRoll_Loot_Slider_ID) end
 
 	SkinButton(_G.RR_Loot_LinkLootButton)
 	SkinButton(_G.RR_Loot_ButtonClear)
