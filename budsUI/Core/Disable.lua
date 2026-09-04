@@ -25,9 +25,9 @@ if C.ActionBar.BottomBars < 1 then
 	C.ActionBar.BottomBars = 1
 end
 
-if C.ActionBar.PetBarHorizontal == true then
-	C.ActionBar.StanceBarHorizontal = false
-end
+--if C.ActionBar.PetBarHorizontal == true then
+--	C.ActionBar.StanceBarHorizontal = false
+--end
 
 if C.Error.Black == true and C.Error.White == true then
 	C.Error.White = false

@@ -49,34 +49,11 @@ COOLDOWN_Anchor:SetPoint(unpack(C.Position.Filger.Cooldown))
 COOLDOWN_Anchor:SetSize(C.Filger.CooldownSize, C.Filger.CooldownSize)
 
 T_DE_BUFF_BAR_Anchor:SetPoint(unpack(C.Position.Filger.TargetBar))
-T_DE_BUFF_BAR_Anchor:SetSize(218, 25)
+T_DE_BUFF_BAR_Anchor:SetSize(C.Filger.BuffsSize, C.Filger.BuffsSize)
 
 -- Filger(by Nils Ruesch, editors Affli/SinaC/Ildyria)
 local Filger = {}
 local MyUnits = {player = true, vehicle = true, pet = true}
-
--- Single-pass aura cache: avoids O(N*M) scanning per UNIT_AURA event
-local auraCache = {buff = {}, debuff = {}}
-
-local function BuildAuraCache(unitID, auraType)
-	local cache = {}
-	local scanner = (auraType == "buff") and UnitBuff or UnitDebuff
-	for i = 1, 40 do
-		-- WoW 3.3.5 Compatibility: UnitBuff/UnitDebuff return only 10 values, not 11
-		-- spellID (11th value) was added in Cataclysm 4.0
-		-- We use the spell name as key instead
-		local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate = scanner(unitID, i)
-		if not name then break end
-		cache[name] = {name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, name}
-	end
-	auraCache[auraType][unitID] = cache
-	return cache
-end
-
-local function WipeAuraCache()
-	for k in pairs(auraCache.buff) do auraCache.buff[k] = nil end
-	for k in pairs(auraCache.debuff) do auraCache.debuff[k] = nil end
-end
 
 function Filger:TooltipOnEnter()
 	if self.spellID > 20 then
@@ -94,11 +71,12 @@ end
 
 function Filger:UnitBuff(unitID, inSpellID, spn, absID)
 	if absID then
-		local cache = auraCache.buff[unitID] or BuildAuraCache(unitID, "buff")
-		-- WoW 3.3.5: Use spell name as key instead of spellID
-		local data = cache[spn]
-		if data then
-			return unpack(data)
+		for i = 1, 40, 1 do
+			local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellID = UnitBuff(unitID, i)
+			if not name then break end
+			if inSpellID == spellID then
+				return name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellID
+			end
 		end
 	else
 		return UnitBuff(unitID, spn)
@@ -108,11 +86,12 @@ end
 
 function Filger:UnitDebuff(unitID, inSpellID, spn, absID)
 	if absID then
-		local cache = auraCache.debuff[unitID] or BuildAuraCache(unitID, "debuff")
-		-- WoW 3.3.5: Use spell name as key instead of spellID
-		local data = cache[spn]
-		if data then
-			return unpack(data)
+		for i = 1, 40, 1 do
+			local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellID = UnitDebuff(unitID, i)
+			if not name then break end
+			if inSpellID == spellID then
+				return name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellID
+			end
 		end
 	else
 		return UnitDebuff(unitID, spn)
@@ -147,8 +126,7 @@ function Filger:DisplayActives()
 	local index = 1
 	local previous = nil
 
-	-- Ensure bars are created/reused correctly up to the current active count
-	for _ in pairs(self.actives) do
+	for _, _ in pairs(self.actives) do
 		local bar = self.bars[index]
 		if not bar then
 			bar = CreateFrame("Frame", "FilgerAnchor"..id.."Frame"..index, self)
@@ -293,7 +271,7 @@ function Filger:DisplayActives()
 		local activeIndex = self.sortedIndex[n]
 		local value = self.actives[activeIndex]
 		local bar = self.bars[index]
-		bar.spellName = K.GetSpellInfo(value.spid)
+		bar.spellName = GetSpellInfo(value.spid)
 		if self.Mode == "BAR" then
 			bar.spellname:SetText(bar.spellName)
 		end
@@ -350,43 +328,8 @@ function Filger:DisplayActives()
 	end
 end
 
--- Throttle cache for Filger updates
-local filgerThrottle = {}
-local FILGER_UPDATE_INTERVAL = 0.15 -- ~6-7x/Sekunde
-
 function Filger:OnEvent(event, unit)
-	-- Throttle UNIT_AURA events per unit
-	if event == "UNIT_AURA" then
-		if not (unit == "target" or unit == "player" or unit == "pet" or unit == "focus") then
-			return
-		end
-		
-		local now = GetTime()
-		local key = unit or "global"
-		local lastUpdate = filgerThrottle[key] or 0
-		if (now - lastUpdate) < FILGER_UPDATE_INTERVAL then
-			return
-		end
-		filgerThrottle[key] = now
-		
-		-- Nur betroffenen Unit-Cache löschen, nicht alles
-		if auraCache.buff[unit] then auraCache.buff[unit] = nil end
-		if auraCache.debuff[unit] then auraCache.debuff[unit] = nil end
-	elseif event == "PLAYER_TARGET_CHANGED" then
-		-- Nur target cache löschen
-		auraCache.buff.target = nil
-		auraCache.debuff.target = nil
-	elseif event == "PLAYER_FOCUS_CHANGED" then
-		-- Nur focus cache löschen
-		auraCache.buff.focus = nil
-		auraCache.debuff.focus = nil
-	elseif event == "SPELL_UPDATE_COOLDOWN" or event == "PLAYER_ENTERING_WORLD" then
-		-- Für andere Events: kompletter Wipe
-		WipeAuraCache()
-	end
-	
-	-- Wrap main logic in pcall
-	local success, err = pcall(function()
+	if event == "SPELL_UPDATE_COOLDOWN" or event == "PLAYER_TARGET_CHANGED" or event == "PLAYER_FOCUS_CHANGED" or event == "PLAYER_ENTERING_WORLD" or event == "UNIT_AURA" and (unit == "target" or unit == "player" or unit == "pet" or unit == "focus") then
 		local needUpdate = false
 		local id = self.Id
 
@@ -398,9 +341,8 @@ function Filger:OnEvent(event, unit)
 
 			if data.filter == "BUFF" then
 				local caster, spn, expirationTime
-				spn, _, _ = K.GetSpellInfo(data.spellID)
+				spn, _, _ = GetSpellInfo(data.spellID)
 				if spn then
-					-- WoW 3.3.5: UnitBuff returns only 10 values, spid is set to spell name
 					name, _, icon, count, _, duration, expirationTime, caster, _, _, spid = Filger:UnitBuff(data.unitID, data.spellID, spn, data.absID)
 					if name and (data.caster ~= 1 and (caster == data.caster or data.caster == "all") or MyUnits[caster]) then
 						if not data.count or count >= data.count then
@@ -411,9 +353,8 @@ function Filger:OnEvent(event, unit)
 				end
 			elseif data.filter == "DEBUFF" then
 				local caster, spn, expirationTime
-				spn, _, _ = K.GetSpellInfo(data.spellID)
+				spn, _, _ = GetSpellInfo(data.spellID)
 				if spn then
-					-- WoW 3.3.5: UnitDebuff returns only 10 values, spid is set to spell name
 					name, _, icon, count, _, duration, expirationTime, caster, _, _, spid = Filger:UnitDebuff(data.unitID, data.spellID, spn, data.absID)
 					if name and (data.caster ~= 1 and (caster == data.caster or data.caster == "all") or MyUnits[caster]) then
 						start = expirationTime - duration
@@ -422,7 +363,7 @@ function Filger:OnEvent(event, unit)
 				end
 			elseif data.filter == "CD" then
 				if data.spellID then
-					name, _, icon = K.GetSpellInfo(data.spellID)
+					name, _, icon = GetSpellInfo(data.spellID)
 					if name then
 						if data.absID then
 							start, duration = GetSpellCooldown(data.spellID)
@@ -445,16 +386,14 @@ function Filger:OnEvent(event, unit)
 			elseif data.filter == "ICD" then
 				if data.trigger == "BUFF" then
 					local spn
-					spn, _, icon = K.GetSpellInfo(data.spellID)
+					spn, _, icon = GetSpellInfo(data.spellID)
 					if spn then
-						-- WoW 3.3.5: UnitBuff returns only 10 values, spid is set to spell name
 						name, _, _, _, _, _, _, _, _, _, spid = Filger:UnitBuff("player", data.spellID, spn, data.absID)
 					end
 				elseif data.trigger == "DEBUFF" then
 					local spn
-					spn, _, icon = K.GetSpellInfo(data.spellID)
+					spn, _, icon = GetSpellInfo(data.spellID)
 					if spn then
-						-- WoW 3.3.5: UnitDebuff returns only 10 values, spid is set to spell name
 						name, _, _, _, _, _, _, _, _, _, spid = Filger:UnitDebuff("player", data.spellID, spn, data.absID)
 					end
 				end
@@ -496,10 +435,6 @@ function Filger:OnEvent(event, unit)
 		if needUpdate and self.actives then
 			Filger.DisplayActives(self)
 		end
-	end)
-	
-	if not success and C.General.DeveloperMode then
-		K.Print("Filger error:", err)
 	end
 end
 
@@ -546,7 +481,7 @@ if C["filger_spells"] and C["filger_spells"][K.Class] then
 		for j = 1, #data, 1 do
 			local spn
 			if data[j].spellID then
-				spn = K.GetSpellInfo(data[j].spellID)
+				spn = GetSpellInfo(data[j].spellID)
 			else
 				local slotLink = GetInventoryItemLink("player", data[j].slotID)
 				if slotLink then
@@ -554,7 +489,7 @@ if C["filger_spells"] and C["filger_spells"][K.Class] then
 				end
 			end
 			if not spn and not data[j].slotID then
-				K.Print("|cfff02c35WARNING: spell/slot ID ["..(data[j].spellID or data[j].slotID or "UNKNOWN").."] no longer exists! Report this to Kkthnx.|r")
+				K.Print("|cffff0000WARNING: spell/slot ID ["..(data[j].spellID or data[j].slotID or "UNKNOWN").."] no longer exists! Report this to Kkthnx.|r")
 				table.insert(jdx, j)
 			end
 		end
@@ -564,7 +499,7 @@ if C["filger_spells"] and C["filger_spells"][K.Class] then
 		end
 
 		if #data == 0 then
-			K.Print("|cfff02c35WARNING: section ["..data.Name.."] is empty! Report this to Kkthnx.|r")
+			K.Print("|cffff0000WARNING: section ["..data.Name.."] is empty! Report this to Kkthnx.|r")
 			table.insert(idx, i)
 		end
 	end
@@ -594,7 +529,7 @@ if C["filger_spells"] and C["filger_spells"][K.Class] then
 				local data = C["filger_spells"][K.Class][i][j]
 				local name, icon
 				if data.spellID then
-					name, _, icon = K.GetSpellInfo(data.spellID)
+					name, _, icon = GetSpellInfo(data.spellID)
 				elseif data.slotID then
 					local slotLink = GetInventoryItemLink("player", data.slotID)
 					if slotLink then

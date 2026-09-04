@@ -33,7 +33,7 @@ bar:SetScript("OnEvent", function(self, event, arg1)
 			button:ClearAllPoints()
 			button:SetParent(PetHolder)
 
-			button:SetSize(C.ActionBar.ButtonSize, C.ActionBar.ButtonSize)
+			button:SetScale(0.7)
 			if i == 1 then
 				if C.ActionBar.PetBarHorizontal == true then
 					button:SetPoint("BOTTOMLEFT", 0, 0)

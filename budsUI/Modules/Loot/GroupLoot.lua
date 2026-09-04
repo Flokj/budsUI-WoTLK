@@ -29,7 +29,17 @@ local function SetTip(frame)
 	GameTooltip:SetOwner(frame, "ANCHOR_TOPLEFT")
 	GameTooltip:SetText(frame.tiptext)
 	if frame:IsEnabled() == 0 then GameTooltip:AddLine("|cffff3333"..L_LOOT_CANNOT) end
-	for name, roll in pairs(frame.parent.rolls) do if roll == rolltypes[frame.rolltype] then GameTooltip:AddLine(name, 1, 1, 1) end end
+	for name, rollData in pairs(frame.parent.rolls) do
+		if rollData[1] == rolltypes[frame.rolltype] then
+			local class = rollData[2]
+			local color = class and ((CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[class]) or RAID_CLASS_COLORS[class])
+			if color then
+				GameTooltip:AddLine(name, color.r, color.g, color.b)
+			else
+				GameTooltip:AddLine(name, 1, 1, 1)
+			end
+		end
+	end
 	GameTooltip:Show()
 end
 
@@ -218,22 +228,9 @@ local function START_LOOT_ROLL(rollid, time)
 	f.pass:SetText(0)
 	f.disenchant:SetText(0)
 
-	-- WoW 3.3.5: GetLootRollItemInfo() doesn't exist, use GetLootRollItemLink() + GetItemInfo()
-	local itemLink = GetLootRollItemLink(rollid)
-	if not itemLink then return end
-	
-	local name, _, quality, _, _, _, _, _, _, texture = GetItemInfo(itemLink)
-	if not name then return end
-	
-	-- In 3.3.5, we can't directly get canNeed/canGreed/canDisenchant, so enable all by default
-	-- The server will reject invalid rolls anyway
-	local bop = select(14, GetItemInfo(itemLink)) == 1
-	local canNeed = true
-	local canGreed = true
-	local canDisenchant = true
-	
+	local texture, name, count, quality, bop, canNeed, canGreed, canDisenchant = GetLootRollItemInfo(rollid)
 	f.button.icon:SetTexture(texture)
-	f.button.link = itemLink
+	f.button.link = GetLootRollItemLink(rollid)
 
 	if C.Loot.AutoGreed and K.Level == MAX_PLAYER_LEVEL and quality == 2 and not bop then return end
 
@@ -339,9 +336,10 @@ end
 local function CHAT_MSG_LOOT(msg)
 	local playername, itemname, rolltype = ParseRollChoice(msg)
 	if playername and itemname and rolltype then
+		local _, class = UnitClass(playername)
 		for _,f in ipairs(frames) do
 			if f.rollid and f.button.link == itemname and not f.rolls[playername] then
-				f.rolls[playername] = rolltype
+				f.rolls[playername] = {rolltype, class}
 				f[rolltype]:SetText(tonumber(f[rolltype]:GetText()) + 1)
 				return
 			end

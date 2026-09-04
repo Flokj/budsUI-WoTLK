@@ -4,18 +4,17 @@ if C.Skins.WeakAuras ~= true then return end
 local pairs = pairs
 local select = select
 local CreateFrame = CreateFrame
-local IsAddOnLoaded = IsAddOnLoaded
 
---	WeakAuras skin
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
-frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:SetScript("OnEvent", function(self, event)
-	if not WeakAuras or not WeakAuras.regions then return end
+	if not WeakAuras or not WeakAuras.regionTypes then return end
 
-	local function Skin_WeakAuras(frame)
+	local function Skin_WeakAuras(frame, ftype)
+		if not frame then return end
+
 		if not frame.border then
-			K.CreateBorder(frame, 10, 2.5)
+			K.CreateBorder(frame, 10, 1)
 		end
 
 		if frame.icon then
@@ -24,8 +23,8 @@ frame:SetScript("OnEvent", function(self, event)
 		end
 
 		if frame.bar then
-			frame.bar.fg:SetTexture(C.Media.Texture)
-			frame.bar.bg:SetTexture(C.Media.Texture)
+			if frame.bar.fg then frame.bar.fg:SetTexture(C.Media.Texture) end
+			if frame.bar.bg then frame.bar.bg:SetTexture(C.Media.Texture) end
 		end
 
 		if frame.stacks then
@@ -44,9 +43,43 @@ frame:SetScript("OnEvent", function(self, event)
 		end
 	end
 
-	for weakAura, _ in pairs(WeakAuras.regions) do
-		if WeakAuras.regions[weakAura].regionType == "icon" or WeakAuras.regions[weakAura].regionType == "aurabar" then
-			Skin_WeakAuras(WeakAuras.regions[weakAura].region)
+	if WeakAuras.regionTypes.icon then
+		local Create_Icon = WeakAuras.regionTypes.icon.create
+		local Modify_Icon = WeakAuras.regionTypes.icon.modify
+
+		WeakAuras.regionTypes.icon.create = function(parent, data)
+			local region = Create_Icon(parent, data)
+			Skin_WeakAuras(region, "icon")
+			return region
+		end
+
+		WeakAuras.regionTypes.icon.modify = function(parent, region, data)
+			Modify_Icon(parent, region, data)
+			Skin_WeakAuras(region, "icon")
+		end
+	end
+
+	if WeakAuras.regionTypes.aurabar then
+		local Create_AuraBar = WeakAuras.regionTypes.aurabar.create
+		local Modify_AuraBar = WeakAuras.regionTypes.aurabar.modify
+
+		WeakAuras.regionTypes.aurabar.create = function(parent)
+			local region = Create_AuraBar(parent)
+			Skin_WeakAuras(region, "aurabar")
+			return region
+		end
+
+		WeakAuras.regionTypes.aurabar.modify = function(parent, region, data)
+			Modify_AuraBar(parent, region, data)
+			Skin_WeakAuras(region, "aurabar")
+		end
+	end
+
+	if WeakAuras.regions then
+		for weakAura, data in pairs(WeakAuras.regions) do
+			if data.regionType == "icon" or data.regionType == "aurabar" then
+				Skin_WeakAuras(data.region, data.regionType)
+			end
 		end
 	end
 end)

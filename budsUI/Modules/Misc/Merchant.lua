@@ -6,20 +6,40 @@ local find = string.find
 local IsAltKeyDown = IsAltKeyDown
 local GetItemInfo = GetItemInfo
 
--- Alt+Click to buy a stack
-hooksecurefunc("MerchantItemButton_OnModifiedClick", function(self, ...)
+-- ALT+RightClick to buy a stack
+local _MerchantItemButton_OnModifiedClick = MerchantItemButton_OnModifiedClick
+function MerchantItemButton_OnModifiedClick(self, ...)
 	if IsAltKeyDown() then
-		local itemLink = GetMerchantItemLink(self:GetID())
-		if not itemLink then return end
+		local id = self:GetID()
+		local link = GetMerchantItemLink(id)
 
-		local maxStack = select(8, GetItemInfo(itemLink))
-		if maxStack and maxStack > 1 then
-			local numAvailable = select(5, GetMerchantItemInfo(self:GetID()))
-			if numAvailable > -1 then
-				BuyMerchantItem(self:GetID(), numAvailable)
-			else
-				BuyMerchantItem(self:GetID(), GetMerchantItemMaxStack(self:GetID()))
+		if link then
+			local maxStack = select(8, GetItemInfo(link))
+
+			if maxStack and maxStack > 1 then
+				local stack = GetMerchantItemMaxStack(id)
+
+				if stack > 1 then
+					BuyMerchantItem(id, stack)
+					return
+				else
+					local _, _, _, quantity, numAvailable = GetMerchantItemInfo(id)
+					quantity = math.ceil(maxStack / quantity)
+
+					if numAvailable > -1 and numAvailable < quantity then
+						quantity = numAvailable
+					end
+
+					if quantity > 1 then
+						BuyMerchantItem(id, quantity)
+						return
+					end
+				end
 			end
+
+			BuyMerchantItem(id)
+			return
 		end
 	end
-end)
+	_MerchantItemButton_OnModifiedClick(self, ...)
+end

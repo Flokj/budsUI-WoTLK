@@ -11,28 +11,22 @@ K.MoverFrames = {
 	ActionBarAnchor,
 	BuffsAnchor,
 	ChatFrame1,
-	COOLDOWN_Anchor,
 	LootRollAnchor,
 	MinimapAnchor,
-	PVE_PVP_CC_Anchor,
-	PVE_PVP_DEBUFF_Anchor,
-	P_BUFF_ICON_Anchor,
-	P_PROC_ICON_Anchor,
 	PetActionBarAnchor,
-	PlayerCastbarAnchor,
-	PlayerFrameAnchor,
-	PowerBarAnchor,
 	PulseCDAnchor,
-	RightActionBarAnchor,
+	--RightActionBarAnchor,
 	SPECIAL_P_BUFF_ICON_Anchor,
 	ShiftHolder,
-	T_BUFF_Anchor,
-	T_DEBUFF_ICON_Anchor,
-	T_DE_BUFF_BAR_Anchor,
-	TargetCastbarAnchor,
-	TargetFrameAnchor,
+	budsUI_COOLDOWN_Anchor,
+	budsUI_PVE_PVP_CC_Anchor,
+	budsUI_PVE_PVP_DEBUFF_Anchor,
+	budsUI_P_BUFF_ICON_Anchor,
+	budsUI_P_PROC_ICON_Anchor,
+	budsUI_T_BUFF_Anchor,
+	budsUI_T_DEBUFF_ICON_Anchor,
+	budsUI_T_DE_BUFF_BAR_Anchor,
 	TooltipAnchor,
-	TotemHolder,
 	VehicleAnchor,
 	WatchFrameAnchor,
 }
@@ -169,3 +163,6 @@ end)
 
 SlashCmdList.MOVING = InitMove
 SLASH_MOVING1 = "/moveui"
+SLASH_MOVING2 = "/mui"
+SLASH_MOVING3 = "/mm"
+SLASH_MOVING4 = "/mmm"

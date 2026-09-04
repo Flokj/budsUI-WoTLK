@@ -41,7 +41,6 @@ local function AddMessage(frame, str, ...)
 	str = str:gsub("<"..DND..">", "[|cffE7E716"..L_CHAT_DND.."|r] ")
 	str = str:gsub("%[BN_CONVERSATION:", "%[1".."")
 	str = str:gsub("^%["..RAID_WARNING.."%]", "["..L_CHAT_RAID_WARNING.."]")
-	-- T1: Guard against origs[frame] being nil (e.g. if called before SetChatStyle)
 	local orig = origs[frame]
 	if orig then
 		return orig(frame, str, ...)
@@ -63,12 +62,32 @@ local function SetChatStyle(frame)
 
 	frame:SetClampRectInsets(0, 0, 0, 0)
 	frame:SetClampedToScreen(false)
-	-- Respect Fading option: false = messages stay visible forever; true = fade after FadeTime
 	if C.Chat.Fading == false then
 		frame:SetFading(false)
 	else
 		frame:SetFading(true)
 		frame:SetTimeVisible(C.Chat.FadeTime)
+	end
+
+	if not frame.backdrop then
+		if frame.CreateBackdrop then
+			frame:CreateBackdrop()
+			if frame.backdrop then
+				frame.backdrop:ClearAllPoints()
+				frame.backdrop:SetPoint("TOPLEFT", frame, "TOPLEFT", -4, 4)
+				frame.backdrop:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 4, -4)
+			end
+		else
+			local backdrop = CreateFrame("Frame", nil, frame)
+			backdrop:SetBackdrop(K.Backdrop)
+			backdrop:SetBackdropColor(unpack(C.Media.Backdrop_Color))
+			backdrop:SetBackdropBorderColor(unpack(C.Media.Border_Color))
+			backdrop:ClearAllPoints()
+			backdrop:SetPoint("TOPLEFT", frame, "TOPLEFT", -4, 4)
+			backdrop:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 4, -4)
+			backdrop:SetFrameLevel(frame:GetFrameLevel() > 0 and frame:GetFrameLevel() - 1 or 0)
+			frame.backdrop = backdrop
+		end
 	end
 
 	-- Move the chat edit box
@@ -96,8 +115,6 @@ local function SetChatStyle(frame)
 	_G[format("ChatFrame%sTabHighlightMiddle", id)]:Kill()
 	_G[format("ChatFrame%sTabHighlightRight", id)]:Kill()
 
-	-- T2: Duplicate Kill calls removed (already called at L83-85)
-
 	_G[format("ChatFrame%sButtonFrameUpButton", id)]:Kill()
 	_G[format("ChatFrame%sButtonFrameDownButton", id)]:Kill()
 	_G[format("ChatFrame%sButtonFrameBottomButton", id)]:Kill()
@@ -110,27 +127,20 @@ local function SetChatStyle(frame)
 
 	_G[format("ChatFrame%sTabGlow", id)]:Kill()
 
-	-- T3: Kill editbox artwork via type-safe region iteration (immune to region reordering)
 	for _, region in ipairs({editbox:GetRegions()}) do
 		if region:GetObjectType() == "Texture" then
 			region:Kill()
 		end
 	end
 
-	-- Kill bubble tex/glow
 	if tab.conversationIcon then tab.conversationIcon:Kill() end
 
-	-- Disable alt key usage
 	editbox:SetAltArrowKeyMode(false)
-
-	-- Hide editbox on login
 	editbox:Hide()
 
-	-- Script to hide editbox instead of fading editbox to 0.35 alpha via IM Style
 	editbox:HookScript("OnEditFocusGained", function(self) self:Show() end)
 	editbox:HookScript("OnEditFocusLost", function(self) self:Hide() end)
 
-	-- T4: Removed commented-out combat guard dead code; clear text instead of hiding (better UX)
 	local function OnTextChanged(self)
 		local text = self:GetText()
 
@@ -157,10 +167,8 @@ local function SetChatStyle(frame)
 	end
 	editbox:HookScript("OnTextChanged", OnTextChanged)
 
-	-- Hide edit box every time we click on a tab
 	tab:HookScript("OnClick", function() editbox:Hide() end)
 
-	-- Create our own texture for edit box
 	if C.Chat.TabsMouseover ~= true then
 		local EditBoxBackground = CreateFrame("Frame", "ChatEditBoxBackground", editbox)
 		EditBoxBackground:SetBackdrop(K.Backdrop)
@@ -176,7 +184,6 @@ local function SetChatStyle(frame)
 			EditBoxBackground:SetBackdropBorderColor(r, g, b)
 		end
 
-		-- T5+T6: Renamed `type` → `chatType` (avoids shadowing global), nil-guarded ChatTypeInfo access
 		hooksecurefunc("ChatEdit_UpdateHeader", function()
 			local chatType = editbox:GetAttribute("chatType")
 			if not chatType then return end
@@ -212,7 +219,7 @@ local function SetChatStyle(frame)
 		CombatLogQuickButtonFrame_CustomProgressBar:ClearAllPoints()
 		CombatLogQuickButtonFrame_CustomProgressBar:SetPoint("TOPLEFT", CombatLogQuickButtonFrame_Custom.backdrop, 4, -4)
 		CombatLogQuickButtonFrame_CustomProgressBar:SetPoint("BOTTOMRIGHT", CombatLogQuickButtonFrame_Custom.backdrop, -4, 4)
-		CombatLogQuickButtonFrame_CustomProgressBar:SetStatusBarTexture(C.Media.Texture) -- T7: Removed duplicate call
+		CombatLogQuickButtonFrame_CustomProgressBar:SetStatusBarTexture(C.Media.Texture)
 		CombatLogQuickButtonFrameButton1:SetPoint("BOTTOM", 0, 0)
 	end
 
@@ -226,13 +233,7 @@ local function SetupChat(self)
 		SetChatStyle(frame)
 	end
 
-	-- Remember last channel
-	local var
-	if C.Chat.Sticky == true then
-		var = 1
-	else
-		var = 0
-	end
+	local var = C.Chat.Sticky == true and 1 or 0
 	ChatTypeInfo.SAY.sticky = var
 	ChatTypeInfo.PARTY.sticky = var
 	ChatTypeInfo.PARTY_LEADER.sticky = var
@@ -247,19 +248,21 @@ local function SetupChat(self)
 end
 
 local function SetupChatPosAndFont(self)
+	if C.Chat.Width and C.Chat.Height then
+		ChatFrame1:SetSize(C.Chat.Width, C.Chat.Height)
+	end
+	
 	for i = 1, NUM_CHAT_WINDOWS do
 		local chat = _G[format("ChatFrame%s", i)]
 		local id = chat:GetID()
 		local _, fontSize = FCF_GetChatWindowInfo(id)
 
-		-- Min. size for chat font
 		if fontSize < 12 then
 			FCF_SetChatWindowFontSize(nil, chat, 12)
 		else
 			FCF_SetChatWindowFontSize(nil, chat, fontSize)
 		end
 
-		-- Font and font style for chat
 		if C.Chat.Outline == true then
 			chat:SetFont(C.Media.Font, fontSize, C.Media.Font_Style)
 			chat:SetShadowColor(0/255, 0/255, 0/255, 0.2)
@@ -269,7 +272,6 @@ local function SetupChatPosAndFont(self)
 			chat:SetShadowOffset((K.Mult or 1), -(K.Mult or 1))
 		end
 
-		-- Let WoW's layout-local handle ChatFrame1 position
 		if i == 2 then
 			if C.Chat.CombatLog ~= true then
 				FCF_DockFrame(chat)
@@ -282,7 +284,6 @@ local function SetupChatPosAndFont(self)
 		end
 	end
 
-	-- Reposition battle.net popup over chat #1
 	BNToastFrame:HookScript("OnShow", function(self)
 		self:ClearAllPoints()
 		self:SetPoint(unpack(C.Position.BnetPopup))
@@ -304,7 +305,6 @@ UIChat:SetScript("OnEvent", function(self, event, addon)
 	end
 end)
 
--- Setup temp chat (BN, WHISPER) when needed
 local function SetupTempChat()
 	local frame = FCF_GetCurrentChatFrame()
 	if frame.skinned then return end
@@ -312,7 +312,6 @@ local function SetupTempChat()
 end
 hooksecurefunc("FCF_OpenTemporaryWindow", SetupTempChat)
 
--- Remove player"s realm name
 local function RemoveRealmName(self, event, msg, author, ...)
 	local realm = gsub(K.Realm, " ", "")
 	if msg:find("-" .. realm) then
@@ -321,7 +320,6 @@ local function RemoveRealmName(self, event, msg, author, ...)
 end
 ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", RemoveRealmName)
 
--- Save slash command typo
 local function TypoHistory_Posthook_AddMessage(chat, text)
 	if strfind(text, HELP_TEXT_SIMPLE) then
 		ChatEdit_AddHistory(chat.editBox)
@@ -334,8 +332,6 @@ for i = 1, NUM_CHAT_WINDOWS do
 	end
 end
 
--- Big Trade Chat
--- T8: SLASH_* binding declared before SlashCmdList entry (WoW convention)
 local bigchat = false
 SLASH_BIGCHAT1 = "/bigchat"
 SlashCmdList.BIGCHAT = function(msg, editbox)

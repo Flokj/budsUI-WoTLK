@@ -354,7 +354,7 @@ local function UpdateObjects(frame)
 		frame.hp.name:SetText(frame.hp.oldname:GetText())
 	end
 
-	-- Setup level text
+	--[[ Setup level text
 	local level, elite, mylevel = tonumber(frame.hp.oldlevel:GetText()), frame.hp.elite:IsShown(), K.Level
 	frame.hp.level:ClearAllPoints()
 	if C.Nameplate.ClassIcons == true and frame.isClass == true then
@@ -372,7 +372,7 @@ local function UpdateObjects(frame)
 	else
 		frame.hp.level:SetText(level..(elite and "+" or ""))
 		frame.hp.level:Show()
-	end
+	end]]
 
 	frame.overlay:ClearAllPoints()
 	frame.overlay:SetAllPoints(frame.hp)
@@ -404,7 +404,7 @@ local function SkinObjects(frame, nameFrame)
 		hp.value = hp:CreateFontString(nil, "OVERLAY")
 		hp.value:SetFont(C.Media.Font, C.Media.Font_Size * K.NoScaleMult - 1, C.Media.Font_Style)
 		hp.value:SetShadowOffset((0), -(0))
-		hp.value:SetPoint("RIGHT", hp, "RIGHT", 0, 0)
+		hp.value:SetPoint("CENTER", hp, "CENTER", 0, 0)
 		hp.value:SetTextColor(255/255, 255/255, 255/255)
 	end
 
@@ -482,7 +482,7 @@ local function SkinObjects(frame, nameFrame)
 
 	-- Create CastBar Icon
 	cbicon:ClearAllPoints()
-	cbicon:SetPoint("TOPLEFT", hp, "TOPRIGHT", 8, 0)
+	cbicon:SetPoint("TOPRIGHT", hp, "TOPLEFT", -6, 0)
 	cbicon:SetSize((C.Nameplate.Height * 2 * K.NoScaleMult) + 8, (C.Nameplate.Height * 2 * K.NoScaleMult) + 8)
 	cbicon:SetTexCoord(unpack(K.TexCoords))
 	cbicon:SetDrawLayer("OVERLAY")

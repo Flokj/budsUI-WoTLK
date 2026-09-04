@@ -144,7 +144,9 @@ L_MAIL_NEED = "Need a mailbox."
 L_MAIL_STOPPED = "Stopped, inventory is full."
 L_MAIL_UNIQUE = "Stopped. Found a unique duplicate item in a bag or the bank."
 -- Map Localization
-L_MAP_FARMMODE = "|cff388bdbFarmMode|r"
+L_MAP_FARMMODE = "|cff2eb6ffFarmMode|r"
+L_MAP_BOUNDS = "Out of bounds!"
+L_MAP_CURSOR = "Cursor: "
 -- FarmMode Minimap
 L_MINIMAP_FARMMODE_ON = "|cffffe02eFarmmode is now|r |cFF008000enabled|r"
 L_MINIMAP_FARMMODE_OFF = "|cffffe02eFarmmode is now|r |cFFFF0000disabled|r"

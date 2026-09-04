@@ -2,20 +2,20 @@ local K, C, L, _ = select(2, ...):unpack()
 
 -- Media Options
 C["Media"] = {
-	["Backdrop_Color"] = {5/255, 5/255, 5/255, 0.8},
+	["Backdrop_Color"] = {6/255, 6/255, 6/255, 0.9},
 	["Blank"] = [[Interface\AddOns\]] .. K.Directory .. [[\Media\Textures\Blank]],
 	["Blank_Font"] = [[Interface\AddOns\]] .. K.Directory .. [[\Media\Fonts\Invisible.ttf]],
 	["Blizz"] = [[Interface\AddOns\]] .. K.Directory .. [[\Media\Border\Border_Default.tga]],
-	["Border_Color"] = {255/255, 255/255, 255/255, 1},
+	["Border_Color"] = {134/255, 134/255, 134/255, 1},
 	["Border_Glow"] = [[Interface\AddOns\]] .. K.Directory .. [[\Media\Border\Border_Glow.tga]],
 	["Combat_Font"] = [[Interface\AddOns\]] .. K.Directory .. [[\Media\Fonts\Damage.ttf]],
 	["Combat_Font_Size"] = 16,
 	["Combat_Font_Size_Style"] = "OUTLINE",
 	["Font"] = [[Interface\AddOns\]] .. K.Directory .. [[\Media\Fonts\Normal.ttf]],
-	["Font_Size"] = 12,
+	["Font_Size"] = 13,
 	["Font_Style"] = "OUTLINE",
 	["Glow"] = [[Interface\AddOns\]] .. K.Directory .. [[\Media\Textures\GlowTex.tga]],
-	["Overlay_Color"] = {0/255, 0/255, 0/255, 0.8},
+	["Overlay_Color"] = {0/255, 0/255, 0/255, 0.9},
 	["Proc_Sound"] = [[Interface\AddOns\]] .. K.Directory .. [[\Media\Sounds\Proc.ogg]],
 	["Texture"] = [[Interface\TargetingFrame\UI-StatusBar]],
 	["Warning_Sound"] = [[Interface\AddOns\]] .. K.Directory .. [[\Media\Sounds\Warning.ogg]],
@@ -23,25 +23,23 @@ C["Media"] = {
 }
 -- ActionBar Options
 C["ActionBar"] = {
-	["BarsLocked"] = false,
 	["BottomBars"] = 3,
 	["ButtonSize"] = 36,
 	["ButtonSpace"] = 3,
 	["Enable"] = true,
-	["EquipBorder"] = false,
+	["EquipBorder"] = true,
 	["Hotkey"] = true,
 	["Macro"] = true,
 	["OutOfMana"] = {128/255, 128/255, 255/255},
 	["OutOfRange"] = {204/255, 26/255, 26/255},
 	["PetBarHide"] = false,
-	["PetBarHorizontal"] = false,
+	["PetBarHorizontal"] = true,
 	["RightBars"] = 2,
 	["Selfcast"] = false,
 	["ShowGrid"] = true,
 	["SplitBars"] = false,
 	["StanceBarHide"] = false,
 	["StanceBarHorizontal"] = true,
-	["ToggleMode"] = true,
 }
 -- Announcements Options
 C["Announcements"] = {
@@ -50,7 +48,7 @@ C["Announcements"] = {
 	["Interrupt"] = false,
 	["Portals"] = false,
 	["PullCountdown"] = true,
-	["SaySapped"] = false,
+	["SaySapped"] = true,
 	["Spells"] = false,
 	["SpellsFromAll"] = false,
 	["Toys"] = false,
@@ -61,10 +59,10 @@ C["Automation"] = {
 	["AutoInvite"] = false,
 	["DeclineDuel"] = false,
 	["LoggingCombat"] = false,
-	["Resurrection"] = false,
+	["Resurrection"] = true,
 	["ScreenShot"] = false,
-	["SellGreyRepair"] = false,
-	["TabBinder"] = false,
+	["SellGreyRepair"] = true,
+	["TabBinder"] = true,
 }
 -- Bag Options
 C["Bag"] = {
@@ -82,25 +80,26 @@ C["Blizzard"] = {
 	["Durability"] = true,
 	["MoveAchievements"] = true,
 	["Reputations"] = true,
+	["DisableBlizzardUF"] = true,
 }
 -- Buffs & Debuffs Options
 C["Aura"] = {
-	["Enable"] = false,
-	["BuffSize"] = 32,
-	["CastBy"] = false,
-	["ClassColorBorder"] = false,
+	["Enable"] = true,
+	["BuffSize"] = 36,
+	["CastBy"] = true,
+	["ClassColorBorder"] = true,
 }
 -- Chat Options
 C["Chat"] = {
-	["BigHeight"] = 400,
-	["BigWidth"] = 400,
+	["BigHeight"] = 450,
+	["BigWidth"] = 450,
 	["HideTextures"] = true,
 	["CombatLog"] = true,
 	["DamageMeterSpam"] = false,
 	["Enable"] = true,
 	["Fading"] = false,
 	["Filter"] = true,
-	["Height"] = 150,
+	["Height"] = 240,
 	["Outline"] = false,
 	["Spam"] = false,
 	["FadeTime"] = 20,
@@ -108,12 +107,12 @@ C["Chat"] = {
 	["TabsMouseover"] = true,
 	["TabsOutline"] = false,
 	["WhispSound"] = true,
-	["Width"] = 400,
+	["Width"] = 450,
 }
 -- Cooldown Options
 C["Cooldown"] = {
 	["Enable"] = true,
-	["FontSize"] = 20,
+	["FontSize"] = 18,
 	["Threshold"] = 3,
 }
 -- Error Options
@@ -124,11 +123,11 @@ C["Error"] = {
 }
 -- Filger Options
 C["Filger"] = {
-	["BuffsSize"] = 37,
+	["BuffsSize"] = 40,
 	["CooldownSize"] = 30,
 	["Enable"] = true,
 	["MaxTestIcon"] = 5,
-	["PvPSize"] = 60,
+	["PvPSize"] = 50,
 	["ShowTooltip"] = false,
 	["TestMode"] = false,
 }
@@ -158,12 +157,13 @@ C["Minimap"] = {
 	["CollectButtons"] = true,
 	["CollectDelay"] = 5,
 	["Enable"] = true,
-	["Ping"] = true,
-	["Size"] = 150,
+	["Ping"] = false,
+	["CDR"] = true,
+	["Size"] = 180,
 	["SizeFarm"] = 300,
-	["SizeNormal"] = 144,
+	["SizeNormal"] = 180,
 	["Offsets"] = {
-		["Mail"] = {6, 10},
+		["Mail"] = {2, 8},
 		["Battlefield"] = {4, -4},
 		["Calendar"] = {0, 5},
 		["LFG"] = {2, -2},
@@ -171,19 +171,17 @@ C["Minimap"] = {
 		["RightClick"] = {0, 0, -160, 0},
 	}
 }
-
-
 -- Miscellaneous Options
 C["Misc"] = {
 	["AFKCamera"] = false,
-	["AlreadyKnown"] = false,
+	["AlreadyKnown"] = true,
 	["Armory"] = false,
-	["BGSpam"] = false,
-	["DurabilityWarning"] = false,
+	["BGSpam"] = true,
+	["DurabilityWarning"] = true,
 	["EnhancedMail"] = true,
 	["HatTrick"] = true,
 	["InviteKeyword"] = "inv",
-	["ItemLevel"] = false,
+	["ItemLevel"] = true,
 	["SpeedyLoad"] = false,
 }
 -- Nameplate Options
@@ -198,12 +196,12 @@ C["Nameplate"] = {
 	["EnhanceThreat"] = false,
 	["GoodColor"] = {74/255, 173/255, 74/255},
 	["HealthValue"] = true,
-	["Height"] = 9,
+	["Height"] = 18,
 	["NameAbbreviate"] = true,
 	["NearColor"] = {217/255, 196/255, 92/255},
 	["CastBarName"] = true,
 	["Auras"] = false,
-	["Width"] = 120,
+	["Width"] = 180,
 }
 -- PowerBar Options
 C["PowerBar"] = {
@@ -238,7 +236,7 @@ C["PowerBar"] = {
 }
 -- PulseCD Options
 C["PulseCD"] = {
-	["Enable"] = true,
+	["Enable"] = false,
 	["Size"] = 75,
 	["Sound"] = false,
 	["AnimationScale"] = 1.5,
@@ -253,9 +251,9 @@ C["Skins"] = {
 	["DBM"] = true,
 	["MinimapButtons"] = true,
 	["Recount"] = false,
-	["Skada"] = false,
-	["WeakAuras"] = false,
-	["WorldMap"] = true,
+	["Skada"] = true,
+	["WeakAuras"] = true,
+	["WorldMap"] = false,
 	["WorldMapScale"] = 0.80,
 	["WorldMapScaleMini"] = 1.20,
 }
@@ -270,13 +268,13 @@ C["Tooltip"] = {
 	["HideCombat"] = false,
 	["HideButtons"] = false,
 	["InstanceLock"] = false,
-	["ItemCount"] = false,
-	["ItemIcon"] = false,
-	["QualityBorder"] = false,
-	["RaidIcon"] = false,
+	["ItemCount"] = true,
+	["ItemIcon"] = true,
+	["QualityBorder"] = true,
+	["RaidIcon"] = true,
 	["Rank"] = false,
-	["SpellID"] = false,
-	["Talents"] = false,
+	["SpellID"] = true,
+	["Talents"] = true,
 	["Target"] = true,
 	["Title"] = true,
 	["WhoTargetting"] = true,

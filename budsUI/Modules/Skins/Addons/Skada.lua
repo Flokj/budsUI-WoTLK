@@ -1,126 +1,171 @@
 local K, C, L, _ = select(2, ...):unpack()
 if C.Skins.Skada ~= true then return end
 
--- Skada skin
-local frame = CreateFrame("Frame")
-frame:RegisterEvent("PLAYER_LOGIN")
-frame:SetScript("OnEvent", function(self, event)
+local function LoadSkadaSkin()
 	if not IsAddOnLoaded("Skada") then return end
 
+	local Skada = Skada
+	if not Skada then return end
+
+	local barSpacing = 1
 	local barmod = Skada.displays["bar"]
 
-	-- Used to strip unecessary options from the in-game config
 	local function StripOptions(options)
-		options.baroptions.args.barspacing = nil
-		options.titleoptions.args.texture = nil
-		options.titleoptions.args.bordertexture = nil
-		options.titleoptions.args.thickness = nil
-		options.titleoptions.args.margin = nil
-		options.titleoptions.args.color = nil
-		options.windowoptions = nil
-		options.baroptions.args.barfont = nil
-		options.baroptions.args.reversegrowth = nil
-		options.titleoptions.args.font = nil
+		if options.baroptions then
+			options.baroptions.args.barspacing = nil
+			options.baroptions.args.barfont = nil
+		end
+		if options.titleoptions then
+			options.titleoptions.args.texture = nil
+			options.titleoptions.args.bordertexture = nil
+			options.titleoptions.args.thickness = nil
+			options.titleoptions.args.margin = nil
+			options.titleoptions.args.color = nil
+			options.titleoptions.args.font = nil
+		end
 	end
 
 	barmod.AddDisplayOptions_ = barmod.AddDisplayOptions
 	barmod.AddDisplayOptions = function(self, win, options)
-		local status, err = pcall(self.AddDisplayOptions_, self, win, options)
-		if not status then 
-			barmod.AddDisplayOptions = barmod.AddDisplayOptions_
-			return 
-		end
+		self:AddDisplayOptions_(win, options)
 		StripOptions(options)
 	end
 
-	for k, options in pairs(Skada.options.args.windows.args) do
+	for _, options in pairs(Skada.options.args.windows.args) do
 		if options.type == "group" then
 			StripOptions(options.args)
 		end
 	end
 
-	-- Override settings from in-game GUI
 	barmod.ApplySettings_ = barmod.ApplySettings
 	barmod.ApplySettings = function(self, win)
-		local status, err = pcall(self.ApplySettings_, self, win)
-		if not status then 
-			barmod.ApplySettings = barmod.ApplySettings_
-			return
-		end
-
-		local skada = win.bargroup
-
-		local titlefont = CreateFont("TitleFont"..win.db.name)
-		titlefont:SetFont(C.Media.Font, C.Media.Font_Size - 1, C.Media.Font_Style)
-		titlefont:SetShadowColor(0, 0)
-
+		barmod.ApplySettings_(self, win)
+		local window = win.bargroup
 		if win.db.enabletitle then
-			skada.button:SetNormalFontObject(titlefont)
-			skada.button:SetBackdrop(nil)
-			skada.button:GetFontString():SetPoint("TOPLEFT", skada.button, "TOPLEFT", 1, -1)
-			skada.button:SetHeight(19)
+			window.button:SetBackdrop(nil)
+		end
+		window:SetSpacing(barSpacing)
+		window:SetFrameLevel(5)
+		window.SetFrameLevel = K.Noop
+		window:SetBackdrop(nil)
+		window.borderFrame:StripTextures()
 
-			if not skada.button.backdrop then
-				skada.button:CreateBackdrop()
-				skada.button.backdrop:SetPoint("TOPLEFT", win.bargroup.button, "TOPLEFT", -4 * K.Mult, 4 * K.Mult)
-				skada.button.backdrop:SetPoint("BOTTOMRIGHT", win.bargroup.button, "BOTTOMRIGHT", 4 * K.Mult, 0)
+		if not window.bg then
+			window.bg = CreateFrame("Frame", nil, window)
+			window.bg:SetFrameLevel(1)
+			
+			if window.bg.CreateBackdrop then
+				window.bg:CreateBackdrop()
+			else
+				window.bg:SetBackdrop({
+					bgFile = (C.Media and C.Media.Blank) or "Interface\\Buttons\\WHITE8X8",
+					edgeFile = (C.Media and C.Media.Glow) or "Interface\\Buttons\\WHITE8X8",
+					tile = false, tileSize = 0, edgeSize = 1,
+					insets = { left = 0, right = 0, top = 0, bottom = 0 }
+				})
 			end
-
-			skada.button.bg = skada.button:CreateTexture(nil, "BACKGROUND")
-			skada.button.bg:SetTexture(C.Media.Blank)
-			skada.button.bg:SetVertexColor(unpack(C.Media.Backdrop_Color))
-			skada.button.bg:SetPoint("TOPLEFT", win.bargroup.button, "TOPLEFT", 0, 0)
-			skada.button.bg:SetPoint("BOTTOMRIGHT", win.bargroup.button, "BOTTOMRIGHT", 0, 2)
 		end
 
-		skada:SetTexture(C.Media.Texture)
-		skada:SetSpacing(7)
-		skada:SetBackdrop(nil)
+		if C.Media and C.Media.Backdrop_Color then
+			window.bg:SetBackdropColor(unpack(C.Media.Backdrop_Color))
+		else
+			window.bg:SetBackdropColor(0.06, 0.06, 0.06, 0.9)
+		end
+
+		if C.Media and C.Media.Border_Color then
+			window.bg:SetBackdropBorderColor(unpack(C.Media.Border_Color))
+		end
+
+		window.bg:ClearAllPoints()
+		if win.db.enabletitle then
+			window.bg:SetPoint("TOPLEFT", window.button, "TOPLEFT", -2, 2)
+		else
+			window.bg:SetPoint("TOPLEFT", window, "TOPLEFT", -2, 2)
+		end
+		window.bg:SetPoint("BOTTOMRIGHT", window, "BOTTOMRIGHT", 2, -2)
+
+		window.button:SetBackdropColor(1, 1, 1, 0)
+		window.button:SetFrameStrata("MEDIUM")
+		window.button:SetFrameLevel(10)
+		window:SetFrameStrata("MEDIUM")
+
+		if win.db.enabletitle and window.button then
+			local children = { window.button:GetChildren() }
+			for i = 1, #children do
+				children[i]:SetFrameLevel(12)
+			end
+		end
 	end
 
-	hooksecurefunc(Skada, "UpdateDisplay", function(self)
-		for _, win in ipairs(self:GetWindows()) do
-			for i, v in pairs(win.bargroup:GetBars()) do
-				if not v.BarStyled then
-					if not v.backdrop then
-						v:CreateBackdrop()
-					end
-
-					v:SetHeight(14)
-
-					v.label:ClearAllPoints()
-					v.label.ClearAllPoints = K.Noop
-					v.label:SetPoint("LEFT", v, "LEFT", 2 * K.Mult, 0)
-					v.label.SetPoint = K.Noop
-
-					K.SkinFont(v.label)
-					v.label.SetFont = K.Noop
-					v.label.SetShadowOffset = K.Noop
-
-					v.timerLabel:ClearAllPoints()
-					v.timerLabel.ClearAllPoints = K.Noop
-					v.timerLabel:SetPoint("RIGHT", v, "RIGHT", 0, 0)
-					v.timerLabel.SetPoint = K.Noop
-
-					K.SkinFont(v.timerLabel)
-					v.timerLabel.SetFont = K.Noop
-					v.timerLabel.SetShadowOffset = K.Noop
-
-					v.BarStyled = true
-				end
-				if v.icon and v.icon:IsShown() then
-					v.backdrop:SetPoint("TOPLEFT", -14 * K.Mult, 2 * K.Mult)
-					v.backdrop:SetPoint("BOTTOMRIGHT", 4 * K.Mult, -4 * K.Mult)
-				else
-					v.backdrop:SetPoint("TOPLEFT", -4 * K.Mult, 4 * K.Mult)
-					v.backdrop:SetPoint("BOTTOMRIGHT", 4 * K.Mult, -4 * K.Mult)
-				end
-			end
+	local function EmbedWindow(window, width, barheight, height, ofsx, ofsy)
+		window.db.barwidth = width
+		window.db.barheight = barheight
+		if window.db.enabletitle then
+			height = height - barheight
 		end
-	end)
+		window.db.background.height = height
+		window.db.spark = false
+		window.db.barslocked = true
+		window.bargroup:ClearAllPoints()
+		window.bargroup:SetPoint("TOPLEFT", UIParent, "TOPLEFT", ofsx, ofsy)
+		barmod.ApplySettings(barmod, window)
+	end
 
-	-- Update pre-existing displays
+	local windows = {}
+	local function EmbedSkada()
+		if #windows == 1 then
+			EmbedWindow(windows[1], 320, 18, 190, 20, -300)
+		elseif #windows == 2 then
+			EmbedWindow(windows[1], 320, 18, 190, 20, -300)
+			EmbedWindow(windows[2], 260, 18, 150, 350, -300)
+		end
+	end
+
 	for _, window in ipairs(Skada:GetWindows()) do
 		window:UpdateDisplay()
 	end
-end)
+
+	if not Skada.CreateWindow_ then
+		Skada.CreateWindow_ = Skada.CreateWindow
+		function Skada:CreateWindow(name, db)
+			Skada:CreateWindow_(name, db)
+			wipe(windows)
+			for _, window in ipairs(Skada:GetWindows()) do
+				tinsert(windows, window)
+			end
+		end
+	end
+
+	if not Skada.DeleteWindow_ then
+		Skada.DeleteWindow_ = Skada.DeleteWindow
+		function Skada:DeleteWindow(name)
+			Skada:DeleteWindow_(name)
+			wipe(windows)
+			for _, window in ipairs(Skada:GetWindows()) do
+				tinsert(windows, window)
+			end
+		end
+	end
+
+	EmbedSkada()
+
+	-- default config
+	Skada.windowdefaults.bartexture = "Serenity"
+	Skada.windowdefaults.classicons = false
+	Skada.windowdefaults.title.fontsize = 12
+	Skada.windowdefaults.title.color = {r=0, g=0, b=0, a=.3}
+	Skada.windowdefaults.barfontsize = 12
+	Skada.windowdefaults.barbgcolor = {r=0, g=0, b=0, a=0}
+
+	if Skada.options.args.generaloptions.args.numberformat then
+		Skada.options.args.generaloptions.args.numberformat = nil
+	end
+
+	function Skada:FormatNumber(number)
+		if number then return K.ShortValue(number) end
+	end
+end
+
+local frame = CreateFrame("Frame")
+frame:RegisterEvent("PLAYER_LOGIN")
+frame:SetScript("OnEvent", LoadSkadaSkin)

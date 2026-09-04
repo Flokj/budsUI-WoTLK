@@ -19,7 +19,7 @@ local function SpellName(id)
 end
 
 K.DebuffWhiteList = {
-	-- Death Knight
+	--[[ Death Knight
 	[SpellName(49203)] = true,
 	[SpellName(47476)] = true,
 	-- Druid
@@ -84,10 +84,10 @@ K.DebuffWhiteList = {
 	[SpellName(20511)] = true,
 	-- Racial
 	[SpellName(25046)] = true,
-	[SpellName(20549)] = true,
+	[SpellName(20549)] = true,]]
 }
 
-K.PlateBlacklist = {
+K.PlateBlacklist = {--[[
 	["Dragonmaw War Banner"] = true,
 	["Healing Tide Totem"] = true,
 
@@ -195,6 +195,121 @@ K.PlateBlacklist = {
 	["Wrath of Air Totem"] = true,
 
 	--The gayest ability in the game
+	["Army of the Dead Ghoul"] = true,
+
+	--Hunter Trap
+	["Venomous Snake"] = true,
+	["Viper"] = true,]]
+}
+
+_G["NAMEPLATE_IGNORELIST"] = {
+	-- All totem
+	-- Enable
+	["Grounding Totem"] = false,
+	["Tremor Totem"] = false,
+	["Mana Tide Totem"] = false,
+	["Earthbind Totem"] = false,
+	["Cleansing Totem"] = false,
+	-- Disable
+	["Nature Resistance Totem I"] = true,
+	["Nature Resistance Totem II"] = true,
+	["Nature Resistance Totem III"] = true,
+	["Nature Resistance Totem IV"] = true,
+	["Nature Resistance Totem V"] = true,
+	["Nature Resistance Totem VI"] = true,
+	["Sentry Totem"] = true,
+	["Windfury Totem"] = true,
+	["Wrath of Air Totem"] = true,
+	["Earth Elemental Totem"] = true,
+	["Stoneclaw Totem I"] = true,
+	["Stoneclaw Totem II"] = true,
+	["Stoneclaw Totem III"] = true,
+	["Stoneclaw Totem IV"] = true,
+	["Stoneclaw Totem V"] = true,
+	["Stoneclaw Totem VI"] = true,
+	["Stoneclaw Totem VII"] = true,
+	["Stoneclaw Totem VIII"] = true,
+	["Stoneclaw Totem IX"] = true,
+	["Stoneclaw Totem X"] = true,
+	["Stoneskin Totem I"] = true,
+	["Stoneskin Totem II"] = true,
+	["Stoneskin Totem III"] = true,
+	["Stoneskin Totem IV"] = true,
+	["Stoneskin Totem V"] = true,
+	["Stoneskin Totem VI"] = true,
+	["Stoneskin Totem VII"] = true,
+	["Stoneskin Totem VIII"] = true,
+	["Stoneskin Totem IX"] = true,
+	["Stoneskin Totem X"] = true,
+	["Strength of Earth Totem I"] = true,
+	["Strength of Earth Totem II"] = true,
+	["Strength of Earth Totem III"] = true,
+	["Strength of Earth Totem IV"] = true,
+	["Strength of Earth Totem V"] = true,
+	["Strength of Earth Totem VI"] = true,
+	["Strength of Earth Totem VII"] = true,
+	["Strength of Earth Totem VIII;]"] = true,
+	["Fire Elemental Totem"] = true,
+	["Flametongue Totem I"] = true,
+	["Flametongue Totem II"] = true,
+	["Flametongue Totem III"] = true,
+	["Flametongue Totem IV"] = true,
+	["Flametongue Totem V"] = true,
+	["Flametongue Totem VI"] = true,
+	["Flametongue Totem VII"] = true,
+	["Flametongue Totem VIII"] = true,
+	["Frost Resistance Totem I"] = true,
+	["Frost Resistance Totem II"] = true,
+	["Frost Resistance Totem III"] = true,
+	["Frost Resistance Totem IV"] = true,
+	["Frost Resistance Totem V"] = true,
+	["Frost Resistance Totem VI"] = true,
+	["Magma Totem I"] = true,
+	["Magma Totem II"] = true,
+	["Magma Totem III"] = true,
+	["Magma Totem IV"] = true,
+	["Magma Totem V"] = true,
+	["Magma Totem VI"] = true,
+	["Magma Totem VII"] = true,
+	["Searing Totem I"] = true,
+	["Searing Totem II"] = true,
+	["Searing Totem III"] = true,
+	["Searing Totem IV"] = true,
+	["Searing Totem V"] = true,
+	["Searing Totem VI"] = true,
+	["Searing Totem VII"] = true,
+	["Searing Totem VIII"] = true,
+	["Searing Totem IX"] = true,
+	["Searing Totem X"] = true,
+	["Totem of Wrath I"] = true,
+	["Totem of Wrath II"] = true,
+	["Totem of Wrath III"] = true,
+	["Totem of Wrath IV"] = true,
+	["Fire Resistance Totem I"] = true,
+	["Fire Resistance Totem II"] = true,
+	["Fire Resistance Totem III"] = true,
+	["Fire Resistance Totem IV"] = true,
+	["Fire Resistance Totem V"] = true,
+	["Fire Resistance Totem VI"] = true,
+	["Healing Stream Totem I"] = true,
+	["Healing Stream Totem II"] = true,
+	["Healing Stream Totem III"] = true,
+	["Healing Stream Totem IV"] = true,
+	["Healing Stream Totem V"] = true,
+	["Healing Stream Totem VI"] = true,
+	["Healing Stream Totem VII"] = true,
+	["Healing Stream Totem VIII"] = true,
+	["Healing Stream Totem IX"] = true,
+	["Mana Spring Totem I"] = true,
+	["Mana Spring Totem II"] = true,
+	["Mana Spring Totem III"] = true,
+	["Mana Spring Totem IV"] = true,
+	["Mana Spring Totem V"] = true,
+	["Mana Spring Totem VI"] = true,
+	["Mana Spring Totem VII"] = true,
+	["Mana Spring Totem VIII"] = true,
+
+  	--The gayest ability in the game
 	["Army of the Dead Ghoul"] = true,
 
 	--Hunter Trap

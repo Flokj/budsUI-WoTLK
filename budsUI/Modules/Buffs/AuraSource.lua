@@ -4,6 +4,7 @@ if C.Aura.CastBy ~= true then return end
 local format = string.format
 local select = select
 local pairs = pairs
+local match = string.match
 local GetUnitName = GetUnitName
 local hooksecurefunc = hooksecurefunc
 local UnitClass = UnitClass
@@ -11,10 +12,6 @@ local CUSTOM_CLASS_COLORS = CUSTOM_CLASS_COLORS
 local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 local UnitIsPlayer = UnitIsPlayer
 local UnitReaction = UnitReaction
-local UnitAura = UnitAura
-local UnitBuff = UnitBuff
-local UnitDebuff = UnitDebuff
-local GameTooltip = GameTooltip
 
 -- Tells you who cast a buff or debuff in its tooltip(prButler by Renstrom)
 local function addAuraSource(self, func, unit, index, filter)
@@ -45,7 +42,7 @@ local function addAuraSource(self, func, unit, index, filter)
 			end
 		end
 
-		self:AddLine(L["Done By"]..src)
+		self:AddLine(DONE_BY .. src)
 		self:Show()
 	end
 end

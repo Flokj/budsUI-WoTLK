@@ -4,24 +4,18 @@ if C.ActionBar.Enable ~= true then return end
 local _G = _G
 local CreateFrame = CreateFrame
 
---	Setup MultiBarLeft as bar #3 by Tukz
-local bar = CreateFrame("Frame", "Bar3Holder", RightActionBarAnchor)
-bar:SetAllPoints(RightActionBarAnchor)
-MultiBarLeft:SetParent(bar)
+local TOTALSIZE = C.ActionBar.ButtonSize + C.ActionBar.ButtonSpace
+local function square(i)
+    local row = floor((i-1)/4)
+    return TOTALSIZE/2+(-2+i%4)*TOTALSIZE,row*TOTALSIZE
+end
 
+--	Setup MultiBarLeft as bar #3 by Tukz
 for i = 1, 12 do
 	local b = _G["MultiBarLeftButton"..i]
-	local b2 = _G["MultiBarLeftButton"..i-1]
 	b:ClearAllPoints()
-	if i == 1 then
-		if C.ActionBar.RightBars == 3 then
-			b:SetPoint("TOP", RightActionBarAnchor, "TOP", 0, 0)
-		else
-			b:SetPoint("TOPLEFT", RightActionBarAnchor, "TOPLEFT", 0, 0)
-		end
-	else
-		b:SetPoint("TOP", b2, "BOTTOM", 0, -C.ActionBar.ButtonSpace)
-	end
+    local x,y = square(i)
+    b:SetPoint("BOTTOMLEFT",ActionButton12,110+x,y)
 end
 
 -- Hide bar

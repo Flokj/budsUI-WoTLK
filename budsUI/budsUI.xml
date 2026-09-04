@@ -31,30 +31,22 @@
 	<Script file="Core\Install.lua"/>
 	<Script file="Core\Disable.lua"/>
 	<Script file="Core\Commands.lua"/>
-	<Script file="Core\WTF.lua"/>
+	<!--Script file="Core\WTF.lua"/-->
 	<Script file="Core\Kill.lua"/>
-	<Script file="Core\CheckVersion.lua"/>
+	<!--Script file="Core\CheckVersion.lua"/-->
 	<Script file="Core\Border.lua"/>
 	<Script file="Core\Developer.lua"/>
 	<Script file="Core\Panels.lua"/>
 	<Script file="Core\Temp.lua"/>
-
-	<Script file="Modules\Unitframes\Auras.lua"/>
-	<Script file="Modules\Unitframes\CastBars.lua"/>
-	<Script file="Modules\Unitframes\EnhancedFrames.lua"/>
-	<Script file="Modules\Unitframes\HealthMinMax.lua"/>
-	<Script file="Modules\Unitframes\Layout.lua"/>
-	<Script file="Modules\Unitframes\PowerBar.lua"/>
-	<Script file="Modules\Unitframes\SmoothBars.lua"/>
-	<Script file="Modules\Unitframes\TargetOfTarget.lua"/>
 
 	<Script file="Modules\Misc\AFKSpin.lua"/>
 	<Script file="Modules\Misc\AddonList.lua"/>
 	<Script file="Modules\Misc\AlreadyKnown.lua"/>
 	<Script file="Modules\Misc\ArmoryLink.lua"/>
 	<Script file="Modules\Misc\Durability.lua"/>
+	<Script file="Modules\Misc\DeathRecap.lua"/>
 	<Script file="Modules\Misc\Filger.lua"/>
-	<Script file="Modules\Misc\GarbageCollect.lua"/>
+	<!--Script file="Modules\Misc\GarbageCollect.lua"/-->
 	<Script file="Modules\Misc\HatTrick.lua"/>
 	<Script file="Modules\Misc\LFDQueueTimer.lua"/>
 	<Script file="Modules\Misc\Mail.lua"/>
@@ -78,7 +70,6 @@
 	<Script file="Modules\ActionBars\ShapeshiftBar.lua"/>
 	<Script file="Modules\ActionBars\PetBar.lua"/>
 	<Script file="Modules\ActionBars\TotemBar.lua"/>
-	<Script file="Modules\ActionBars\Toggle.lua"/>
 	<Script file="Modules\ActionBars\Style.lua"/>
 	<Script file="Modules\ActionBars\Range.lua"/>
 	<Script file="Modules\ActionBars\Others.lua"/>
@@ -102,11 +93,11 @@
 
 	<Script file="Modules\Blizzard\Achievements.lua"/>
 	<Script file="Modules\Blizzard\Bags.lua"/>
-	<Script file="Modules\Blizzard\BlizzBugsSuck.lua"/>
+	<Script file="Modules\Blizzard\DisableBlizzard.lua"/>
+	<!--Script file="Modules\Blizzard\BlizzBugsSuck.lua"/-->
 	<Script file="Modules\Blizzard\CaptureBar.lua"/>
 	<Script file="Modules\Blizzard\ClassColor.lua"/>
 	<Script file="Modules\Blizzard\CombatText.lua"/>
-	<Script file="Modules\Blizzard\DarkTextures.lua"/>
 	<Script file="Modules\Blizzard\Durability.lua"/>
 	<Script file="Modules\Blizzard\Errors.lua"/>
 	<Script file="Modules\Blizzard\ExpBar.lua"/>
@@ -127,6 +118,7 @@
 	<Script file="Modules\Chat\Sounds.lua"/>
 	<Script file="Modules\Chat\SpamageMeters.lua"/>
 	<Script file="Modules\Chat\TellTarget.lua"/>
+	<Script file="Modules\Chat\ChatBars.lua"/>
 
 	<Script file="Modules\Class\Hunter.lua"/>
 	<Script file="Modules\Class\Shaman.lua"/>
@@ -147,6 +139,7 @@
 	<Script file="Modules\Maps\MiniMap.lua"/>
 	<Script file="Modules\Maps\RightClick.lua"/>
 	<Script file="Modules\Maps\WhoPinged.lua"/>
+	<Script file="Modules\Maps\CDR.lua"/>
 
 	<Script file="Modules\Quests\AutoCollapse.lua"/>
 	<Script file="Modules\Quests\QuestLog.lua"/>
@@ -161,7 +154,6 @@
 	<Script file="Modules\Tooltip\InstanceLockCompare.lua"/>
 	<Script file="Modules\Tooltip\ItemCount.lua"/>
 	<Script file="Modules\Tooltip\ItemIcons.lua"/>
-	<Script file="Modules\Tooltip\ItemLevel.lua"/>
 	<Script file="Modules\Tooltip\MultiItemRef.lua"/>
 	<Script file="Modules\Tooltip\PvPRating.lua"/>
 	<Script file="Modules\Tooltip\RuFix.lua"/>

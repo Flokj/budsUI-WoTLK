@@ -20,7 +20,7 @@ local function setTooltipIcon(self, icon)
 	if title then
 		local text = title:GetText()
 		if text then
-			title:SetFormattedText("|T%s:20:20:0:0:64:64:5:59:5:59:%d|t %s", icon, 20, text)
+			title:SetFormattedText("|T%s:30:30:0:0:64:64:5:59:5:59:%d|t %s", icon, 30, text)
 		end
 	end
 end

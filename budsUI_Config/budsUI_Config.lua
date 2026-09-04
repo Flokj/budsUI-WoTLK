@@ -52,7 +52,6 @@ local ALLOWED_GROUPS = {
 	["PulseCD"] = 18,
 	["Skins"] = 19,
 	["Tooltip"] = 20,
-	["Unitframe"] = 21,
 }
 
 local function Local(o)
@@ -76,7 +75,6 @@ local function Local(o)
 	if o == "UIConfigActionBarSplitBars" then o = L_GUI_ACTIONBAR_SPLIT_BARS end
 	if o == "UIConfigActionBarStanceBarHide" then o = L_GUI_ACTIONBAR_STANCEBAR_HIDE end
 	if o == "UIConfigActionBarStanceBarHorizontal" then o = L_GUI_ACTIONBAR_STANCEBAR_HORIZONTAL end
-	if o == "UIConfigActionBarToggleMode" then o = L_GUI_ACTIONBAR_TOGGLE_MODE end
 	-- Announcement Settings
 	if o == "UIConfigAnnouncements" then o = L_GUI_ANNOUNCEMENTS end
 	if o == "UIConfigAnnouncementsBad_Gear" then o = L_GUI_ANNOUNCEMENTS_BAD_GEAR end
@@ -115,6 +113,7 @@ local function Local(o)
 	if o == "UIConfigBlizzardDurability" then o = L_GUI_BLIZZARD_DURABILITY end
 	if o == "UIConfigBlizzardMoveAchievements" then o = L_GUI_BLIZZARD_ACHIEVEMENTS end
 	if o == "UIConfigBlizzardReputations" then o = L_GUI_BLIZZARD_REPUTATIONS end
+	if o == "UIConfigBlizzardDisableBlizzardUF" then o = L_GUI_BLIZZARD_DISABLEBLIZZARDUF end
 	-- Auras Settings
 	if o == "UIConfigAura" then o = L_GUI_AURA end
 	if o == "UIConfigAuraCastBy" then o = L_GUI_AURA_CAST_BY end
@@ -178,6 +177,7 @@ local function Local(o)
 	if o == "UIConfigLootWidth" then o = L_GUI_LOOT_WIDTH end
 	-- Minimap Settings
 	if o == "UIConfigMinimap" then o = L_GUI_MINIMAP end
+	if o == "UIConfigMinimapCDR" then o = L_GUI_MINIMAP_CDR end
 	if o == "UIConfigMinimapCollectButtons" then o = L_GUI_MINIMAP_COLLECTBUTTONS end
 	if o == "UIConfigMinimapEnable" then o = L_GUI_MINIMAP_ENABLEMINIMAP end
 	if o == "UIConfigMinimapPing" then o = L_GUI_MINIMAP_PING end
@@ -271,25 +271,6 @@ local function Local(o)
 	if o == "UIConfigTooltipTarget" then o = L_GUI_TOOLTIP_TARGET end
 	if o == "UIConfigTooltipTitle" then o = L_GUI_TOOLTIP_TITLE end
 	if o == "UIConfigTooltipWhoTargetting" then o = L_GUI_TOOLTIP_WHO_TARGETTING end
-	-- Unitframe Settings
-	if o == "UIConfigUnitframe" then o = L_GUI_UNITFRAME end
-	if o == "UIConfigUnitframeComboFrame" then o = L_GUI_UNITFRAME_COMBOFRAME end
-	if o == "UIConfigUnitframeSmoothBars" then o = L_GUI_UNITFRAME_SMOOTH_BARS end
-	if o == "UIConfigUnitframeAuraOffsetY" then o = L_GUI_UNITFRAME_AURA_OFFSETY end
-	if o == "UIConfigUnitframeBetterPowerColors" then o = L_GUI_UNITFRAME_BETTER_POWER_COLOR end
-	if o == "UIConfigUnitframeCastBarScale" then o = L_GUI_UNITFRAME_CASTBAR_SCALE end
-	if o == "UIConfigUnitframeClassHealth" then o = L_GUI_UNITFRAME_CLASS_HEALTH end
-	if o == "UIConfigUnitframeClassIcon" then o = L_GUI_UNITFRAME_CLASS_ICON end
-	if o == "UIConfigUnitframeCombatFeedback" then o = L_GUI_UNITFRAME_COMBAT_FEEDBACK end
-	if o == "UIConfigUnitframeEnable" then o = L_GUI_UNITFRAME_ENABLE end
-	if o == "UIConfigUnitframeEnhancedFrames" then o = L_GUI_UNITFRAME_ENHANCED_UNITFRAMES end
-	if o == "UIConfigUnitframeGroupNumber" then o = L_GUI_UNITFRAME_GROUP_NUMBER end
-	if o == "UIConfigUnitframePvPIcon" then o = L_GUI_UNITFRAME_HIDE_PVPICON end
-	if o == "UIConfigUnitframeLargeAuraSize" then o = L_GUI_UNITFRAME_LARGE_AURA end
-	if o == "UIConfigUnitframeOutline" then o = L_GUI_UNITFRAME_OUTLINE end
-	if o == "UIConfigUnitframePercentHealth" then o = L_GUI_UNITFRAME_PERCENT_HEALTH end
-	if o == "UIConfigUnitframeScale" then o = L_GUI_UNITFRAME_SCALE end
-	if o == "UIConfigUnitframeSmallAuraSize" then o = L_GUI_UNITFRAME_SMALL_AURA end
 	-- Profiles settings
 	if o == "UIConfigProfiles" then o = L_GUI_PROFILES or "Profiles" end
 

@@ -9,9 +9,10 @@ if K.Class == "SHAMAN" then
 		MultiCastActionBarFrame:SetScript("OnUpdate", nil)
 		MultiCastActionBarFrame:SetScript("OnShow", nil)
 		MultiCastActionBarFrame:SetScript("OnHide", nil)
+		MultiCastActionBarFrame:SetScale(1.1)
 		MultiCastActionBarFrame:SetParent(ShiftHolder)
 		MultiCastActionBarFrame:ClearAllPoints()
-		MultiCastActionBarFrame:SetPoint("BOTTOMLEFT", ShiftHolder, -3, 23)
+		MultiCastActionBarFrame:SetPoint("CENTER", ShiftHolder, 0, 0)
  
 		hooksecurefunc("MultiCastActionButton_Update",function(actionbutton) if not InCombatLockdown() then actionbutton:SetAllPoints(actionbutton.slotButton) end end)
  

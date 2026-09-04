@@ -71,6 +71,10 @@ local faneifyTab = function(frame, sel)
 	local i = frame:GetID()
 
 	if not frame.Fane then
+		frame.leftSelectedTexture.Show = frame.leftSelectedTexture.Hide
+		frame.middleSelectedTexture.Show = frame.middleSelectedTexture.Hide
+		frame.rightSelectedTexture.Show = frame.rightSelectedTexture.Hide
+		
 		frame:HookScript("OnEnter", OnEnter)
 		frame:HookScript("OnLeave", OnLeave)
 		if C.Chat.TabsMouseover ~= true then
@@ -119,7 +123,6 @@ end
 Fane:SetScript("OnEvent", function(self, event, ...)
 	if self[event] then self[event](self, event, ...) end
 end)
-Fane:RegisterEvent("ADDON_LOADED")
 
 function Fane:ADDON_LOADED(event, addon)
 	if addon == "Blizzard_CombatLog" then
@@ -129,3 +132,4 @@ function Fane:ADDON_LOADED(event, addon)
 		return CombatLogQuickButtonFrame_Custom:SetAlpha(0.4)
 	end
 end
+Fane:RegisterEvent("ADDON_LOADED")

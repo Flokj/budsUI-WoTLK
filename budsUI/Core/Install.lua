@@ -104,7 +104,7 @@ local function InstallStep5_ChatWindows()
 	FCF_SetLocked(ChatFrame4, 1)
 	ChatFrame4:Show()
 	
-	FCF_OpenNewWindow("Group")
+	FCF_OpenNewWindow("Whisper")
 	FCF_DockFrame(ChatFrame5)
 	FCF_SetLocked(ChatFrame5, 1)
 	ChatFrame5:Show()
@@ -120,7 +120,7 @@ local function InstallStep5_ChatWindows()
 		
 		FCF_SavePositionAndDimensions(frame)
 		FCF_StopDragging(frame)
-		FCF_SetChatWindowFontSize(nil, frame, 12)
+		FCF_SetChatWindowFontSize(nil, frame, 13)
 		
 		if i == 1 then
 			FCF_SetWindowName(frame, GENERAL)
@@ -131,7 +131,7 @@ local function InstallStep5_ChatWindows()
 		elseif i == 4 then
 			FCF_SetWindowName(frame, TRADE)
 		elseif i == 5 then
-			FCF_SetWindowName(frame, "Group")
+			FCF_SetWindowName(frame, "Whisper")
 		end
 	end
 	
@@ -140,10 +140,6 @@ local function InstallStep5_ChatWindows()
 	ChatFrame_AddMessageGroup(ChatFrame1, "SAY")
 	ChatFrame_AddMessageGroup(ChatFrame1, "EMOTE")
 	ChatFrame_AddMessageGroup(ChatFrame1, "YELL")
-	ChatFrame_AddMessageGroup(ChatFrame1, "MONSTER_SAY")
-	ChatFrame_AddMessageGroup(ChatFrame1, "MONSTER_EMOTE")
-	ChatFrame_AddMessageGroup(ChatFrame1, "MONSTER_YELL")
-	ChatFrame_AddMessageGroup(ChatFrame1, "MONSTER_BOSS_EMOTE")
 	ChatFrame_AddMessageGroup(ChatFrame1, "SYSTEM")
 	ChatFrame_AddMessageGroup(ChatFrame1, "ERRORS")
 	ChatFrame_AddMessageGroup(ChatFrame1, "AFK")
@@ -151,6 +147,19 @@ local function InstallStep5_ChatWindows()
 	ChatFrame_AddMessageGroup(ChatFrame1, "IGNORED")
 	ChatFrame_AddMessageGroup(ChatFrame1, "ACHIEVEMENT")
 	ChatFrame_AddMessageGroup(ChatFrame1, "BN_INLINE_TOAST_ALERT")
+	ChatFrame_AddMessageGroup(ChatFrame1, "BN_CONVERSATION")
+	ChatFrame_AddMessageGroup(ChatFrame1, "GUILD")
+	ChatFrame_AddMessageGroup(ChatFrame1, "OFFICER")
+	ChatFrame_AddMessageGroup(ChatFrame1, "GUILD_ACHIEVEMENT")
+	ChatFrame_AddMessageGroup(ChatFrame1, "WHISPER")
+	ChatFrame_AddMessageGroup(ChatFrame1, "BN_WHISPER")
+	ChatFrame_AddMessageGroup(ChatFrame1, "PARTY")
+	ChatFrame_AddMessageGroup(ChatFrame1, "PARTY_LEADER")
+	ChatFrame_AddMessageGroup(ChatFrame1, "RAID")
+	ChatFrame_AddMessageGroup(ChatFrame1, "RAID_LEADER")
+	ChatFrame_AddMessageGroup(ChatFrame1, "RAID_WARNING")
+	ChatFrame_AddMessageGroup(ChatFrame1, "BATTLEGROUND")
+	ChatFrame_AddMessageGroup(ChatFrame1, "BATTLEGROUND_LEADER")
 	
 	-- Setup ChatFrame2 for guild
 	ChatFrame_RemoveAllMessageGroups(ChatFrame2)
@@ -175,17 +184,6 @@ local function InstallStep5_ChatWindows()
 	ChatFrame_RemoveAllMessageGroups(ChatFrame5)
 	ChatFrame_AddMessageGroup(ChatFrame5, "WHISPER")
 	ChatFrame_AddMessageGroup(ChatFrame5, "BN_WHISPER")
-	ChatFrame_AddMessageGroup(ChatFrame5, "BN_CONVERSATION")
-	ChatFrame_AddMessageGroup(ChatFrame5, "PARTY")
-	ChatFrame_AddMessageGroup(ChatFrame5, "PARTY_LEADER")
-	ChatFrame_AddMessageGroup(ChatFrame5, "RAID")
-	ChatFrame_AddMessageGroup(ChatFrame5, "RAID_LEADER")
-	ChatFrame_AddMessageGroup(ChatFrame5, "RAID_WARNING")
-	ChatFrame_AddMessageGroup(ChatFrame5, "BATTLEGROUND")
-	ChatFrame_AddMessageGroup(ChatFrame5, "BATTLEGROUND_LEADER")
-	ChatFrame_AddMessageGroup(ChatFrame5, "BG_HORDE")
-	ChatFrame_AddMessageGroup(ChatFrame5, "BG_ALLIANCE")
-	ChatFrame_AddMessageGroup(ChatFrame5, "BG_NEUTRAL")
 	
 	-- Add channels to correct frames (using channel names)
 	ChatFrame_AddChannel(ChatFrame1, GENERAL)
@@ -229,9 +227,9 @@ local function InstallStep6_Misc()
 	K.SafeSetCVar("showTutorials", 0)
 	K.SafeSetCVar("taintLog", 0)
 	
-	if C.General.DeveloperMode == true then
-		K.SafeSetCVar("scriptErrors", 1)
-	end
+	--if C.General.DeveloperMode == true then
+	--	K.SafeSetCVar("scriptErrors", 1)
+	--end
 end
 
 -- Step 7: Finalize
@@ -245,7 +243,6 @@ local function InstallStep7_Finalize()
 	
 	charSettings.Install = true
 	charSettings.AutoInvite = false
-	charSettings.BarsLocked = false
 	charSettings.SplitBars = true
 	charSettings.RightBars = C.ActionBar.RightBars
 	charSettings.BottomBars = C.ActionBar.BottomBars
@@ -543,7 +540,6 @@ Install:SetScript("OnEvent", function(self, event, addon)
 	local charSettings = budsUIData.CharacterData[realmKey]
 	
 	if charSettings.AutoInvite == nil then charSettings.AutoInvite = false end
-	if charSettings.BarsLocked == nil then charSettings.BarsLocked = false end
 	if charSettings.SplitBars == nil then charSettings.SplitBars = true end
 	if charSettings.RightBars == nil then charSettings.RightBars = C.ActionBar.RightBars end
 	if charSettings.BottomBars == nil then charSettings.BottomBars = C.ActionBar.BottomBars end

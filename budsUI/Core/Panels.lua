@@ -67,7 +67,7 @@ RegisterStateDriver(petbaranchor, "visibility", "[pet,novehicleui,nobonusbar:5] 
 local ShiftHolder = CreateFrame("Frame", "ShiftHolder", UIParent)
 if C.ActionBar.StanceBarHorizontal == true then
 	ShiftHolder:SetPoint(unpack(C.Position.StanceBar))
-	ShiftHolder:SetWidth((C.ActionBar.ButtonSize * 7) + (C.ActionBar.ButtonSpace * 6))
+	ShiftHolder:SetWidth((C.ActionBar.ButtonSize * 3) + (C.ActionBar.ButtonSpace))
 	ShiftHolder:SetHeight(C.ActionBar.ButtonSize)
 else
 	if (PetActionBarFrame:IsShown() or PetHolder) and C.ActionBar.PetBarHorizontal ~= true then

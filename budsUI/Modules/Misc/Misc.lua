@@ -192,3 +192,171 @@ strip:SetScript("OnEvent", function(self)
 		self.model = DressUpModel
 	end
 end)
+
+--------------------------------------------------
+--- Totem Shaman
+
+_,Class=UnitClass("player");
+if Class == "SHAMAN" then
+local totem_size 	= 34
+local totem_spacing	= 12
+
+local function OnDragStart()
+	if not InCombatLockdown() then
+		TotemFrame:StartMoving()
+	end
+end
+
+local function OnDragStop()
+	TotemFrame:StopMovingOrSizing()
+end
+
+TotemFrame:SetMovable(true)
+TotemFrame:SetClampedToScreen(true)
+
+for i = 1, 4 do
+	select(2, _G["TotemFrameTotem"..i]:GetChildren()):Hide()
+	select(2, _G["TotemFrameTotem"..i]:GetChildren()).Show = function() end
+	_G["TotemFrameTotem"..i.."IconTexture"]:SetTexCoord(.08, .92, .08, .92)
+	_G["TotemFrameTotem"..i.."Background"]:Hide()
+	_G["TotemFrameTotem"..i.."Background"].Show = function () end
+	_G["TotemFrameTotem"..i]:RegisterForDrag("LeftButton")
+	_G["TotemFrameTotem"..i]:SetScript("OnDragStart", OnDragStart)
+	_G["TotemFrameTotem"..i]:SetScript("OnDragStop", OnDragStop)
+	_G["TotemFrameTotem"..i]:SetWidth(totem_size)
+	_G["TotemFrameTotem"..i]:SetHeight(totem_size)
+	_G["TotemFrameTotem"..i.."Icon"]:SetWidth(totem_size)
+	_G["TotemFrameTotem"..i.."Icon"]:SetHeight(totem_size)
+	--_G["TotemFrameTotem"..i.."Duration"]:ClearAllPoints()
+	--_G["TotemFrameTotem"..i.."Duration"]:SetPoint("TOP", _G["TotemFrameTotem"..i.."Icon"], "BOTTOM", 0, -totem_spacing / 4)
+	--_G["TotemFrameTotem"..i.."Duration"]:SetFont("Fonts\\FRIZQT__.TTF", 12, "THINOUTLINE")
+	_G["TotemFrameTotem"..i.."Duration"]:SetAlpha(0)
+	_G["TotemFrameTotem"..i]:ClearAllPoints()
+	if i == 1 then
+		_G["TotemFrameTotem"..i]:SetPoint("LEFT", TotemFrame, "LEFT", 2, 0)
+	else
+		_G["TotemFrameTotem"..i]:SetPoint("LEFT", _G["TotemFrameTotem"..(i-1)], "RIGHT", totem_spacing, 0)
+	end
+	_G["TotemFrameTotem"..i].bg = CreateFrame("Frame", nil, _G["TotemFrameTotem"..i])
+	_G["TotemFrameTotem"..i].bg:SetWidth(totem_size + totem_spacing / 2)
+	_G["TotemFrameTotem"..i].bg:SetHeight(totem_size + totem_spacing / 2)
+	_G["TotemFrameTotem"..i].bg:SetBackdrop({
+		bgFile = [[Interface\AddOns\]] .. K.Directory .. [[\Media\Textures\tex_striped]],
+		edgeFile = "Interface\\Buttons\\WHITE8x8",
+		tile = true,   
+	  	tileSize = 32,  
+	  	edgeSize = 1,  
+	  	insets = {	left = 1, right = 1, top = 1, bottom = 1	 } 
+	} )
+
+	_G["TotemFrameTotem"..i].bg:SetBackdropColor(0.1, 0.1, 0.1, 1)
+	_G["TotemFrameTotem"..i].bg:SetBackdropBorderColor(65/255, 74/255, 79/255)
+	_G["TotemFrameTotem"..i].bg:SetPoint("CENTER", _G["TotemFrameTotem"..i], "CENTER")
+end
+TotemFrame:SetWidth((totem_size * 4) + (totem_spacing * 4))
+end
+
+TotemFrame:SetParent(UIParent)
+TotemFrame:ClearAllPoints()
+TotemFrame:SetPoint("CENTER",0,0)
+
+ZoneTextFrame:UnregisterAllEvents()
+ZoneTextFrame:SetScript("OnShow", function() this:Hide() end)
+ZoneTextFrame:Hide()
+SubZoneTextFrame:UnregisterAllEvents()
+SubZoneTextFrame:SetScript("OnShow", function() this:Hide() end)
+SubZoneTextFrame:Hide()
+
+--------------------------------------------------
+-- Item/Spell link
+
+function SlashCmdList.IDLINK(msg, editbox)
+local name, rank = GetSpellInfo(msg);
+    if name == nil then return end
+    print("Spell: " ..GetSpellLink(msg).." "..rank)
+end
+SLASH_IDLINK1 = '/is'  
+function SlashCmdList.ITLINK(msg, editbox)
+  local _, itemLink, _, _, _, _, _, _, _, _ = GetItemInfo(msg)
+if itemLink == nil then return end
+    print("Item: " ..itemLink)
+end
+SLASH_ITLINK1 = '/it'
+
+--------------------------------------------------
+-- Suppressing detailed loot spamm
+
+if not (GetLocale=="enGB" or GetLocale=="enUS") then
+	LOOT_ROLL_ALL_PASSED = "Everyone passed on: %s";
+	LOOT_ROLL_DISENCHANT = "%s has selected Disenchant for: %s";
+	LOOT_ROLL_DISENCHANT_SELF = "You have selected Disenchant for: %s";
+	LOOT_ROLL_GREED = "%s has selected Greed for: %s";
+	LOOT_ROLL_GREED_SELF = "You have selected Greed for: %s";
+	LOOT_ROLL_NEED = "%s has selected Need for: %s";
+	LOOT_ROLL_NEED_SELF = "You have selected Need for: %s";
+	LOOT_ROLL_PASSED = "%s passed on: %s";
+	LOOT_ROLL_PASSED_AUTO = "%s automatically passed on: %s because he cannot loot that item.";
+	LOOT_ROLL_PASSED_AUTO_FEMALE = "%s automatically passed on: %s because she cannot loot that item.";
+	LOOT_ROLL_PASSED_SELF = "You passed on: %s";
+	LOOT_ROLL_PASSED_SELF_AUTO = "You automatically passed on: %s because you cannot loot that item.";
+	LOOT_ROLL_ROLLED_DE = "Disenchant Roll - %d for %s by %s";
+	LOOT_ROLL_ROLLED_GREED = "Greed Roll - %d for %s by %s";
+	LOOT_ROLL_ROLLED_NEED = "Need Roll - %d for %s by %s";
+end
+ChatFrame_AddMessageEventFilter("CHAT_MSG_LOOT", function(self, event, msg)
+	if msg:match("(.*) has?v?e? selected (.+) for: (.+)") or msg:match("(.+) Roll . (%d+) for (.+) by (.+)")
+		or msg:match("You passed on: ") or msg:match(" automatically passed on: ") or (msg:match(" passed on: ") and not msg:match("Everyone passed on: ")) then
+		return true
+	end
+end)
+
+--------------------------------------------------
+-- Game DBM OFF
+RaidBossEmoteFrame:SetAlpha(0)
+--RaidNotice_AddMessage = function() end -- Raid Warning
+
+-- Test Hite PP/Bg text
+HK=' '
+local s for i=1,19 do for j=0,1 do s=("PVP_RANK_%d_%d"):format(i,j) _G[s],_G[s.."_FEMALE"]=nil end end
+
+-- Easy Item Destroy 
+local TypeDeleteLine = gsub(DELETE_GOOD_ITEM, "[\r\n]", "@")
+local _, TypeDeleteLine = strsplit("@", TypeDeleteLine, 2)
+TypeDeleteLine = gsub(TypeDeleteLine, "@", "")
+
+StaticPopupDialogs["DELETE_GOOD_ITEM"].OnHyperlinkEnter = function(self, link, text, region, boundsLeft, boundsBottom, boundsWidth, boundsHeight)
+    GameTooltip:SetOwner(self, "ANCHOR_PRESERVE")
+    GameTooltip:ClearAllPoints()
+    local cursorClearance = 30
+    GameTooltip:SetPoint("TOPLEFT", region, "BOTTOMLEFT", boundsLeft, boundsBottom - cursorClearance)
+    GameTooltip:SetHyperlink(link)
+end
+
+StaticPopupDialogs["DELETE_GOOD_ITEM"].OnHyperlinkLeave = function(self)
+    GameTooltip:Hide()
+end
+
+StaticPopupDialogs["DELETE_ITEM"].OnHyperlinkEnter = StaticPopupDialogs["DELETE_GOOD_ITEM"].OnHyperlinkEnter
+StaticPopupDialogs["DELETE_ITEM"].OnHyperlinkLeave = StaticPopupDialogs["DELETE_GOOD_ITEM"].OnHyperlinkLeave
+
+local easyDelFrame = CreateFrame("Frame")
+easyDelFrame:RegisterEvent("DELETE_ITEM_CONFIRM")
+easyDelFrame:SetScript("OnEvent", function()
+    local link = select(3, GetCursorInfo())
+    
+    if StaticPopup1EditBox:IsShown() then
+        StaticPopup1:SetHeight(StaticPopup1:GetHeight() - 10)
+        StaticPopup1EditBox:Hide()
+        StaticPopup1Button1:Enable()
+        if link then
+            StaticPopup1Text:SetText(gsub(StaticPopup1Text:GetText(), TypeDeleteLine, "") .. "\n" .. link)
+        end
+    else
+        StaticPopup1:SetHeight(StaticPopup1:GetHeight() + 40)
+        StaticPopup1EditBox:Hide()
+        StaticPopup1Button1:Enable()
+        if link then
+            StaticPopup1Text:SetText(gsub(StaticPopup1Text:GetText(), TypeDeleteLine, "") .. "\n\n" .. link)
+        end
+    end
+end)

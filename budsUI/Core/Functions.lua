@@ -179,9 +179,9 @@ local function CheckRole(self, event, unit)
 	
 	-- Wrap in pcall for error safety
 	local success, err = pcall(function()
-		if (K.Class == "PALADIN" and UnitBuff("player", K.GetSpellInfo(25780))) and GetCombatRatingBonus(CR_DEFENSE_SKILL) > 100 or
+		if (K.Class == "PALADIN" and UnitBuff("player", GetSpellInfo(25780))) and GetCombatRatingBonus(CR_DEFENSE_SKILL) > 100 or
 		(K.Class == "WARRIOR" and GetBonusBarOffset() == 2) or
-		(K.Class == "DEATHKNIGHT" and UnitBuff("player", K.GetSpellInfo(48263))) or
+		(K.Class == "DEATHKNIGHT" and UnitBuff("player", GetSpellInfo(48263))) or
 		(K.Class == "DRUID" and GetBonusBarOffset() == 3) then
 			K.Role = "Tank"
 		else
@@ -190,7 +190,7 @@ local function CheckRole(self, event, unit)
 			local base, posBuff, negBuff = UnitAttackPower("player")
 			local playerap = base + posBuff + negBuff
 
-			if ((playerap > playerint) or (playeragi > playerint)) and not (UnitBuff("player", K.GetSpellInfo(24858)) or UnitBuff("player", K.GetSpellInfo(65139))) then
+			if ((playerap > playerint) or (playeragi > playerint)) and not (UnitBuff("player", GetSpellInfo(24858)) or UnitBuff("player", GetSpellInfo(65139))) then
 				K.Role = "Melee"
 			else
 				K.Role = "Caster"

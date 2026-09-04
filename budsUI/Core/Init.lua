@@ -67,8 +67,13 @@ configWarningFrame:SetScript("OnEvent", function(self, event)
 	self:UnregisterEvent(event)
 end)
 
-SLASH_RELOADUI1, SLASH_RELOADUI2 = "/rl", "/reloadui"
-SlashCmdList["RELOADUI"] = ReloadUI
+_G.SLASH_RELOADUI1 = "/rl"
+_G.SLASH_RELOADUI2 = "/reload"
+_G.SLASH_RELOADUI3 = "/reloadui"
+_G.SLASH_RELOADUI4 = "//"
+_G.SLASH_RELOADUI5 = "/."
+_G.SLASH_RELOADUI6 = "/кд"
+_G.SlashCmdList.RELOADUI = ReloadUI
 
 budsUI = Engine
 
