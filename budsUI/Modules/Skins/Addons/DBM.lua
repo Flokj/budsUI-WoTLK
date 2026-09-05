@@ -4,258 +4,328 @@ if C.Skins.DBM ~= true then return end
 local _G = _G
 local format = string.format
 local find = string.find
+local gsub = string.gsub
 local CreateFrame = CreateFrame
 local hooksecurefunc = hooksecurefunc
 
-local forcebosshealthclasscolor = false
 local croprwicons = true
-local rwiconsize = 12
-local r, g, b = K.Color.r, K.Color.g, K.Color.b
-local backdrop = {
-	bgFile = C.Media.Texture,
+local rwiconsize = 18
+local BAR_HEIGHT = 23
+local BOSS_HEIGHT = 19
+local barBackdrop = {
+	bgFile = C.Media.Blank,
 	insets = {left = 0, right = 0, top = 0, bottom = 0},
 }
 
-local DBMSkin = CreateFrame("Frame")
-DBMSkin:RegisterEvent("PLAYER_LOGIN")
-DBMSkin:SetScript("OnEvent", function(self, event, addon)
-	if IsAddOnLoaded("DBM-Core") then
-		local function SkinBars(self)
-			for bar in self:GetBarIterator() do
-				if not bar.injected then
-					bar.ApplyStyle = function()
-						local frame = bar.frame
-						local tbar = _G[frame:GetName().."Bar"]
-						local spark = _G[frame:GetName().."BarSpark"]
-						local texture = _G[frame:GetName().."BarTexture"]
-						local icon1 = _G[frame:GetName().."BarIcon1"]
-						local icon2 = _G[frame:GetName().."BarIcon2"]
-						local name = _G[frame:GetName().."BarName"]
-						local timer = _G[frame:GetName().."BarTimer"]
+-- Reparent icon into a backdrop overlay, ElvUI-style.
+-- Overlay is square (bar height), icon sits inside with cropped texcoords.
+local function CreateIconOverlay(id, parent, size)
+	local overlay = CreateFrame("Frame", "$parentIcon" .. id .. "Overlay", parent)
+	overlay:SetWidth(size)
+	overlay:SetHeight(size)
+	if id == 1 then
+		overlay:SetPoint("RIGHT", parent, "LEFT", -5 * K.Mult, 0)
+	else
+		overlay:SetPoint("LEFT", parent, "RIGHT", 5 * K.Mult, 0)
+	end
+	overlay:CreateBackdrop(2)
+	return overlay
+end
 
-						if (icon1.overlay) then
-							icon1.overlay = _G[icon1.overlay:GetName()]
-						else
-							icon1.overlay = CreateFrame("Frame", "$parentIcon1Overlay", tbar)
-							icon1.overlay:SetWidth(23)
-							icon1.overlay:SetHeight(23)
-							icon1.overlay:SetFrameStrata("BACKGROUND")
-							icon1.overlay:SetPoint("BOTTOMRIGHT", tbar, "BOTTOMLEFT", -5 * K.Mult, -2 * K.Mult)
-							icon1.overlay:CreateBackdrop(2)
-						end
+local function StyleIcon(icon, overlay)
+	icon:SetParent(overlay)
+	icon:ClearAllPoints()
+	icon:SetInside()
+	if icon.SetTexCoord then
+		icon:SetTexCoord(unpack(K.TexCoords))
+	end
+end
 
-						if (icon2.overlay) then
-							icon2.overlay = _G[icon2.overlay:GetName()]
-						else
-							icon2.overlay = CreateFrame("Frame", "$parentIcon2Overlay", tbar)
-							icon2.overlay:SetWidth(23)
-							icon2.overlay:SetHeight(23)
-							icon2.overlay:SetFrameStrata("BACKGROUND")
-							icon2.overlay:SetPoint("BOTTOMLEFT", tbar, "BOTTOMRIGHT", 5 * K.Mult, -2 * K.Mult)
-							icon2.overlay:CreateBackdrop(2)
-						end
+local function ApplyBarStyle(bar)
+	local frame = bar.frame
+	if not frame then return end
+	local frameName = frame:GetName()
+	if not frameName then return end
 
-						if bar.color then
-							tbar:SetStatusBarColor(0.1, 0.1, 0.1)
-							tbar:SetBackdrop(backdrop)
-							tbar:SetBackdropColor(0.1, 0.1, 0.1, 0.15)
-						else
-							tbar:SetStatusBarColor(0.1, 0.1, 0.1)
-							tbar:SetBackdrop(backdrop)
-							tbar:SetBackdropColor(0.1, 0.1, 0.1, 0.15)
-						end
+	local tbar = _G[frameName .. "Bar"]
+	local background = _G[frameName .. "BarBackground"]
+	local spark = _G[frameName .. "BarSpark"]
+	local texture = _G[frameName .. "BarTexture"]
+	local icon1 = _G[frameName .. "BarIcon1"]
+	local icon2 = _G[frameName .. "BarIcon2"]
+	local name = _G[frameName .. "BarName"]
+	local timer = _G[frameName .. "BarTimer"]
+	if not tbar then return end
 
-						if bar.enlarged then frame:SetWidth(bar.owner.options.HugeWidth) else frame:SetWidth(bar.owner.options.Width) end
-						if bar.enlarged then tbar:SetWidth(bar.owner.options.HugeWidth) else tbar:SetWidth(bar.owner.options.Width) end
+	local options = bar.owner and bar.owner.options
+	local enlarged = bar.enlarged
+	local scale = 1
+	local width = 189
+	if options then
+		if enlarged then
+			scale = options.HugeScale or options.Scale or 1
+			width = options.HugeWidth or options.Width or width
+		else
+			scale = options.Scale or 1
+			width = options.Width or width
+		end
+	end
+	width = width * scale
+	local height = BAR_HEIGHT * scale
 
-						frame:SetScale(1)
-						if not frame.styled then
-							frame:SetHeight(23)
-							frame:CreateBackdrop(2)
-							frame.styled = true
-						end
-
-						if not spark.killed then
-							spark:SetAlpha(0)
-							spark:SetTexture(nil)
-							spark.killed = true
-						end
-
-						if not icon1.styled then
-							icon1:SetTexCoord(0.1, 0.9, 0.1, 0.9)
-							icon1:ClearAllPoints()
-							icon1:SetPoint("TOPLEFT", icon1.overlay, 2, -2)
-							icon1:SetPoint("BOTTOMRIGHT", icon1.overlay, -2, 2)
-							icon1.styled = true
-						end
-
-						if not icon2.styled then
-							icon2:SetTexCoord(0.1, 0.9, 0.1, 0.9)
-							icon2:ClearAllPoints()
-							icon2:SetPoint("TOPLEFT", icon2.overlay, 2, -2)
-							icon2:SetPoint("BOTTOMRIGHT", icon2.overlay, -2, 2)
-							icon2.styled = true
-						end
-
-						if not texture.styled then
-							texture:SetTexture(C.Media.Texture)
-							texture.styled = true
-						end
-
-						if not tbar.styled then
-							tbar:SetPoint("TOPLEFT", frame, "TOPLEFT", 2, -2)
-							tbar:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
-							tbar.styled = true
-						end
-
-						if not name.styled then
-							name:ClearAllPoints()
-							name:SetPoint("LEFT", frame, "LEFT", 4 * K.Mult, 0)
-							name:SetWidth(180)
-							name:SetHeight(8)
-							K.SkinFont(name)
-							name:SetJustifyH("LEFT")
-							name.SetFont = K.Noop
-							name.styled = true
-						end
-
-						if not timer.styled then
-							timer:ClearAllPoints()
-							timer:SetPoint("RIGHT", frame, "RIGHT", -5 * K.Mult, 0)
-							K.SkinFont(timer)
-							timer:SetJustifyH("RIGHT")
-							timer.SetFont = K.Noop
-							timer.styled = true
-						end
-
-						if bar.owner.options.IconLeft then icon1:Show() icon1.overlay:Show() else icon1:Hide() icon1.overlay:Hide() end
-						if bar.owner.options.IconRight then icon2:Show() icon2.overlay:Show() else icon2:Hide() icon2.overlay:Hide() end
-						tbar:SetAlpha(1)
-						frame:SetAlpha(1)
-						texture:SetAlpha(1)
-						frame:Show()
-						bar:Update(0)
-						bar.injected = true
-					end
-					bar:ApplyStyle()
-				end
+	-- Icons (overlay hosts the icon, so Hide on overlay hides both)
+	if icon1 then
+		if not icon1.overlay then
+			icon1.overlay = CreateIconOverlay(1, frame, height)
+			StyleIcon(icon1, icon1.overlay)
+		else
+			icon1.overlay:SetWidth(height)
+			icon1.overlay:SetHeight(height)
+			if icon1:GetParent() ~= icon1.overlay then
+				StyleIcon(icon1, icon1.overlay)
 			end
 		end
-
-		local SkinBossTitle = function()
-			local anchor = DBMBossHealthDropdown:GetParent()
-			if not anchor.styled then
-				local header = {anchor:GetRegions()}
-				if header[1] and header[1]:IsObjectType("FontString") then
-					K.SkinFont(header[1])
-					header[1]:SetTextColor(1, 1, 1, 1)
-					anchor.styled = true
-				end
-				header = nil
+	end
+	if icon2 then
+		if not icon2.overlay then
+			icon2.overlay = CreateIconOverlay(2, frame, height)
+			StyleIcon(icon2, icon2.overlay)
+		else
+			icon2.overlay:SetWidth(height)
+			icon2.overlay:SetHeight(height)
+			if icon2:GetParent() ~= icon2.overlay then
+				StyleIcon(icon2, icon2.overlay)
 			end
-			anchor = nil
 		end
+	end
 
-		local SkinBoss = function()
-			local count = 1
-			while (_G[format("DBM_BossHealth_Bar_%d", count)]) do
-				local bar = _G[format("DBM_BossHealth_Bar_%d", count)]
-				local background = _G[bar:GetName().."BarBorder"]
-				local progress = _G[bar:GetName().."Bar"]
-				local name = _G[bar:GetName().."BarName"]
-				local timer = _G[bar:GetName().."BarTimer"]
-				local prev = _G[format("DBM_BossHealth_Bar_%d", count-1)]
+	-- Frame + statusbar
+	frame:SetScale(1)
+	frame:SetWidth(width)
+	frame:SetHeight(height)
+	if not frame.styled then
+		frame:CreateBackdrop(2)
+		frame.styled = true
+	end
 
-				if (count == 1) then
-					local _, anch, _ , _, _ = bar:GetPoint()
-					bar:ClearAllPoints()
-					bar:SetPoint("TOP", anch, "BOTTOM", 0, -3 * K.Mult)
+	if background and not background.killed then
+		background:SetTexture(nil)
+		background:Hide()
+		background.killed = true
+	end
+
+	if spark and not spark.killed then
+		spark:SetTexture(nil)
+		spark:Hide()
+		spark.killed = true
+	end
+
+	if texture and not texture.styled then
+		texture:SetTexture(C.Media.Texture)
+		texture.styled = true
+	end
+
+	tbar:ClearAllPoints()
+	tbar:SetInside(frame)
+	if not tbar.budsBackdrop then
+		tbar:SetBackdrop(barBackdrop)
+		tbar:SetBackdropColor(unpack(C.Media.Backdrop_Color))
+		tbar.budsBackdrop = true
+	end
+
+	if name then
+		name:ClearAllPoints()
+		name:SetPoint("LEFT", frame, "LEFT", 4 * K.Mult, 0)
+		if timer then
+			name:SetPoint("RIGHT", timer, "LEFT", -2, 0) -- truncation, ElvUI-style
+		else
+			name:SetWidth(width - 60)
+		end
+		name:SetHeight(8)
+		name:SetJustifyH("LEFT")
+		K.SkinFont(name)
+	end
+
+	if timer then
+		timer:ClearAllPoints()
+		timer:SetPoint("RIGHT", frame, "RIGHT", -4 * K.Mult, 0)
+		timer:SetJustifyH("RIGHT")
+		K.SkinFont(timer)
+	end
+
+	-- NOTE: no SetFont = K.Noop lock here on purpose:
+	-- the hook re-applies our font after every DBM ApplyStyle,
+	-- so user/UploadDBM font options keep working.
+
+	if options then
+		if icon1 and icon1.overlay then
+			if options.IconLeft then icon1.overlay:Show() else icon1.overlay:Hide() end
+		end
+		if icon2 and icon2.overlay then
+			if options.IconRight then icon2.overlay:Show() else icon2.overlay:Hide() end
+		end
+	end
+
+	tbar:SetAlpha(1)
+	frame:SetAlpha(1)
+	if texture then texture:SetAlpha(1) end
+	frame:Show()
+	bar.injected = true
+	if bar.Update then bar:Update(0) end
+end
+
+local function SkinBars(self)
+	if not self.GetBarIterator then return end
+	-- GetBarIterator returns nil while self.bars is not initialized yet
+	local iterator, tbl, state = self:GetBarIterator()
+	if not iterator then return end
+	for bar in iterator, tbl, state do
+		if not bar.injected then
+			-- Direct override, not hooksecurefunc: old DBM bar objects
+			-- don't expose hookable Update/ApplyStyle methods (nil call error).
+			bar.ApplyStyle = function()
+				ApplyBarStyle(bar)
+			end
+			bar:ApplyStyle()
+		end
+	end
+end
+
+local function SkinBossTitle()
+	if not DBMBossHealthDropdown then return end
+	local anchor = DBMBossHealthDropdown:GetParent()
+	if not anchor or anchor.styled then return end
+	local header = {anchor:GetRegions()}
+	if header[1] and header[1].IsObjectType and header[1]:IsObjectType("FontString") then
+		K.SkinFont(header[1])
+		header[1]:SetTextColor(1, 1, 1, 1)
+		anchor.styled = true
+	end
+end
+
+local function SkinBoss()
+	local count = 1
+	local bar = _G[format("DBM_BossHealth_Bar_%d", count)]
+	while bar do
+		local barName = bar:GetName()
+		local background = _G[barName .. "BarBorder"]
+		local progress = _G[barName .. "Bar"]
+		local name = _G[barName .. "BarName"]
+		local timer = _G[barName .. "BarTimer"]
+		local prev = _G[format("DBM_BossHealth_Bar_%d", count - 1)]
+		if not progress then return end
+
+		local growUp = DBM and DBM.Options and DBM.Options.HealthFrameGrowUp
+		bar:ClearAllPoints()
+		if count == 1 then
+			local _, anch = bar:GetPoint()
+			if growUp then
+				if anch then bar:SetPoint("BOTTOM", anch, "TOP", 0, 8 * K.Mult) end
+			else
+				if anch then bar:SetPoint("TOP", anch, "BOTTOM", 0, -3 * K.Mult) end
+			end
+		else
+			if prev then
+				if growUp then
+					bar:SetPoint("BOTTOMLEFT", prev, "TOPLEFT", 0, 4 * K.Mult)
 				else
-					bar:ClearAllPoints()
 					bar:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -3 * K.Mult)
 				end
-
-				if not bar.styled then
-					bar:SetScale(1)
-					bar:SetHeight(19)
-					bar:CreateBackdrop(2)
-					background:SetNormalTexture(nil)
-					bar.styled = true
-				end
-
-				if not progress.styled then
-					progress:SetStatusBarTexture(C.Media.Texture)
-					progress:SetBackdrop(backdrop)
-					progress:SetBackdropColor(r,g,b,1)
-					if forcebosshealthclasscolor then
-						local tslu = 0
-						progress:SetStatusBarColor(r,g,b,1)
-						progress:HookScript("OnUpdate", function(self, elapsed)
-							tslu = tslu+ elapsed
-							if tslu > 0.025 then
-								self:SetStatusBarColor(r,g,b,1)
-								tslu = 0
-							end
-						end)
-					end
-					progress.styled = true
-				end
-				progress:ClearAllPoints()
-				progress:SetPoint("TOPLEFT", bar, "TOPLEFT", 2, -2)
-				progress:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", -2, 2)
-
-				if not name.styled then
-					name:ClearAllPoints()
-					name:SetPoint("LEFT", bar, "LEFT", 4 * K.Mult, 0)
-					K.SkinFont(name)
-					name:SetJustifyH("LEFT")
-					name.styled = true
-				end
-
-				if not timer.styled then
-					timer:ClearAllPoints()
-					timer:SetPoint("RIGHT", bar, "RIGHT", -5 * K.Mult, 0)
-					K.SkinFont(timer)
-					timer:SetJustifyH("RIGHT")
-					timer.styled = true
-				end
-				count = count + 1
 			end
 		end
 
-		if DBT then
-			hooksecurefunc(DBT, "CreateBar", SkinBars)
+		if not bar.styled then
+			bar:SetScale(1)
+			bar:SetHeight(BOSS_HEIGHT)
+			bar:CreateBackdrop(2)
+			if background and background.SetNormalTexture then
+				background:SetNormalTexture(nil)
+			end
+			bar.styled = true
 		end
-		hooksecurefunc(DBM.BossHealth, "Show", SkinBossTitle)
-		hooksecurefunc(DBM.BossHealth, "AddBoss", SkinBoss)
-		hooksecurefunc(DBM.BossHealth, "UpdateSettings", SkinBoss)
 
-		local firstRange = true
-		hooksecurefunc(DBM.RangeCheck, "Show", function()
-			if firstRange then
-				DBMRangeCheck:SetBackdrop(nil)
-				local bd = CreateFrame("Frame", nil, DBMRangeCheckRadar)
-				bd:SetPoint("TOPLEFT")
-				bd:SetPoint("BOTTOMRIGHT")
-				bd:SetFrameLevel(0)
-				bd:SetFrameStrata(DBMRangeCheckRadar:GetFrameStrata())
-				bd:SetBackdropColor(.05,.05,.05, .9)
-				bd:SetBackdrop(backdrop)
-				bd:SetBackdropColor(.08,.08,.08, .9)
+		progress:SetStatusBarTexture(C.Media.Texture)
+		progress:ClearAllPoints()
+		progress:SetInside(bar)
+		if not progress.budsBackdrop then
+			progress:SetBackdrop(barBackdrop)
+			progress:SetBackdropColor(unpack(C.Media.Backdrop_Color))
+			progress.budsBackdrop = true
+		end
 
-				firstRange = false
+		if name then
+			name:ClearAllPoints()
+			name:SetPoint("LEFT", bar, "LEFT", 4 * K.Mult, 0)
+			if timer then
+				name:SetPoint("RIGHT", timer, "LEFT", -2, 0)
 			end
-		end)
+			name:SetJustifyH("LEFT")
+			K.SkinFont(name)
+		end
 
-		if croprwicons then
-			local replace = string.gsub
-			local old = RaidNotice_AddMessage
-			RaidNotice_AddMessage = function(noticeFrame, textString, colorInfo)
-				if type(textString) == "string" and textString:find(" |T") then
-					textString=replace(textString,"(:12:12)",":"..rwiconsize..":"..rwiconsize..":0:0:64:64:5:59:5:59")
-				end
-				return old(noticeFrame, textString, colorInfo)
-			end
+		if timer then
+			timer:ClearAllPoints()
+			timer:SetPoint("RIGHT", bar, "RIGHT", -4 * K.Mult, 0)
+			timer:SetJustifyH("RIGHT")
+			K.SkinFont(timer)
+		end
+
+		count = count + 1
+		bar = _G[format("DBM_BossHealth_Bar_%d", count)]
+	end
+end
+
+local function CropRaidIcons(textString)
+	if type(textString) == "string" and find(textString, " |T") then
+		textString = gsub(textString, "(:12:12)", ":" .. rwiconsize .. ":" .. rwiconsize .. ":0:0:64:64:5:59:5:59")
+	end
+	return textString
+end
+
+local function InitCoreSkin()
+	if DBT and DBT.CreateBar and not DBT.budsHooked then
+		hooksecurefunc(DBT, "CreateBar", SkinBars)
+		-- Style bars created before our hook attached.
+		-- NOTE: DBT is only the class; live bars live on the DBM.Bars instance.
+		if DBM and DBM.Bars and DBM.Bars.GetBarIterator then
+			SkinBars(DBM.Bars)
+		end
+		DBT.budsHooked = true
+	end
+	if DBM and DBM.BossHealth and not DBM.BossHealth.budsHooked then
+		if DBM.BossHealth.Show then
+			hooksecurefunc(DBM.BossHealth, "Show", SkinBossTitle)
+		end
+		if DBM.BossHealth.AddBoss then
+			hooksecurefunc(DBM.BossHealth, "AddBoss", SkinBoss)
+		end
+		if DBM.BossHealth.UpdateSettings then
+			hooksecurefunc(DBM.BossHealth, "UpdateSettings", SkinBoss)
+		end
+		DBM.BossHealth.budsHooked = true
+	end
+
+	if croprwicons and RaidNotice_AddMessage and not _G.BudsRWIconHooked then
+		local old = RaidNotice_AddMessage
+		_G.RaidNotice_AddMessage = function(noticeFrame, textString, colorInfo)
+			return old(noticeFrame, CropRaidIcons(textString), colorInfo)
+		end
+		_G.BudsRWIconHooked = true
+	end
+end
+
+-- Loader: ADDON_LOADED covers late-loaded DBM, PLAYER_LOGIN covers already-loaded
+local Loader = CreateFrame("Frame")
+Loader:RegisterEvent("ADDON_LOADED")
+Loader:RegisterEvent("PLAYER_LOGIN")
+Loader:SetScript("OnEvent", function(_, event, addon)
+	if event == "ADDON_LOADED" then
+		if addon == "DBM-Core" then
+			InitCoreSkin()
+		end
+	elseif event == "PLAYER_LOGIN" then
+		if IsAddOnLoaded("DBM-Core") then
+			InitCoreSkin()
 		end
 	end
 end)
@@ -264,7 +334,7 @@ end)
 function K.UploadDBM()
 	if IsAddOnLoaded("DBM-Core") then
 		DBM_UseDualProfile = false
-		
+
 		if DBM_SavedOptions then
 			DBM_SavedOptions.enabled = true
 			DBM_SavedOptions.ShowMinimapButton = C.Skins.MinimapButtons and true or false
@@ -346,7 +416,7 @@ function K.UploadDBM()
 				DBT_SavedOptions["DBM"].HugeTimerY = -80
 			end
 		end
-		
+
 		if DBM_SavedOptions then
 			DBM_SavedOptions.InstalledBars = C.ActionBar.BottomBars
 		end
