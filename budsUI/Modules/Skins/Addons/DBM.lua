@@ -275,6 +275,29 @@ local function SkinBoss()
 	end
 end
 
+local rangeStyled = false
+local function SkinRange()
+	if rangeStyled then return end
+	-- Radar: plain frame, hangs a budsUI backdrop under it (stock behavior + guards)
+	if DBMRangeCheckRadar and not DBMRangeCheckRadar.backdrop then
+		DBMRangeCheckRadar:CreateBackdrop(2)
+	end
+	-- Main window: GameTooltip-based, strip tooltip border then backdrop
+	if DBMRangeCheck then
+		if DBMRangeCheck.StripTextures then
+			DBMRangeCheck:StripTextures()
+		else
+			DBMRangeCheck:SetBackdrop(nil)
+		end
+		if not DBMRangeCheck.backdrop then
+			DBMRangeCheck:CreateBackdrop(2)
+		end
+	end
+	if DBMRangeCheckRadar or DBMRangeCheck then
+		rangeStyled = true
+	end
+end
+
 local function CropRaidIcons(textString)
 	if type(textString) == "string" and find(textString, " |T") then
 		textString = gsub(textString, "(:12:12)", ":" .. rwiconsize .. ":" .. rwiconsize .. ":0:0:64:64:5:59:5:59")
@@ -303,6 +326,10 @@ local function InitCoreSkin()
 			hooksecurefunc(DBM.BossHealth, "UpdateSettings", SkinBoss)
 		end
 		DBM.BossHealth.budsHooked = true
+	end
+	if DBM and DBM.RangeCheck and DBM.RangeCheck.Show and not DBM.RangeCheck.budsHooked then
+		hooksecurefunc(DBM.RangeCheck, "Show", SkinRange)
+		DBM.RangeCheck.budsHooked = true
 	end
 
 	if croprwicons and RaidNotice_AddMessage and not _G.BudsRWIconHooked then
