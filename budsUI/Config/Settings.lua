@@ -75,7 +75,7 @@ C["Bag"] = {
 }
 -- Blizzard Options
 C["Blizzard"] = {
-	["Capturebar"] = true,
+	["CaptureBar"] = true,
 	["ClassColor"] = true,
 	["Durability"] = true,
 	["MoveAchievements"] = true,

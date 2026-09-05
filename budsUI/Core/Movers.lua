@@ -10,6 +10,7 @@ K.MoverFrames = {
 	AchievementAnchor,
 	ActionBarAnchor,
 	BuffsAnchor,
+	CaptureBarAnchor,
 	ChatFrame1,
 	LootRollAnchor,
 	MinimapAnchor,

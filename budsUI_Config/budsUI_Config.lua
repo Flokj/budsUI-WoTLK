@@ -106,7 +106,7 @@ local function Local(o)
 	if o == "UIConfigBagEnable" then o = L_GUI_BAGS_ENABLE end
 	-- Blizzard Settings
 	if o == "UIConfigBlizzard" then o = L_GUI_BLIZZARD end
-	if o == "UIConfigBlizzardCapturebar" then o = L_GUI_BLIZZARD_CAPTUREBAR end
+	if o == "UIConfigBlizzardCaptureBar" then o = L_GUI_BLIZZARD_CAPTUREBAR end
 	if o == "UIConfigBlizzardClassColor" then o = L_GUI_BLIZZARD_CLASS_COLOR end
 	if o == "UIConfigBlizzardDarkTextures" then o = L_GUI_BLIZZARD_DARK_TEXTURES end
 	if o == "UIConfigBlizzardDarkTexturesColor" then o = L_GUI_BLIZZARD_DARK_TEXTURES_COLOR end

@@ -144,12 +144,15 @@ local function SkinRaidRoll()
 		end
 	end
 
-	-- Fonts
+	-- Fonts (keep original size: rows are 12px apart, full C.Media.Font_Size overlaps the roll column)
 	if C.General.ReplaceBlizzardFonts and GetLocale() ~= "zhCN" then
 		for i = 1, 5 do
 			local roller = _G["RR_Roller" .. i]
 			if roller then
-				K.SkinFont(roller)
+				local _, size = roller:GetFont()
+				roller:SetFont(C.Media.Font, size or 11, C.Media.Font_Style)
+				roller:SetShadowOffset(K.Mult, -K.Mult)
+				roller:SetShadowColor(0, 0, 0, 1)
 				roller.SetFont = K.Noop
 			end
 		end
