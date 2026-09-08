@@ -1,20 +1,33 @@
-local K, C, L, _ = select(2, ...):unpack()
-if C.Blizzard.DisableBlizzardUF ~= true then return end
+local _, ns = ...
+local oUF = ns.oUF
 
 -- sourced from Blizzard_ArenaUI/Blizzard_ArenaUI.lua
-local MAX_ARENA_ENEMIES = MAX_ARENA_ENEMIES or 5
+local MAX_ARENA_ENEMIES = _G.MAX_ARENA_ENEMIES or 5
 
 -- sourced from FrameXML/TargetFrame.lua
-local MAX_BOSS_FRAMES = MAX_BOSS_FRAMES or 4
+local MAX_BOSS_FRAMES = _G.MAX_BOSS_FRAMES or 4
 
 -- sourced from FrameXML/PartyMemberFrame.lua
-local MAX_PARTY_MEMBERS = MAX_PARTY_MEMBERS or 4
+local MAX_PARTY_MEMBERS = _G.MAX_PARTY_MEMBERS or 4
+
+local hookedFrames = {}
+local hookedNameplates = {}
 
 local hiddenParent = CreateFrame('Frame', nil, UIParent)
 hiddenParent:SetAllPoints()
 hiddenParent:Hide()
 
-local function handleFrame(baseName)
+local function insecureHide(self)
+	self:Hide()
+end
+
+local function resetParent(self, parent)
+	if(parent ~= hiddenParent) then
+		self:SetParent(hiddenParent)
+	end
+end
+
+local function handleFrame(baseName, doNotReparent)
 	local frame
 	if(type(baseName) == 'string') then
 		frame = _G[baseName]
@@ -25,6 +38,16 @@ local function handleFrame(baseName)
 	if(frame) then
 		frame:UnregisterAllEvents()
 		frame:Hide()
+
+		if(not doNotReparent) then
+			frame:SetParent(hiddenParent)
+
+			if(not hookedFrames[frame]) then
+				hooksecurefunc(frame, 'SetParent', resetParent)
+
+				hookedFrames[frame] = true
+			end
+		end
 
 		-- Keep frame hidden without causing taint
 		frame:SetParent(hiddenParent)
@@ -48,10 +71,20 @@ local function handleFrame(baseName)
 		if(buffFrame) then
 			buffFrame:UnregisterAllEvents()
 		end
+
+		local petFrame = frame.petFrame or frame.PetFrame
+		if(petFrame) then
+			petFrame:UnregisterAllEvents()
+		end
+
+		local debuffFrame = frame.DebuffFrame
+		if(debuffFrame) then
+			debuffFrame:UnregisterAllEvents()
+		end
 	end
 end
 
-local function DisableBlizzard(unit)
+function oUF:DisableBlizzard(unit)
 	if(not unit) then return end
 
 	if(unit == 'player') then
@@ -111,17 +144,14 @@ local function DisableBlizzard(unit)
 	end
 end
 
-local units = {
-	"player",
-	"pet",
-	"target",
-	"targettarget",
-	"focus",
-	"party",
-	"boss",
-	"arena",
-}
+function oUF:DisableNamePlate(frame)
+	if(not(frame and frame.UnitFrame)) then return end
 
-for _, unit in ipairs(units) do
-	DisableBlizzard(unit)
+	if(not hookedNameplates[frame]) then
+		frame.UnitFrame:HookScript('OnShow', insecureHide)
+
+		hookedNameplates[frame] = true
+	end
+
+	handleFrame(frame.UnitFrame, true)
 end

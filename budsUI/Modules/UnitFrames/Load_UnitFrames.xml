@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<!-- Compat first: creates Engine.UnitFrames and backfills K helpers. -->
+	<Script file="Compat.lua" />
+	<Script file="Core.lua" />
+	<Script file="Colors.lua" />
+	<Script file="AuraFilter.lua" />
+	<Script file="AuraWatchList.lua" />
+	<Script file="Tags.lua" />
+
+	<!-- Element builders fill Module.Build. -->
+	<Script file="Elements\Bars.lua" />
+	<Script file="Elements\Portrait.lua" />
+	<Script file="Elements\Texts.lua" />
+	<Script file="Elements\Auras.lua" />
+	<Script file="Elements\ClassPower.lua" />
+	<Script file="Elements\Indicators.lua" />
+	<Script file="Elements\Castbar.lua" />
+	<Script file="Elements\AuraWatch.lua" />
+
+	<!-- Unit styles fill Module.Styles, so they load after the builders. -->
+	<Script file="Units\Player.lua" />
+	<Script file="Units\Target.lua" />
+	<Script file="Units\Small.lua" />
+	<Script file="Units\Boss.lua" />
+	<Script file="Units\Group.lua" />
+
+	<!-- Preview / test mode. -->
+	<Script file="Test.lua" />
+
+	<!-- Spawn pass, runs last. -->
+	<Script file="Init.lua" />
+</Ui>

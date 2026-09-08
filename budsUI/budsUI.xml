@@ -15,6 +15,7 @@
 	<Script file="Libs\LibStub\LibStub.lua"/>
 	<Script file="Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua"/>
 	<Script file="Libs\LibSharedMedia-3.0\LibSharedMedia-3.0.lua"/>
+	<Include file="Libs\oUF\oUF.xml"/>
 	<Script file="Media\Media.lua"/>
 	<Script file="Core\Colors.lua"/>
 
@@ -92,7 +93,6 @@
 
 	<Script file="Modules\Blizzard\Achievements.lua"/>
 	<Script file="Modules\Blizzard\Bags.lua"/>
-	<Script file="Modules\Blizzard\DisableBlizzard.lua"/>
 	<!--Script file="Modules\Blizzard\BlizzBugsSuck.lua"/-->
 	<Script file="Modules\Blizzard\CaptureBar.lua"/>
 	<Script file="Modules\Blizzard\ClassColor.lua"/>
@@ -161,4 +161,6 @@
 	<Script file="Modules\Tooltip\Tooltip.lua"/>
 
 	<Script file="Core\Movers.lua"/>
+
+	<Include file="Modules\UnitFrames\Load_UnitFrames.xml"/>
 </Ui>

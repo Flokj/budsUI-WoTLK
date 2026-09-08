@@ -80,7 +80,6 @@ C["Blizzard"] = {
 	["Durability"] = true,
 	["MoveAchievements"] = true,
 	["Reputations"] = true,
-	["DisableBlizzardUF"] = true,
 }
 -- Buffs & Debuffs Options
 C["Aura"] = {
@@ -193,7 +192,7 @@ C["Nameplate"] = {
 	["ClassIcons"] = false,
 	["Combat"] = false,
 	["Enable"] = true,
-	["EnhanceThreat"] = false,
+	["EnhanceThreat"] = true,
 	["GoodColor"] = {74/255, 173/255, 74/255},
 	["HealthValue"] = true,
 	["Height"] = 18,
@@ -280,13 +279,90 @@ C["Tooltip"] = {
 	["Title"] = true,
 	["WhoTargetting"] = true,
 }
--- Unitframe Options
+-- Unitframe Options (oUF-based frames ported from KkthnxUI; Enable gates spawning)
 C["Unitframe"] = {
+	["Enable"] = true,
+	["Texture"] = "budsUI_StatusBar",
+	["ClassHealth"] = false,
+	["ClassColorBorder"] = false,
+	["ThreatHealthColor"] = false,
+	["BarBackdrop"] = true,
+	["Portrait"] = true,
+	["PortraitStyle"] = "3D", -- 3D, 2D, Class
+	["HealthPrediction"] = true, -- incoming heals on the health bar
+	["RangeFade"] = true,
+	["RangeAlpha"] = 0.4,
+	["GroupDispelOnly"] = true, -- party/raid debuffs: only ones you can dispel
+	["AuraWatch"] = true, -- corner dots on party/raid frames for tracked heals
+
+	["HealthFormat"] = "Both", -- None, Current, Percent, Both
+	["PowerFormat"] = "Current", -- None, Current, Percent, Both
+	["NameColor"] = true,
+	["NameLength"] = 18,
+
+	["PowerColors"] = {
+		["MANA"] = { 0.36, 0.55, 0.81 },
+		["RAGE"] = { 0.82, 0.31, 0.31 },
+		["FOCUS"] = { 0.90, 0.52, 0.28 },
+		["ENERGY"] = { 0.95, 0.76, 0.32 },
+		["RUNIC_POWER"] = { 0.33, 0.72, 0.88 },
+	},
+	["ReactionColors"] = {
+		[1] = { 0.82, 0.31, 0.31 },
+		[2] = { 0.82, 0.31, 0.31 },
+		[3] = { 0.85, 0.45, 0.25 },
+		[4] = { 0.95, 0.76, 0.32 },
+		[5] = { 0.22, 0.80, 0.30 },
+		[6] = { 0.22, 0.80, 0.30 },
+		[7] = { 0.22, 0.80, 0.30 },
+		[8] = { 0.36, 0.72, 0.88 },
+	},
+
+	["Player"] = { ["Enable"] = true, ["Width"] = 220, ["Height"] = 40, ["PowerHeight"] = 16, ["ShowPower"] = true, ["Buffs"] = false, ["Debuffs"] = true, ["ClassPower"] = true, ["AdditionalPower"] = true, ["ShowName"] = false },
+	["Target"] = { ["Enable"] = true, ["Width"] = 220, ["Height"] = 40, ["PowerHeight"] = 16, ["ShowPower"] = true, ["Buffs"] = true, ["Debuffs"] = true },
+	["TargetOfTarget"] = { ["Enable"] = true, ["Width"] = 100, ["Height"] = 18, ["PowerHeight"] = 10, ["ShowPower"] = true },
+	["Pet"] = { ["Enable"] = true, ["Width"] = 100, ["Height"] = 18, ["PowerHeight"] = 10, ["ShowPower"] = true, ["Debuffs"] = false },
+	["Focus"] = { ["Enable"] = true, ["Width"] = 200, ["Height"] = 34, ["PowerHeight"] = 14, ["ShowPower"] = true, ["Debuffs"] = true },
+	["FocusTarget"] = { ["Enable"] = true, ["Width"] = 100, ["Height"] = 18, ["PowerHeight"] = 10, ["ShowPower"] = true },
+	["Party"] = { ["Enable"] = true, ["Width"] = 150, ["Height"] = 26, ["PowerHeight"] = 10, ["ShowPower"] = true, ["ShowSolo"] = false, ["ShowPlayer"] = true, ["Debuffs"] = true, ["DispelHighlight"] = true, ["Portrait"] = true, ["Castbar"] = true, ["RaidStyle"] = false },
+	-- Height is the health bar, the power bar (PowerHeight) sits below it.
+	-- PowerMode: All, Mana, or None.
+	["Raid"] = { ["Enable"] = true, ["Width"] = 80, ["Height"] = 30, ["PowerHeight"] = 6, ["PowerGap"] = 6, ["PowerMode"] = "All", ["GroupsPerRow"] = 5, ["GroupBy"] = "GROUP", ["RaidWide"] = false, ["SortDirection"] = "ASC", ["Orientation"] = "DOWN_RIGHT", ["DispelHighlight"] = true, ["ShowGroupNumber"] = true },
+	["Boss"] = { ["Enable"] = true, ["Width"] = 150, ["Height"] = 24, ["PowerHeight"] = 10, ["ShowPower"] = true, ["Spacing"] = 34, ["Debuffs"] = true, ["Castbar"] = true, ["Portrait"] = true },
+
+	["Auras"] = {
+		["PerRow"] = 7,
+		["NumBuffs"] = 12,
+		["NumDebuffs"] = 8,
+		["Spacing"] = 6,
+		["OnlyPlayerDebuffs"] = false,
+	},
+
+	["ClassPower"] = {
+		["Height"] = 14,
+		["Spacing"] = 6,
+	},
+
+	["Castbar"] = {
+		["Enable"] = true,
+		["ShowIcon"] = true,
+		["ShowTimer"] = true,
+		["ShowSpark"] = true,
+		["ShowLatency"] = true,
+		["TimeToHold"] = 0.4,
+		["PlayerWidth"] = 242,
+		["PlayerHeight"] = 28,
+		["TargetWidth"] = 242,
+		["TargetHeight"] = 40,
+		["FocusWidth"] = 208,
+		["FocusHeight"] = 24,
+	},
+
+	-- Legacy budsUI keys (kept for compat with other modules/config GUI)
 	["ComboFrame"] = false,
 	["AuraOffsetY"] = 3,
 	["BetterPowerColors"] = false,
 	["CastBarScale"] = 1.2,
-	["ClassHealth"] = false,
 	["ClassIcon"] = false,
 	["CombatFeedback"] = false,
 	["GroupNumber"] = false,

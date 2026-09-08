@@ -52,6 +52,7 @@ local ALLOWED_GROUPS = {
 	["PulseCD"] = 18,
 	["Skins"] = 19,
 	["Tooltip"] = 20,
+	["Unitframe"] = 21,
 }
 
 local function Local(o)
@@ -113,7 +114,6 @@ local function Local(o)
 	if o == "UIConfigBlizzardDurability" then o = L_GUI_BLIZZARD_DURABILITY end
 	if o == "UIConfigBlizzardMoveAchievements" then o = L_GUI_BLIZZARD_ACHIEVEMENTS end
 	if o == "UIConfigBlizzardReputations" then o = L_GUI_BLIZZARD_REPUTATIONS end
-	if o == "UIConfigBlizzardDisableBlizzardUF" then o = L_GUI_BLIZZARD_DISABLEBLIZZARDUF end
 	-- Auras Settings
 	if o == "UIConfigAura" then o = L_GUI_AURA end
 	if o == "UIConfigAuraCastBy" then o = L_GUI_AURA_CAST_BY end
@@ -274,6 +274,8 @@ local function Local(o)
 	if o == "UIConfigTooltipWhoTargetting" then o = L_GUI_TOOLTIP_WHO_TARGETTING end
 	-- Profiles settings
 	if o == "UIConfigProfiles" then o = L_GUI_PROFILES or "Profiles" end
+	-- Unitframe group title (options page is custom-rendered, see BuildUnitframeOptions)
+	if o == "UIConfigUnitframe" then o = L_GUI_UNITFRAME end
 
 	K.option = o
 end
@@ -359,6 +361,291 @@ local function SetValue(group, option, value)
 			C[group][option] = value
 		end
 	end
+end
+
+-- ---------------------------------------------------------------------------
+-- Unitframe options page. C.Unitframe holds nested per-unit tables, which the
+-- generic flat renderer below cannot handle (it would treat them as color
+-- pickers), so this builds the page explicitly. Nested writes go through the
+-- regular SetValue(group, sub, {key = value}), which the profile system
+-- merges one level deep - the same depth MergeProfileIntoC applies on load.
+-- ---------------------------------------------------------------------------
+local function BuildUnitframeOptions(frame, startOffset)
+	local K, C = budsUI:unpack()
+	local UF = C.Unitframe
+	if type(UF) ~= "table" then return startOffset end
+	local offset = startOffset
+	local seq = 0
+	local function NextName(prefix)
+		seq = seq + 1
+		return "UIConfigUnitframeOpt" .. seq .. (prefix or "")
+	end
+
+	local function Header(text)
+		local label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+		label:SetText(text)
+		label:SetSize(460, 20)
+		label:SetJustifyH("LEFT")
+		label:SetPoint("TOPLEFT", 5, -offset)
+		offset = offset + 22
+	end
+
+	local function Check(label, get, set)
+		local button = CreateFrame("CheckButton", NextName("Check"), frame, "InterfaceOptionsCheckButtonTemplate")
+		_G[button:GetName() .. "Text"]:SetText(label)
+		_G[button:GetName() .. "Text"]:SetFontObject(GameFontHighlight)
+		_G[button:GetName() .. "Text"]:SetWidth(460)
+		_G[button:GetName() .. "Text"]:SetJustifyH("LEFT")
+		button:SetChecked(get() and true or false)
+		button:SetScript("OnClick", function(self) set(self:GetChecked() and true or false) end)
+		button:SetPoint("TOPLEFT", 5, -offset)
+		offset = offset + 25
+	end
+
+	local function Slider(label, get, set, sMin, sMax, sStep)
+		local text = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+		text:SetText(label)
+		text:SetSize(460, 20)
+		text:SetJustifyH("LEFT")
+		text:SetPoint("TOPLEFT", 5, -offset)
+		local slider = CreateFrame("Slider", NextName("Slider"), frame, "OptionsSliderTemplate")
+		slider:SetPoint("TOPLEFT", 10, -(offset + 25))
+		slider:SetWidth(200)
+		slider:SetMinMaxValues(sMin, sMax)
+		slider:SetValueStep(sStep)
+		slider:SetValue(get() or sMin)
+		_G[slider:GetName() .. "Low"]:SetText(sMin)
+		_G[slider:GetName() .. "High"]:SetText(sMax)
+		_G[slider:GetName() .. "Text"]:SetText(get() or sMin)
+		slider:SetScript("OnValueChanged", function(self, val)
+			local mult = 1 / sStep
+			val = math.floor(val * mult + 0.5) / mult
+			_G[self:GetName() .. "Text"]:SetText(val)
+			set(val)
+		end)
+		offset = offset + 50
+	end
+
+	local function Edit(label, get, set)
+		local text = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+		text:SetText(label)
+		text:SetSize(460, 20)
+		text:SetJustifyH("LEFT")
+		text:SetPoint("TOPLEFT", 5, -offset)
+		local editbox = CreateFrame("EditBox", NextName("Edit"), frame)
+		editbox:SetAutoFocus(false)
+		editbox:SetMultiLine(false)
+		editbox:SetSize(220, 22)
+		editbox:SetMaxLetters(64)
+		editbox:SetTextInsets(3, 0, 0, 0)
+		editbox:SetFontObject(GameFontHighlight)
+		editbox:SetPoint("TOPLEFT", 8, -(offset + 20))
+		editbox:SetText(tostring(get() or ""))
+		editbox:SetBackdrop(K.Backdrop)
+		editbox:SetBackdropColor(unpack(C["Media"].Backdrop_Color))
+		editbox:SetScript("OnEscapePressed", function(self) self:ClearFocus() self:SetText(tostring(get() or "")) end)
+		editbox:SetScript("OnEnterPressed", function(self) self:ClearFocus() set(self:GetText()) end)
+		offset = offset + 45
+	end
+
+	local function Color(label, get, set)
+		local text = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+		text:SetText(label)
+		text:SetSize(440, 20)
+		text:SetJustifyH("LEFT")
+		text:SetPoint("TOPLEFT", 5, -offset)
+		local button = CreateFrame("Button", NextName("Color"), frame)
+		button:SetHeight(20)
+		button:SetBackdrop(K.Backdrop)
+		local cur = get() or {1, 1, 1}
+		button:SetBackdropBorderColor(cur[1], cur[2], cur[3], 1)
+		button:SetBackdropColor(cur[1], cur[2], cur[3], 0.3)
+		button:SetPoint("LEFT", text, "RIGHT", 2, 0)
+		local btntext = button:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+		btntext:SetText(COLOR)
+		btntext:SetPoint("CENTER")
+		btntext:SetJustifyH("CENTER")
+		button:SetWidth(btntext:GetWidth() + 5)
+		button:SetScript("OnMouseDown", function(self)
+			if ColorPickerFrame:IsShown() then return end
+			local c = get() or {1, 1, 1}
+			local function cb(restore)
+				local nr, ng, nb
+				if restore ~= nil then
+					nr, ng, nb = unpack(restore)
+				else
+					nr, ng, nb = ColorPickerFrame:GetColorRGB()
+				end
+				set({nr, ng, nb})
+				self:SetBackdropBorderColor(nr, ng, nb, 1)
+				self:SetBackdropColor(nr, ng, nb, 0.3)
+			end
+			ColorPickerFrame.func, ColorPickerFrame.opacityFunc, ColorPickerFrame.cancelFunc = cb, cb, cb
+			ColorPickerFrame:SetColorRGB(c[1], c[2], c[3])
+			ColorPickerFrame.hasOpacity = false
+			ColorPickerFrame.previousValues = {c[1], c[2], c[3]}
+			ColorPickerFrame:Hide()
+			ColorPickerFrame:Show()
+		end)
+		offset = offset + 25
+	end
+
+	-- Accessors: top-level keys write straight, sub-table keys merge one level.
+	local function BoolTop(key, label)
+		Check(label, function() return UF[key] end, function(v) SetValue("Unitframe", key, v) end)
+	end
+	local function NumTop(key, label, mn, mx, st)
+		Slider(label, function() return UF[key] end, function(v) SetValue("Unitframe", key, v) end, mn, mx, st)
+	end
+	local function StrTop(key, label)
+		Edit(label, function() return UF[key] end, function(v) SetValue("Unitframe", key, v) end)
+	end
+	local function BoolSub(sub, key, label)
+		Check(label, function() return UF[sub] and UF[sub][key] end, function(v) SetValue("Unitframe", sub, {[key] = v}) end)
+	end
+	local function NumSub(sub, key, label, mn, mx, st)
+		Slider(label, function() return UF[sub] and UF[sub][key] end, function(v) SetValue("Unitframe", sub, {[key] = v}) end, mn, mx, st)
+	end
+	local function StrSub(sub, key, label)
+		Edit(label, function() return UF[sub] and UF[sub][key] end, function(v) SetValue("Unitframe", sub, {[key] = v}) end)
+	end
+	local function Dims(sub)
+		NumSub(sub, "Width", L_GUI_UNITFRAME_WIDTH, 40, 400, 1)
+		NumSub(sub, "Height", L_GUI_UNITFRAME_HEIGHT, 8, 100, 1)
+		NumSub(sub, "PowerHeight", L_GUI_UNITFRAME_POWER_HEIGHT, 0, 40, 1)
+		BoolSub(sub, "ShowPower", L_GUI_UNITFRAME_SHOW_POWER)
+	end
+
+	Header(L_GUI_UNITFRAME_GENERAL)
+	BoolTop("Enable", L_GUI_UNITFRAME_ENABLE)
+	BoolTop("ClassHealth", L_GUI_UNITFRAME_CLASS_HEALTH)
+	BoolTop("ClassColorBorder", L_GUI_UNITFRAME_CLASS_COLOR_BORDER)
+	BoolTop("ThreatHealthColor", L_GUI_UNITFRAME_THREAT_HEALTH_COLOR)
+	BoolTop("BarBackdrop", L_GUI_UNITFRAME_BAR_BACKDROP)
+	BoolTop("Portrait", L_GUI_UNITFRAME_PORTRAIT)
+	StrTop("PortraitStyle", L_GUI_UNITFRAME_PORTRAIT_STYLE)
+	BoolTop("HealthPrediction", L_GUI_UNITFRAME_HEALTH_PREDICTION)
+	BoolTop("RangeFade", L_GUI_UNITFRAME_RANGE_FADE)
+	NumTop("RangeAlpha", L_GUI_UNITFRAME_RANGE_ALPHA, 0, 1, 0.05)
+	BoolTop("GroupDispelOnly", L_GUI_UNITFRAME_GROUP_DISPEL_ONLY)
+	BoolTop("AuraWatch", L_GUI_UNITFRAME_AURA_WATCH)
+	StrTop("HealthFormat", L_GUI_UNITFRAME_HEALTH_FORMAT)
+	StrTop("PowerFormat", L_GUI_UNITFRAME_POWER_FORMAT)
+	BoolTop("NameColor", L_GUI_UNITFRAME_NAME_COLOR)
+	NumTop("NameLength", L_GUI_UNITFRAME_NAME_LENGTH, 0, 30, 1)
+	StrTop("Texture", L_GUI_UNITFRAME_TEXTURE)
+
+	Header(L_GUI_UNITFRAME_OPT_PLAYER)
+	BoolSub("Player", "Enable", L_GUI_UNITFRAME_OPT_ENABLE)
+	Dims("Player")
+	BoolSub("Player", "Buffs", L_GUI_UNITFRAME_OPT_BUFFS)
+	BoolSub("Player", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS)
+	BoolSub("Player", "ClassPower", L_GUI_UNITFRAME_OPT_CLASS_POWER)
+	BoolSub("Player", "AdditionalPower", L_GUI_UNITFRAME_OPT_ADDITIONAL_POWER)
+	BoolSub("Player", "ShowName", L_GUI_UNITFRAME_OPT_SHOW_NAME)
+
+	Header(L_GUI_UNITFRAME_OPT_TARGET)
+	BoolSub("Target", "Enable", L_GUI_UNITFRAME_OPT_ENABLE)
+	Dims("Target")
+	BoolSub("Target", "Buffs", L_GUI_UNITFRAME_OPT_BUFFS)
+	BoolSub("Target", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS)
+
+	Header(L_GUI_UNITFRAME_OPT_FOCUS)
+	BoolSub("Focus", "Enable", L_GUI_UNITFRAME_OPT_ENABLE)
+	Dims("Focus")
+	BoolSub("Focus", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS)
+
+	Header(L_GUI_UNITFRAME_OPT_SMALL)
+	BoolSub("TargetOfTarget", "Enable", L_GUI_UNITFRAME_OPT_ENABLE)
+	Dims("TargetOfTarget")
+	BoolSub("Pet", "Enable", L_GUI_UNITFRAME_OPT_ENABLE)
+	Dims("Pet")
+	BoolSub("Pet", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS)
+	BoolSub("FocusTarget", "Enable", L_GUI_UNITFRAME_OPT_ENABLE)
+	Dims("FocusTarget")
+
+	Header(L_GUI_UNITFRAME_OPT_PARTY)
+	BoolSub("Party", "Enable", L_GUI_UNITFRAME_OPT_ENABLE)
+	Dims("Party")
+	BoolSub("Party", "ShowPlayer", L_GUI_UNITFRAME_OPT_SHOW_PLAYER)
+	BoolSub("Party", "ShowSolo", L_GUI_UNITFRAME_OPT_SHOW_SOLO)
+	BoolSub("Party", "RaidStyle", L_GUI_UNITFRAME_OPT_RAID_STYLE)
+	BoolSub("Party", "Portrait", L_GUI_UNITFRAME_OPT_PORTRAIT)
+	BoolSub("Party", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS)
+	BoolSub("Party", "DispelHighlight", L_GUI_UNITFRAME_OPT_DISPEL)
+	BoolSub("Party", "Castbar", L_GUI_UNITFRAME_OPT_CASTBAR)
+
+	Header(L_GUI_UNITFRAME_OPT_RAID)
+	BoolSub("Raid", "Enable", L_GUI_UNITFRAME_OPT_ENABLE)
+	NumSub("Raid", "Width", L_GUI_UNITFRAME_WIDTH, 40, 200, 1)
+	NumSub("Raid", "Height", L_GUI_UNITFRAME_HEIGHT, 8, 100, 1)
+	NumSub("Raid", "PowerHeight", L_GUI_UNITFRAME_POWER_HEIGHT, 0, 20, 1)
+	NumSub("Raid", "PowerGap", L_GUI_UNITFRAME_POWER_GAP, 0, 20, 1)
+	StrSub("Raid", "PowerMode", L_GUI_UNITFRAME_OPT_POWER_MODE)
+	NumSub("Raid", "GroupsPerRow", L_GUI_UNITFRAME_OPT_GROUPS_PER_ROW, 1, 8, 1)
+	StrSub("Raid", "GroupBy", L_GUI_UNITFRAME_OPT_GROUP_BY)
+	BoolSub("Raid", "RaidWide", L_GUI_UNITFRAME_OPT_RAID_WIDE)
+	StrSub("Raid", "SortDirection", L_GUI_UNITFRAME_OPT_SORT_DIR)
+	StrSub("Raid", "Orientation", L_GUI_UNITFRAME_OPT_ORIENTATION)
+	BoolSub("Raid", "DispelHighlight", L_GUI_UNITFRAME_OPT_DISPEL)
+	BoolSub("Raid", "ShowGroupNumber", L_GUI_UNITFRAME_OPT_GROUP_NUMBERS)
+
+	Header(L_GUI_UNITFRAME_OPT_BOSS)
+	BoolSub("Boss", "Enable", L_GUI_UNITFRAME_OPT_ENABLE)
+	Dims("Boss")
+	NumSub("Boss", "Spacing", L_GUI_UNITFRAME_SPACING, 0, 80, 1)
+	BoolSub("Boss", "Portrait", L_GUI_UNITFRAME_OPT_PORTRAIT)
+	BoolSub("Boss", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS)
+	BoolSub("Boss", "Castbar", L_GUI_UNITFRAME_OPT_CASTBAR)
+
+	Header(L_GUI_UNITFRAME_OPT_AURAS)
+	NumSub("Auras", "PerRow", L_GUI_UNITFRAME_OPT_PER_ROW, 1, 12, 1)
+	NumSub("Auras", "NumBuffs", L_GUI_UNITFRAME_OPT_NUM_BUFFS, 0, 30, 1)
+	NumSub("Auras", "NumDebuffs", L_GUI_UNITFRAME_OPT_NUM_DEBUFFS, 0, 30, 1)
+	NumSub("Auras", "Spacing", L_GUI_UNITFRAME_SPACING, 0, 20, 1)
+	BoolSub("Auras", "OnlyPlayerDebuffs", L_GUI_UNITFRAME_OPT_ONLY_MINE)
+
+	Header(L_GUI_UNITFRAME_OPT_CLASSPOWER)
+	NumSub("ClassPower", "Height", L_GUI_UNITFRAME_HEIGHT, 4, 30, 1)
+	NumSub("ClassPower", "Spacing", L_GUI_UNITFRAME_SPACING, 0, 20, 1)
+
+	Header(L_GUI_UNITFRAME_OPT_CASTBAR)
+	BoolSub("Castbar", "Enable", L_GUI_UNITFRAME_OPT_ENABLE)
+	BoolSub("Castbar", "ShowIcon", L_GUI_UNITFRAME_OPT_SHOW_ICON)
+	BoolSub("Castbar", "ShowTimer", L_GUI_UNITFRAME_OPT_SHOW_TIMER)
+	BoolSub("Castbar", "ShowSpark", L_GUI_UNITFRAME_OPT_SHOW_SPARK)
+	BoolSub("Castbar", "ShowLatency", L_GUI_UNITFRAME_OPT_SHOW_LATENCY)
+	NumSub("Castbar", "TimeToHold", L_GUI_UNITFRAME_OPT_HOLD_TIME, 0, 2, 0.1)
+	NumSub("Castbar", "PlayerWidth", L_GUI_UNITFRAME_OPT_PLAYER_WIDTH, 100, 400, 1)
+	NumSub("Castbar", "PlayerHeight", L_GUI_UNITFRAME_OPT_PLAYER_HEIGHT, 10, 60, 1)
+	NumSub("Castbar", "TargetWidth", L_GUI_UNITFRAME_OPT_TARGET_WIDTH, 100, 400, 1)
+	NumSub("Castbar", "TargetHeight", L_GUI_UNITFRAME_OPT_TARGET_HEIGHT, 10, 60, 1)
+	NumSub("Castbar", "FocusWidth", L_GUI_UNITFRAME_OPT_FOCUS_WIDTH, 100, 400, 1)
+	NumSub("Castbar", "FocusHeight", L_GUI_UNITFRAME_OPT_FOCUS_HEIGHT, 10, 60, 1)
+
+	Header(L_GUI_UNITFRAME_OPT_POWERS)
+	for _, token in ipairs({"MANA", "RAGE", "FOCUS", "ENERGY", "RUNIC_POWER"}) do
+		local tok, label = token, token:lower():gsub("^%l", string.upper):gsub("_(%l)", function(c) return " " .. string.upper(c) end)
+		if UF.PowerColors and UF.PowerColors[tok] then
+			Color(label,
+				function() return UF.PowerColors[tok] end,
+				function(v) SetValue("Unitframe", "PowerColors", {[tok] = v}) end)
+		end
+	end
+
+	Header(L_GUI_UNITFRAME_OPT_REACTION)
+	if type(UF.ReactionColors) == "table" then
+		for idx = 1, 8 do
+			local i = idx
+			if UF.ReactionColors[i] then
+				Color(_G["FACTION_STANDING_LABEL" .. i] or ("Reaction " .. i),
+					function() return UF.ReactionColors[i] end,
+					function(v) SetValue("Unitframe", "ReactionColors", {[i] = v}) end)
+			end
+		end
+	end
+
+	return offset
 end
 
 local VISIBLE_GROUP = nil
@@ -608,6 +895,10 @@ function CreateUIConfig()
 			local offset = 5
 
 			if type(C[i]) ~= "table" then Error(i.." GroupName not found in config table.") return end
+		if i == "Unitframe" then
+			-- Nested per-unit tables: custom page (flat renderer can't handle them).
+			offset = BuildUnitframeOptions(frame, offset)
+		else
 		for j, value in PairsByKeys(C[i]) do
 			if type(value) == "boolean" then
 				local button = CreateFrame("CheckButton", "UIConfig"..i..j, frame, "InterfaceOptionsCheckButtonTemplate")
@@ -797,6 +1088,7 @@ function CreateUIConfig()
 
 				offset = offset + 25
 			end
+		end
 		end
 
 		frame:SetHeight(offset)
