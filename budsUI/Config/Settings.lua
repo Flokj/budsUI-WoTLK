@@ -469,3 +469,18 @@ local function ValidateConfig()
 end
 
 ValidateConfig()
+
+-- Snapshot pristine defaults for budsUI_Config (option tooltips, right-click reset).
+-- Runs here because Settings builds C from defaults and Modules/Profiles merges
+-- the active profile into C afterwards. Deep copy so later merges never mutate it.
+do
+	local function DeepCopyDefaults(src)
+		if type(src) ~= "table" then return src end
+		local copy = {}
+		for k, v in pairs(src) do
+			copy[k] = DeepCopyDefaults(v)
+		end
+		return copy
+	end
+	K.ConfigDefaults = DeepCopyDefaults(C)
+end

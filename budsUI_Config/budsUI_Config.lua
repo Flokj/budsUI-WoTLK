@@ -364,6 +364,121 @@ local function SetValue(group, option, value)
 end
 
 -- ---------------------------------------------------------------------------
+-- Advanced GUI helpers (Kkthnx-style look, 3.3.5-safe API only:
+-- no SetColorTexture, no retail namespaces)
+-- ---------------------------------------------------------------------------
+local ACCENT_R, ACCENT_G, ACCENT_B = 0x38/255, 0x8b/255, 0xdb/255 -- buds blue #388bdb
+
+-- Pristine default for an option (snapshot taken in core Settings.lua).
+-- key ~= nil addresses nested tables, e.g. Unitframe "Player"."Width".
+local function GetDefault(group, option, key)
+	if not _G["budsUI"] or not _G["budsUI"].unpack then return nil end
+	local K2 = _G["budsUI"]:unpack()
+	if not K2 or type(K2.ConfigDefaults) ~= "table" then return nil end
+	local g = K2.ConfigDefaults[group]
+	if type(g) ~= "table" then return nil end
+	local v = g[option]
+	if key ~= nil then
+		if type(v) ~= "table" then return nil end
+		v = v[key]
+	end
+	return v
+end
+
+local function FormatDefault(value)
+	if type(value) == "boolean" then
+		return value and "On" or "Off"
+	elseif type(value) == "number" then
+		return tostring(math.floor(value * 100 + 0.5) / 100)
+	elseif type(value) == "table" and type(value[1]) == "number" then
+		local r = math.floor((value[1] or 0) * 255 + 0.5)
+		local g = math.floor((value[2] or 0) * 255 + 0.5)
+		local b = math.floor((value[3] or 0) * 255 + 0.5)
+		return format("|cff%02x%02x%02xthis color|r", r, g, b)
+	elseif value ~= nil then
+		return tostring(value)
+	end
+	return nil
+end
+
+local function CopyDefaultValue(value)
+	if type(value) ~= "table" then return value end
+	local t = {}
+	for k, v in pairs(value) do t[k] = v end
+	return t
+end
+
+-- Reset one option to its pristine default: writes through the profile system
+-- (SetValue updates live C too), then repaints the widget via refresh().
+-- Falls back to dropping the profile override + ReloadUI when core is too old
+-- to provide K.ConfigDefaults.
+local function ResetOption(group, option, key, refresh)
+	local def = GetDefault(group, option, key)
+	if def == nil then
+		local K2 = _G["budsUI"]:unpack()
+		local active = K2.GetActiveProfile and K2.GetActiveProfile()
+		if active and budsUIData and budsUIData.Profiles and budsUIData.Profiles[active] then
+			local P = budsUIData.Profiles[active]
+			if key ~= nil then
+				if type(P[group]) == "table" and type(P[group][option]) == "table" then
+					P[group][option][key] = nil
+				end
+			elseif type(P[group]) == "table" then
+				P[group][option] = nil
+			end
+		end
+		Print("Default will be restored after ReloadUI.")
+		ReloadUI()
+		return
+	end
+	if key ~= nil then
+		SetValue(group, option, {[key] = CopyDefaultValue(def)})
+	else
+		SetValue(group, option, CopyDefaultValue(def))
+	end
+	if refresh then refresh(CopyDefaultValue(def)) end
+end
+
+-- Hover tooltip (label + default + reset hint) plus right-click reset.
+-- refresh(defaultValue) repaints the widget after a reset.
+local function AttachReset(widget, label, group, option, key, refresh)
+	if not widget or not widget.HookScript then return end
+	widget:HookScript("OnEnter", function()
+		GameTooltip:SetOwner(widget, "ANCHOR_RIGHT")
+		GameTooltip:SetText(label or "", 1, 1, 1)
+		local d = GetDefault(group, option, key)
+		if d ~= nil then
+			GameTooltip:AddLine("Default: " .. (FormatDefault(d) or "?"), 0.6, 0.8, 1, true)
+		end
+		GameTooltip:AddLine("Right-click to reset", 0.5, 0.5, 0.5, true)
+		GameTooltip:Show()
+	end)
+	widget:HookScript("OnLeave", function() GameTooltip:Hide() end)
+	widget:HookScript("OnMouseUp", function(_, btn)
+		if btn == "RightButton" then
+			ResetOption(group, option, key, refresh)
+		end
+	end)
+end
+
+-- Accent section header (title + rule). 3.3.5-safe: plain Texture:SetTexture.
+local function SectionHeader(parent, text, offset, width)
+	local label = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	label:SetText(text)
+	label:SetTextColor(ACCENT_R, ACCENT_G, ACCENT_B)
+	label:SetSize(width or 460, 20)
+	label:SetJustifyH("LEFT")
+	label:SetPoint("TOPLEFT", 5, -offset)
+	offset = offset + 20
+	local rule = parent:CreateTexture(nil, "ARTWORK")
+	rule:SetTexture(ACCENT_R, ACCENT_G, ACCENT_B, 0.35)
+	rule:SetHeight(1)
+	rule:SetPoint("TOPLEFT", parent, "TOPLEFT", 5, -offset)
+	rule:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -25, -offset)
+	return offset + 8
+end
+
+-- ---------------------------------------------------------------------------
 -- Unitframe options page. C.Unitframe holds nested per-unit tables, which the
 -- generic flat renderer below cannot handle (it would treat them as color
 -- pickers), so this builds the page explicitly. Nested writes go through the
@@ -382,15 +497,10 @@ local function BuildUnitframeOptions(frame, startOffset)
 	end
 
 	local function Header(text)
-		local label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-		label:SetText(text)
-		label:SetSize(460, 20)
-		label:SetJustifyH("LEFT")
-		label:SetPoint("TOPLEFT", 5, -offset)
-		offset = offset + 22
+		offset = SectionHeader(frame, text, offset, 460)
 	end
 
-	local function Check(label, get, set)
+	local function Check(label, get, set, option, key)
 		local button = CreateFrame("CheckButton", NextName("Check"), frame, "InterfaceOptionsCheckButtonTemplate")
 		_G[button:GetName() .. "Text"]:SetText(label)
 		_G[button:GetName() .. "Text"]:SetFontObject(GameFontHighlight)
@@ -399,10 +509,11 @@ local function BuildUnitframeOptions(frame, startOffset)
 		button:SetChecked(get() and true or false)
 		button:SetScript("OnClick", function(self) set(self:GetChecked() and true or false) end)
 		button:SetPoint("TOPLEFT", 5, -offset)
+		AttachReset(button, label, "Unitframe", option, key, function(d) button:SetChecked(d and true or false) end)
 		offset = offset + 25
 	end
 
-	local function Slider(label, get, set, sMin, sMax, sStep)
+	local function Slider(label, get, set, sMin, sMax, sStep, option, key)
 		local text = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 		text:SetText(label)
 		text:SetSize(460, 20)
@@ -423,10 +534,11 @@ local function BuildUnitframeOptions(frame, startOffset)
 			_G[self:GetName() .. "Text"]:SetText(val)
 			set(val)
 		end)
+		AttachReset(slider, label, "Unitframe", option, key, function(d) slider:SetValue(d or sMin) end)
 		offset = offset + 50
 	end
 
-	local function Edit(label, get, set)
+	local function Edit(label, get, set, option, key)
 		local text = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 		text:SetText(label)
 		text:SetSize(460, 20)
@@ -445,10 +557,11 @@ local function BuildUnitframeOptions(frame, startOffset)
 		editbox:SetBackdropColor(unpack(C["Media"].Backdrop_Color))
 		editbox:SetScript("OnEscapePressed", function(self) self:ClearFocus() self:SetText(tostring(get() or "")) end)
 		editbox:SetScript("OnEnterPressed", function(self) self:ClearFocus() set(self:GetText()) end)
+		AttachReset(editbox, label, "Unitframe", option, key, function(d) editbox:SetText(tostring(d or "")) end)
 		offset = offset + 45
 	end
 
-	local function Color(label, get, set)
+	local function Color(label, get, set, option, key)
 		local text = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 		text:SetText(label)
 		text:SetSize(440, 20)
@@ -466,7 +579,8 @@ local function BuildUnitframeOptions(frame, startOffset)
 		btntext:SetPoint("CENTER")
 		btntext:SetJustifyH("CENTER")
 		button:SetWidth(btntext:GetWidth() + 5)
-		button:SetScript("OnMouseDown", function(self)
+		button:SetScript("OnMouseDown", function(self, btn)
+			if btn == "RightButton" then return end -- reset handled by AttachReset
 			if ColorPickerFrame:IsShown() then return end
 			local c = get() or {1, 1, 1}
 			local function cb(restore)
@@ -486,28 +600,34 @@ local function BuildUnitframeOptions(frame, startOffset)
 			ColorPickerFrame.previousValues = {c[1], c[2], c[3]}
 			ColorPickerFrame:Hide()
 			ColorPickerFrame:Show()
-		end)
-		offset = offset + 25
-	end
+			end)
+			AttachReset(button, label, "Unitframe", option, key, function(d)
+			if type(d) == "table" then
+				button:SetBackdropBorderColor(d[1], d[2], d[3], 1)
+				button:SetBackdropColor(d[1], d[2], d[3], 0.3)
+			end
+			end)
+			offset = offset + 25
+			end
 
 	-- Accessors: top-level keys write straight, sub-table keys merge one level.
 	local function BoolTop(key, label)
-		Check(label, function() return UF[key] end, function(v) SetValue("Unitframe", key, v) end)
+		Check(label, function() return UF[key] end, function(v) SetValue("Unitframe", key, v) end, key, nil)
 	end
 	local function NumTop(key, label, mn, mx, st)
-		Slider(label, function() return UF[key] end, function(v) SetValue("Unitframe", key, v) end, mn, mx, st)
+		Slider(label, function() return UF[key] end, function(v) SetValue("Unitframe", key, v) end, mn, mx, st, key, nil)
 	end
 	local function StrTop(key, label)
-		Edit(label, function() return UF[key] end, function(v) SetValue("Unitframe", key, v) end)
+		Edit(label, function() return UF[key] end, function(v) SetValue("Unitframe", key, v) end, key, nil)
 	end
 	local function BoolSub(sub, key, label)
-		Check(label, function() return UF[sub] and UF[sub][key] end, function(v) SetValue("Unitframe", sub, {[key] = v}) end)
+		Check(label, function() return UF[sub] and UF[sub][key] end, function(v) SetValue("Unitframe", sub, {[key] = v}) end, sub, key)
 	end
 	local function NumSub(sub, key, label, mn, mx, st)
-		Slider(label, function() return UF[sub] and UF[sub][key] end, function(v) SetValue("Unitframe", sub, {[key] = v}) end, mn, mx, st)
+		Slider(label, function() return UF[sub] and UF[sub][key] end, function(v) SetValue("Unitframe", sub, {[key] = v}) end, mn, mx, st, sub, key)
 	end
 	local function StrSub(sub, key, label)
-		Edit(label, function() return UF[sub] and UF[sub][key] end, function(v) SetValue("Unitframe", sub, {[key] = v}) end)
+		Edit(label, function() return UF[sub] and UF[sub][key] end, function(v) SetValue("Unitframe", sub, {[key] = v}) end, sub, key)
 	end
 	local function Dims(sub)
 		NumSub(sub, "Width", L_GUI_UNITFRAME_WIDTH, 40, 400, 1)
@@ -629,7 +749,8 @@ local function BuildUnitframeOptions(frame, startOffset)
 		if UF.PowerColors and UF.PowerColors[tok] then
 			Color(label,
 				function() return UF.PowerColors[tok] end,
-				function(v) SetValue("Unitframe", "PowerColors", {[tok] = v}) end)
+				function(v) SetValue("Unitframe", "PowerColors", {[tok] = v}) end,
+				"PowerColors", tok)
 		end
 	end
 
@@ -640,7 +761,8 @@ local function BuildUnitframeOptions(frame, startOffset)
 			if UF.ReactionColors[i] then
 				Color(_G["FACTION_STANDING_LABEL" .. i] or ("Reaction " .. i),
 					function() return UF.ReactionColors[i] end,
-					function(v) SetValue("Unitframe", "ReactionColors", {[i] = v}) end)
+					function(v) SetValue("Unitframe", "ReactionColors", {[i] = v}) end,
+					"ReactionColors", i)
 			end
 		end
 	end
@@ -649,17 +771,24 @@ local function BuildUnitframeOptions(frame, startOffset)
 end
 
 local VISIBLE_GROUP = nil
-local lastbutton = nil
-local function ShowGroup(group, button)
-	local K, _ = budsUI:unpack()
-
-	if lastbutton then
-		lastbutton:SetText(lastbutton:GetText().sub(lastbutton:GetText(), 11, -3))
+local categoryButtons = {} -- [group] = {button = ..., label = ...}
+local function PaintCategory(selected)
+	for g, info in pairs(categoryButtons) do
+		if info.button then
+			if g == selected then
+				info.button:SetText("|cff388bdb" .. info.label .. "|r")
+			else
+				info.button:SetText(info.label)
+			end
+		end
 	end
-	if VISIBLE_GROUP then
+end
+local function ShowGroup(group, button)
+	if VISIBLE_GROUP and _G["UIConfig"..VISIBLE_GROUP] then
 		_G["UIConfig"..VISIBLE_GROUP]:Hide()
 	end
 	if _G["UIConfig"..group] then
+		local K, _ = budsUI:unpack()
 		local o = "UIConfig"..group
 		Local(o)
 		_G["UIConfigTitle"]:SetText(K.option)
@@ -698,7 +827,7 @@ local function ShowGroup(group, button)
 		end
 
 		VISIBLE_GROUP = group
-		lastbutton = button
+		PaintCategory(group)
 	end
 end
 
@@ -723,6 +852,12 @@ function CreateUIConfig()
 	UIConfigMain:SetBackdropBorderColor(K.Color.r, K.Color.g, K.Color.b)
 	UIConfigMain:SetFrameStrata("DIALOG")
 	UIConfigMain:SetFrameLevel(20)
+	UIConfigMain:SetMovable(true)
+	UIConfigMain:EnableMouse(true)
+	UIConfigMain:RegisterForDrag("LeftButton")
+	UIConfigMain:SetClampedToScreen(true)
+	UIConfigMain:SetScript("OnDragStart", function(self) self:StartMoving() end)
+	UIConfigMain:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
 	tinsert(UISpecialFrames, "UIConfigMain")
 
 	-- Version Title
@@ -741,6 +876,11 @@ function CreateUIConfig()
 
 	local TitleBoxText = TitleBox:CreateFontString("UIConfigTitle", "OVERLAY", "GameFontNormal")
 	TitleBoxText:SetPoint("LEFT", TitleBox, "LEFT", 15, 0)
+
+	local TitleHint = TitleBox:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+	TitleHint:SetPoint("RIGHT", TitleBox, "RIGHT", -10, 0)
+	TitleHint:SetTextColor(0.5, 0.5, 0.5)
+	TitleHint:SetText("Right-click an option to reset it - APPLY reloads UI")
 
 	-- Options Frame
 	local UIConfig = CreateFrame("Frame", "UIConfig", UIConfigMain)
@@ -767,24 +907,6 @@ function CreateUIConfig()
 	UIConfigCover:EnableMouse(true)
 	UIConfigCover:SetScript("OnMouseDown", function(self) print(L_GUI_MAKE_SELECTION) end)
 	UIConfigCover:Hide()
-
-	-- Group Scroll
-	local slider = CreateFrame("Slider", "UIConfigCategorySlider", groups)
-	slider:SetPoint("TOPRIGHT", 0, 0)
-	slider:SetSize(20, 400)
-	slider:SetThumbTexture("Interface\\Buttons\\UI-ScrollBar-Knob")
-	slider:SetOrientation("VERTICAL")
-	slider:SetValueStep(20)
-	slider:SetScript("OnValueChanged", function(self, value) groups:SetVerticalScroll(value) end)
-
-	if not slider.bg then
-		slider.bg = CreateFrame("Frame", nil, slider)
-		slider.bg:SetPoint("TOPLEFT", 0, 0)
-		slider.bg:SetPoint("BOTTOMRIGHT", 0, 0)
-		slider.bg:SetBackdrop(K.Backdrop)
-		slider.bg:SetBackdropColor(unpack(C["Media"].Backdrop_Color))
-		slider.bg:SetBackdropBorderColor(unpack(C["Media"].Border_Color))
-	end
 
 	local function sortMyTable(a, b)
 		return ALLOWED_GROUPS[a] < ALLOWED_GROUPS[b]
@@ -838,30 +960,16 @@ function CreateUIConfig()
 	for i in pairsByKey(ALLOWED_GROUPS) do
 		local o = "UIConfig"..i
 		Local(o)
-		local button = NewButton(K.option, child)
+		local plainLabel = K.option
+		local button = NewButton(plainLabel, child)
 		button:SetSize(125, 16)
 		button:SetPoint("TOPLEFT", 5, -offset)
-		button:SetScript("OnClick", function(self) ShowGroup(i, button) self:SetText(format("|cff%02x%02x%02x%s|r", K.Color.r*255, K.Color.g*255, K.Color.b*255, K.option)) end)
-		offset = offset + 20
+		categoryButtons[i] = {button = button, label = plainLabel}
+		button:SetScript("OnClick", function() ShowGroup(i) end)
+		offset = offset + 18
 	end
 	child:SetSize(125, offset)
-	slider:SetMinMaxValues(0, max(0, offset - 400))
-	slider:SetValue(1)
 	groups:SetScrollChild(child)
-
-	local x
-	_G["UIConfigCategoryGroup"]:EnableMouseWheel(true)
-	_G["UIConfigCategoryGroup"]:SetScript("OnMouseWheel", function(self, delta)
-		if _G["UIConfigCategorySlider"]:IsShown() then
-			if delta == -1 then
-				x = _G["UIConfigCategorySlider"]:GetValue()
-				_G["UIConfigCategorySlider"]:SetValue(x + 10)
-			elseif delta == 1 then
-				x = _G["UIConfigCategorySlider"]:GetValue()
-				_G["UIConfigCategorySlider"]:SetValue(x - 20)
-			end
-		end
-	end)
 
 	local group = CreateFrame("ScrollFrame", "UIConfigGroup", UIConfig)
 	UIConfigGroup = group
@@ -876,14 +984,21 @@ function CreateUIConfig()
 	slider:SetOrientation("VERTICAL")
 	slider:SetValueStep(20)
 	slider:SetScript("OnValueChanged", function(self, value) UIConfigGroup:SetVerticalScroll(value) end)
-	
+
 	if not slider.bg then
-		slider.bg = CreateFrame("Frame", nil, slider)
-		slider.bg:SetPoint("TOPLEFT", 0, 0)
-		slider.bg:SetPoint("BOTTOMRIGHT", 0, 0)
-		slider.bg:SetBackdrop(K.Backdrop)
-		slider.bg:SetBackdropColor(unpack(C["Media"].Backdrop_Color))
-		slider.bg:SetBackdropBorderColor(unpack(C["Media"].Border_Color))
+		if slider.CreateBackdrop then
+			-- Core API: backdrop one level below the frame (bg = 2 here:
+			-- under the thumb, above the panels).
+			slider:CreateBackdrop()
+			slider.bg = slider.backdrop
+		else
+			slider.bg = CreateFrame("Frame", nil, slider)
+			slider.bg:SetPoint("TOPLEFT", -2, 2)
+			slider.bg:SetPoint("BOTTOMRIGHT", 2, -2)
+			slider.bg:SetBackdrop(K.Backdrop)
+			slider.bg:SetBackdropColor(unpack(C["Media"].Backdrop_Color))
+			slider.bg:SetBackdropBorderColor(unpack(C["Media"].Border_Color))
+		end
 	end
 
 	for i in pairs(ALLOWED_GROUPS) do
@@ -899,7 +1014,31 @@ function CreateUIConfig()
 			-- Nested per-unit tables: custom page (flat renderer can't handle them).
 			offset = BuildUnitframeOptions(frame, offset)
 		else
-		for j, value in PairsByKeys(C[i]) do
+		-- Section order: toggles, values, colors (Kkthnx-style cards).
+		local orderedKeys = {}
+		for j in pairs(C[i]) do orderedKeys[#orderedKeys + 1] = j end
+		table.sort(orderedKeys, function(a, b)
+			local ta, tb = type(C[i][a]), type(C[i][b])
+			local sa = (ta == "boolean") and 1 or ((ta == "table") and 3 or 2)
+			local sb = (tb == "boolean") and 1 or ((tb == "table") and 3 or 2)
+			if sa ~= sb then return sa < sb end
+			return tostring(a) < tostring(b)
+		end)
+		local lastSection = nil
+		for _, j in ipairs(orderedKeys) do
+			local value = C[i][j]
+			local section = (type(value) == "boolean") and 1 or ((type(value) == "table") and 3 or 2)
+			if section ~= lastSection then
+				lastSection = section
+				Local("UIConfig"..i)
+				if section == 1 then
+					offset = SectionHeader(frame, K.option .. " - Toggles", offset)
+				elseif section == 2 then
+					offset = SectionHeader(frame, K.option .. " - Values", offset)
+				else
+					offset = SectionHeader(frame, K.option .. " - Colors", offset)
+				end
+			end
 			if type(value) == "boolean" then
 				local button = CreateFrame("CheckButton", "UIConfig"..i..j, frame, "InterfaceOptionsCheckButtonTemplate")
 				local o = "UIConfig"..i..j
@@ -911,6 +1050,7 @@ function CreateUIConfig()
 				button:SetChecked(value)
 				button:SetScript("OnClick", function(self) SetValue(i, j, (self:GetChecked() and true or false)) end)
 				button:SetPoint("TOPLEFT", 5, -offset)
+				AttachReset(button, K.option, i, j, nil, function(d) button:SetChecked(d and true or false) end)
 				offset = offset + 25
 			elseif type(value) == "number" or type(value) == "string" then
 				if (i == "PowerBar" and j == "MaelstromSize") or (i == "Unitframe" and type(value) == "number") then
@@ -952,6 +1092,7 @@ function CreateUIConfig()
 						_G[self:GetName().."Text"]:SetText(val)
 						SetValue(i, j, val)
 					end)
+					AttachReset(slider, label:GetText(), i, j, nil, function(d) slider:SetValue(d or sMin) end)
 
 					offset = offset + 50
 				else
@@ -1014,6 +1155,7 @@ function CreateUIConfig()
 						editbox:SetScript("OnEnterPressed", function(self) okbutton:Hide() self:ClearFocus() SetValue(i, j, tostring(self:GetText())) end)
 						okbutton:SetScript("OnMouseDown", function(self) editbox:ClearFocus() self:Hide() SetValue(i, j, tostring(editbox:GetText())) end)
 					end
+					AttachReset(editbox, label:GetText(), i, j, nil, function(d) editbox:SetText(tostring(d or "")) end)
 
 					offset = offset + 45
 				end
@@ -1026,7 +1168,7 @@ function CreateUIConfig()
 				label:SetJustifyH("LEFT")
 				label:SetPoint("TOPLEFT", 5, -offset)
 
-				colorbuttonname = (label:GetText().."ColorPicker")
+				local colorbuttonname = (label:GetText().."ColorPicker")
 
 				local colorbutton = CreateFrame("Button", colorbuttonname, frame)
 				colorbutton:SetHeight(20)
@@ -1047,7 +1189,8 @@ function CreateUIConfig()
 					return (("%%.%df"):format(decimal)):format(number)
 				end
 
-				colorbutton:SetScript("OnMouseDown", function(self)
+				colorbutton:SetScript("OnMouseDown", function(self, btn)
+					if btn == "RightButton" then return end -- reset handled by AttachReset
 					if ColorPickerFrame:IsShown() then return end
 					local newR, newG, newB, newA
 					local fired = 0
@@ -1085,7 +1228,12 @@ function CreateUIConfig()
 
 					ShowColorPicker(originalR, originalG, originalB, originalA, myColorCallback)
 				end)
-
+				AttachReset(colorbutton, label:GetText(), i, j, nil, function(d)
+					if type(d) == "table" then
+						colorbutton:SetBackdropBorderColor(d[1], d[2], d[3], d[4] or 1)
+						colorbutton:SetBackdropColor(d[1], d[2], d[3], 0.3)
+					end
+				end)
 				offset = offset + 25
 			end
 		end
@@ -1399,30 +1547,6 @@ end
 		sb:SetBackdropBorderColor(unpack(C["Media"].Border_Color))
 	end
 
-	-- Mascot
-	local MascotFrame = CreateFrame("Frame", nil, UIConfigMain)
-	MascotFrame:SetSize(128, 128)
-	MascotFrame:SetPoint("BOTTOMRIGHT", UIConfigMain, "BOTTOMRIGHT", 10, 35)
-	MascotFrame:SetFrameLevel(UIConfigMain:GetFrameLevel() + 30)
-	MascotFrame:EnableMouse(true)
-
-	local Mascot = MascotFrame:CreateTexture(nil, "OVERLAY")
-	Mascot:SetAllPoints()
-	Mascot:SetTexture("Interface\\AddOns\\budsUI\\Media\\assets\\buds_shot.tga")
-
-	MascotFrame:SetScript("OnEnter", function(self)
-		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		GameTooltip:ClearLines()
-		GameTooltip:AddLine("|cff388bdbBuds|r")
-		GameTooltip:AddLine("Level 420", 1, 1, 1)
-		GameTooltip:AddDoubleLine("Race:", "Hybrid", 1, 1, 1, 0.2, 1, 0.2)
-		GameTooltip:AddDoubleLine("Class:", "Sativa", 1, 1, 1, 1, 0.8, 0)
-		GameTooltip:Show()
-	end)
-
-	MascotFrame:SetScript("OnLeave", function()
-		GameTooltip:Hide()
-	end)
 
 	ShowGroup("General")
 	loaded = true
