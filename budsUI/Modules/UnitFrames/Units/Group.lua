@@ -76,8 +76,8 @@ Module.Styles.Party = function(self)
 		Build.PortraitLevel(self)
 	end
 	-- Name on the gradient strip above health, value centred on the bar.
-	Build.Name(self, 11)
-	Build.HealthText(self, 11)
+	Build.Name(self, 12)
+	Build.HealthText(self, 12)
 	Build.PowerText(self, 9)
 
 	Build.Indicators(self, 14)
@@ -121,7 +121,7 @@ Module.Styles.Raid = function(self)
 		RaidHealthFill(self, false)
 	end
 
-	Build.NameCenter(self, 10, 0, "[buds:namecolor][buds:nameshort]")
+	Build.NameCenter(self, 12, 0, "[buds:namecolor][buds:nameshort]")
 	Build.Indicators(self, 12)
 	Build.GroupIndicators(self)
 

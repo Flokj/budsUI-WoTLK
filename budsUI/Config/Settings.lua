@@ -325,10 +325,10 @@ C["Unitframe"] = {
 	["Pet"] = { ["Enable"] = true, ["Width"] = 90, ["Height"] = 18, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Debuffs"] = true },
 	["Focus"] = { ["Enable"] = true, ["Width"] = 180, ["Height"] = 28, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Debuffs"] = true },
 	["FocusTarget"] = { ["Enable"] = false, ["Width"] = 80, ["Height"] = 18, ["PowerHeight"] = 12, ["ShowPower"] = true },
-	["Party"] = { ["Enable"] = true, ["Width"] = 150, ["Height"] = 22, ["PowerHeight"] = 12, ["ShowPower"] = true, ["ShowSolo"] = false, ["ShowPlayer"] = true, ["Debuffs"] = true, ["DispelHighlight"] = true, ["Portrait"] = false, ["Castbar"] = true, ["RaidStyle"] = false },
+	["Party"] = { ["Enable"] = false, ["Width"] = 150, ["Height"] = 22, ["PowerHeight"] = 12, ["ShowPower"] = true, ["ShowSolo"] = false, ["ShowPlayer"] = true, ["Debuffs"] = true, ["DispelHighlight"] = true, ["Portrait"] = false, ["Castbar"] = true, ["RaidStyle"] = false },
 	-- Height is the health bar, the power bar (PowerHeight) sits below it.
 	-- PowerMode: All, Mana, or None.
-	["Raid"] = { ["Enable"] = true, ["Width"] = 80, ["Height"] = 30, ["PowerHeight"] = 6, ["PowerGap"] = 6, ["PowerMode"] = "All", ["GroupsPerRow"] = 5, ["GroupBy"] = "GROUP", ["RaidWide"] = false, ["SortDirection"] = "ASC", ["Orientation"] = "DOWN_RIGHT", ["DispelHighlight"] = true, ["ShowGroupNumber"] = true },
+	["Raid"] = { ["Enable"] = false, ["Width"] = 80, ["Height"] = 24, ["PowerHeight"] = 6, ["PowerGap"] = 6, ["PowerMode"] = "All", ["GroupsPerRow"] = 5, ["GroupBy"] = "GROUP", ["RaidWide"] = false, ["SortDirection"] = "ASC", ["Orientation"] = "DOWN_RIGHT", ["DispelHighlight"] = true, ["ShowGroupNumber"] = true },
 	["Boss"] = { ["Enable"] = true, ["Width"] = 150, ["Height"] = 24, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Spacing"] = 34, ["Debuffs"] = true, ["Castbar"] = true, ["Portrait"] = true },
 
 	["Auras"] = {

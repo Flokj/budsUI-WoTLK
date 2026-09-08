@@ -143,7 +143,7 @@ function Module:SpawnBoss()
 	local height = Module.TotalHeight(cfg)
 	local holder = CreateFrame("Frame", "budsUI_BossHolder", UIParent)
 	holder:SetSize(cfg.Width, height * MAX_BOSS_FRAMES + cfg.Spacing * (MAX_BOSS_FRAMES - 1))
-	K.CreateMover(holder, "BossFrames", "Boss Frames", { "BOTTOMRIGHT", UIParent, "RIGHT", -250, 140 }, holder:GetWidth(), holder:GetHeight())
+	K.CreateMover(holder, "BossFrames", "Boss Frames", { "BOTTOMRIGHT", UIParent, "RIGHT", -50, -200 }, holder:GetWidth(), holder:GetHeight())
 
 	self.Boss = {}
 	for i = 1, MAX_BOSS_FRAMES do
@@ -287,7 +287,7 @@ function Module:SpawnRaid()
 		"oUF-initialConfigFunction", InitialConfig(cfg.Width, height))
 
 	header:SetSize(cols * cfg.Width + (cols - 1) * Module.GAP, height * rows + Module.GAP * (rows - 1))
-	K.CreateMover(header, "RaidFrames", "Raid", { "TOPLEFT", UIParent, "TOPLEFT", 4, -180 }, header:GetWidth(), header:GetHeight())
+	K.CreateMover(header, "RaidFrames", "Raid", { "TOPLEFT", UIParent, "TOPLEFT", 4, -300 }, header:GetWidth(), header:GetHeight())
 
 	RegisterStateDriver(header, "visibility", "[group:raid] show; hide")
 

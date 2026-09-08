@@ -67,10 +67,13 @@ end
 
 -- Build the holder plus its segments. Returns the holder and the segment
 -- array; the caller wires whichever oUF element drives them.
-local function CreateSegmented(self, total)
+-- The holder is detached (parented to UIParent with its own mover) so the
+-- resource bar can be placed anywhere. By default it sits right above the
+-- player frame, where the old attached bar lived.
+local function CreateSegmented(self, total, width)
 	local db = C.Unitframe.ClassPower
-	local holder = CreateFrame("Frame", nil, self)
-	Module.StackUp(self, holder, db.Height)
+	local holder = CreateFrame("Frame", nil, UIParent)
+	holder:SetSize(width or 190, db.Height)
 
 	local bars = {}
 	for i = 1, total do
@@ -87,16 +90,18 @@ local function CreateSegmented(self, total)
 	holder.count = total
 	holder:SetScript("OnSizeChanged", OnHolderResize)
 
+	K.CreateMover(holder, "ClassPower", "Class Power", { "BOTTOMLEFT", self, "TOPLEFT", 0, Module.GAP }, holder:GetWidth(), db.Height)
+
 	self.ClassPowerHolder = holder
 	return holder, bars
 end
 
-function Build.ClassPower(self)
+function Build.ClassPower(self, width)
 	if K.Class ~= "ROGUE" and K.Class ~= "DRUID" then
 		return
 	end
 
-	local holder, points = CreateSegmented(self, MAX_POINTS)
+	local holder, points = CreateSegmented(self, MAX_POINTS, width)
 	LayoutSegments(holder, MAX_POINTS)
 
 	for i = 1, #points do
@@ -120,12 +125,12 @@ function Build.ClassPower(self)
 	return points
 end
 
-function Build.Runes(self)
+function Build.Runes(self, width)
 	if K.Class ~= "DEATHKNIGHT" then
 		return
 	end
 
-	local holder, bars = CreateSegmented(self, MAX_RUNES)
+	local holder, bars = CreateSegmented(self, MAX_RUNES, width)
 	LayoutSegments(holder, MAX_RUNES)
 
 	-- Rune type colours follow budsUI's rune palette when available.

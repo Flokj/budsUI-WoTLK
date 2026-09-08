@@ -16,9 +16,11 @@ local callback, objects, headers = {}, {}, {}
 local elements = {}
 local activeElements = {}
 
-local UFParent = CreateFrame('Frame', (global or parent) .. 'Parent', UIParent, 'SecureHandlerStateTemplate')
+local UFParent = CreateFrame('Frame', (global or parent) .. 'Parent', UIParent)
 UFParent:SetFrameStrata('LOW')
-RegisterStateDriver(UFParent, 'visibility', '[vehicleui] hide; show')
+-- No [vehicleui] visibility driver here: it would hide every unit frame and
+-- header in a vehicle while Blizzard's own vehicle frame stays disabled, and
+-- oUF already swaps the player frame to the vehicle unit on its own.
 
 -- updating of "invalid" units.
 local function enableTargetUpdate(object)
@@ -623,6 +625,16 @@ do
 	-- There has to be an easier way to do this.
 	local initialConfigFunction = function(self)
 		local header = self:GetParent()
+		-- 3.3.5 never runs the oUF-initialConfigFunction snippet (retail-only
+		-- secure path), so children would keep the template's zero size and
+		-- every anchored bar/texture would collapse into a single pixel.
+		-- Apply the size cached by SpawnHeader before styling, so builders
+		-- see the real frame dimensions.
+		local cw, ch = header.__childWidth, header.__childHeight
+		if(cw or ch) then
+			if(cw) then self:SetWidth(cw) end
+			if(ch) then self:SetHeight(ch) end
+		end
 		for i = 1, select('#', self), 1 do
 			local frame = select(i, self)
 			local unit
@@ -700,6 +712,12 @@ do
 		for i = 1, select('#', ...), 2 do
 			local att, val = select(i, ...)
 			if(not att) then break end
+			if(att == 'oUF-initialConfigFunction' and type(val) == 'string') then
+				-- 3.3.5 never executes this snippet; cache the child size so
+				-- initialConfigFunction above can apply it directly.
+				header.__childWidth = tonumber(val:match('SetWidth%(([%d%.]+)'))
+				header.__childHeight = tonumber(val:match('SetHeight%(([%d%.]+)'))
+			end
 			header:SetAttribute(att, val)
 		end
 

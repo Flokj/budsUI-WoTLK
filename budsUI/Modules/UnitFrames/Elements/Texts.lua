@@ -34,36 +34,38 @@ Module.NewText = NewText
 function Module.GradientLabel(self, anchor, size, yOffset)
 	size = size or 12
 
-	-- Optional dark strip behind the text. Without it the label stands
-	-- alone, parented straight to the unit frame.
-	local textParent, bg = self, nil
+	-- The holder always exists, even with the strip itself transparent: the
+	-- upward stack (debuffs and friends) anchors to it, so their position
+	-- derives from the bar geometry in both modes. Anchoring to the bare
+	-- font string instead collapses the rect while the name is empty and
+	-- glues everything above it straight onto the name text.
+	local shade = K.CreateTextShade(self, "BACKGROUND", -2)
+	local height = size + 6
+	local bottom = (yOffset or 6) - 3
+
+	-- Span the anchor width and sit above it at a fixed height. Sizing from
+	-- the name fontstring instead collapsed the strip to nothing on any frame
+	-- whose name had not populated yet.
+	local holder = shade.Holder
+	holder:SetPoint("LEFT", anchor, "LEFT", 0, 0)
+	holder:SetPoint("RIGHT", anchor, "RIGHT", 0, 0)
+	holder:SetPoint("BOTTOM", anchor, "TOP", 0, bottom)
+	holder:SetHeight(height)
+
 	if C.Unitframe.NameBackground ~= false then
-		local shade = K.CreateTextShade(self, "BACKGROUND", -2)
-		local height = size + 6
-		local bottom = (yOffset or 6) - 3
-
-		-- Span the anchor width and sit above it at a fixed height. Sizing from
-		-- the name fontstring instead collapsed the strip to nothing on any frame
-		-- whose name had not populated yet.
-		local holder = shade.Holder
-		holder:SetPoint("LEFT", anchor, "LEFT", 0, 0)
-		holder:SetPoint("RIGHT", anchor, "RIGHT", 0, 0)
-		holder:SetPoint("BOTTOM", anchor, "TOP", 0, bottom)
-		holder:SetHeight(height)
-
 		shade:SetColor(K.StripColor[1], K.StripColor[2], K.StripColor[3], K.GradientAlpha.strip)
-		shade:Show()
-
-		-- The text lives on the holder, not on the unit frame: the holder is a
-		-- child frame, and child frames always draw above their parent's own
-		-- regions, so a parented-to-self label would end up under the strip.
-		textParent, bg = holder, holder
+	else
+		shade:SetColor(0, 0, 0, 0)
 	end
+	shade:Show()
 
-	local text = NewText(textParent, size)
+	-- The text lives on the holder, not on the unit frame: the holder is a
+	-- child frame, and child frames always draw above their parent's own
+	-- regions, so a parented-to-self label would end up under the strip.
+	local text = NewText(holder, size)
 	text:SetJustifyH("CENTER")
 	text:SetPoint("BOTTOM", anchor, "TOP", 0, yOffset or 6)
-	text.BG = bg
+	text.BG = holder
 
 	return text
 end

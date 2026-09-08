@@ -39,11 +39,12 @@ Module.Styles.Player = function(self)
 	Build.Indicators(self)
 	Build.PlayerIndicators(self)
 
-	-- Upward stack, in the order they leave the health bar. Only one of the
-	-- resource builders does anything for a given class.
+	-- Class resource lives in its own detached holder with a mover now, so it
+	-- no longer takes part in the upward stack. Only one of the resource
+	-- builders does anything for a given class.
 	if cfg.ClassPower then
-		Build.Runes(self)
-		Build.ClassPower(self)
+		Build.Runes(self, cfg.Width)
+		Build.ClassPower(self, cfg.Width)
 	end
 	Build.Auras(self, cfg)
 
