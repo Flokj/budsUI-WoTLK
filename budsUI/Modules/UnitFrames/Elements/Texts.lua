@@ -33,29 +33,37 @@ Module.NewText = NewText
 -- the font string, the strip is attached as text.BG.
 function Module.GradientLabel(self, anchor, size, yOffset)
 	size = size or 12
-	local shade = K.CreateTextShade(self, "BACKGROUND", -2)
-	local height = size + 6
-	local bottom = (yOffset or 6) - 3
 
-	-- Span the anchor width and sit above it at a fixed height. Sizing from
-	-- the name fontstring instead collapsed the strip to nothing on any frame
-	-- whose name had not populated yet.
-	local holder = shade.Holder
-	holder:SetPoint("LEFT", anchor, "LEFT", 0, 0)
-	holder:SetPoint("RIGHT", anchor, "RIGHT", 0, 0)
-	holder:SetPoint("BOTTOM", anchor, "TOP", 0, bottom)
-	holder:SetHeight(height)
+	-- Optional dark strip behind the text. Without it the label stands
+	-- alone, parented straight to the unit frame.
+	local textParent, bg = self, nil
+	if C.Unitframe.NameBackground ~= false then
+		local shade = K.CreateTextShade(self, "BACKGROUND", -2)
+		local height = size + 6
+		local bottom = (yOffset or 6) - 3
 
-	shade:SetColor(K.StripColor[1], K.StripColor[2], K.StripColor[3], K.GradientAlpha.strip)
-	shade:Show()
+		-- Span the anchor width and sit above it at a fixed height. Sizing from
+		-- the name fontstring instead collapsed the strip to nothing on any frame
+		-- whose name had not populated yet.
+		local holder = shade.Holder
+		holder:SetPoint("LEFT", anchor, "LEFT", 0, 0)
+		holder:SetPoint("RIGHT", anchor, "RIGHT", 0, 0)
+		holder:SetPoint("BOTTOM", anchor, "TOP", 0, bottom)
+		holder:SetHeight(height)
 
-	-- The text lives on the holder, not on the unit frame: the holder is a
-	-- child frame, and child frames always draw above their parent's own
-	-- regions, so a parented-to-self label would end up under the strip.
-	local text = NewText(holder, size)
+		shade:SetColor(K.StripColor[1], K.StripColor[2], K.StripColor[3], K.GradientAlpha.strip)
+		shade:Show()
+
+		-- The text lives on the holder, not on the unit frame: the holder is a
+		-- child frame, and child frames always draw above their parent's own
+		-- regions, so a parented-to-self label would end up under the strip.
+		textParent, bg = holder, holder
+	end
+
+	local text = NewText(textParent, size)
 	text:SetJustifyH("CENTER")
 	text:SetPoint("BOTTOM", anchor, "TOP", 0, yOffset or 6)
-	text.BG = holder
+	text.BG = bg
 
 	return text
 end

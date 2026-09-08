@@ -22,14 +22,14 @@ Module.Styles.Player = function(self)
 
 	Build.Health(self, cfg.Height)
 	Build.Power(self, Module.PowerHeight(cfg))
-	Build.HealthText(self, 13)
-	Build.PowerText(self, 11)
+	Build.HealthText(self, 15)
+	Build.PowerText(self, 13)
 
 	Build.Portrait(self, "left")
 	Build.PortraitLevel(self)
 
 	if cfg.ShowName then
-		Build.Name(self, 12)
+		Build.Name(self, 15)
 	end
 
 	if cfg.AdditionalPower then
@@ -48,5 +48,5 @@ Module.Styles.Player = function(self)
 	Build.Auras(self, cfg)
 
 	-- Sit evenly between the action bars below and the unit frames above.
-	Build.DetachedCastbar(self, "PlayerCastbar", "Player Castbar", castbar.PlayerWidth, castbar.PlayerHeight, { "BOTTOM", UIParent, "BOTTOM", 0, 190 }, "left")
+	Build.DetachedCastbar(self, "PlayerCastbar", "Player Castbar", castbar.PlayerWidth, castbar.PlayerHeight, { "BOTTOM", UIParent, "BOTTOM", 25, 385 }, "left")
 end

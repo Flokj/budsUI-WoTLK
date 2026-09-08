@@ -283,14 +283,14 @@ C["Tooltip"] = {
 C["Unitframe"] = {
 	["Enable"] = true,
 	["Texture"] = "budsUI_StatusBar",
-	["ClassHealth"] = false,
-	["ClassColorBorder"] = false,
+	["ClassHealth"] = true,
+	["ClassColorBorder"] = true,
 	["ThreatHealthColor"] = false,
 	["BarBackdrop"] = true,
-	["Portrait"] = true,
+	["Portrait"] = false,
 	["PortraitStyle"] = "3D", -- 3D, 2D, Class
 	["HealthPrediction"] = true, -- incoming heals on the health bar
-	["RangeFade"] = true,
+	["RangeFade"] = false, -- need fix
 	["RangeAlpha"] = 0.4,
 	["GroupDispelOnly"] = true, -- party/raid debuffs: only ones you can dispel
 	["AuraWatch"] = true, -- corner dots on party/raid frames for tracked heals
@@ -299,6 +299,7 @@ C["Unitframe"] = {
 	["PowerFormat"] = "Current", -- None, Current, Percent, Both
 	["NameColor"] = true,
 	["NameLength"] = 18,
+	["NameBackground"] = true, -- dark strip behind the name/level texts
 
 	["PowerColors"] = {
 		["MANA"] = { 0.36, 0.55, 0.81 },
@@ -318,22 +319,22 @@ C["Unitframe"] = {
 		[8] = { 0.36, 0.72, 0.88 },
 	},
 
-	["Player"] = { ["Enable"] = true, ["Width"] = 220, ["Height"] = 40, ["PowerHeight"] = 16, ["ShowPower"] = true, ["Buffs"] = false, ["Debuffs"] = true, ["ClassPower"] = true, ["AdditionalPower"] = true, ["ShowName"] = false },
-	["Target"] = { ["Enable"] = true, ["Width"] = 220, ["Height"] = 40, ["PowerHeight"] = 16, ["ShowPower"] = true, ["Buffs"] = true, ["Debuffs"] = true },
-	["TargetOfTarget"] = { ["Enable"] = true, ["Width"] = 100, ["Height"] = 18, ["PowerHeight"] = 10, ["ShowPower"] = true },
-	["Pet"] = { ["Enable"] = true, ["Width"] = 100, ["Height"] = 18, ["PowerHeight"] = 10, ["ShowPower"] = true, ["Debuffs"] = false },
-	["Focus"] = { ["Enable"] = true, ["Width"] = 200, ["Height"] = 34, ["PowerHeight"] = 14, ["ShowPower"] = true, ["Debuffs"] = true },
-	["FocusTarget"] = { ["Enable"] = true, ["Width"] = 100, ["Height"] = 18, ["PowerHeight"] = 10, ["ShowPower"] = true },
-	["Party"] = { ["Enable"] = true, ["Width"] = 150, ["Height"] = 26, ["PowerHeight"] = 10, ["ShowPower"] = true, ["ShowSolo"] = false, ["ShowPlayer"] = true, ["Debuffs"] = true, ["DispelHighlight"] = true, ["Portrait"] = true, ["Castbar"] = true, ["RaidStyle"] = false },
+	["Player"] = { ["Enable"] = true, ["Width"] = 190, ["Height"] = 36, ["PowerHeight"] = 16, ["ShowPower"] = true, ["Buffs"] = false, ["Debuffs"] = false, ["ClassPower"] = true, ["AdditionalPower"] = true, ["ShowName"] = false },
+	["Target"] = { ["Enable"] = true, ["Width"] = 190, ["Height"] = 36, ["PowerHeight"] = 16, ["ShowPower"] = true, ["Buffs"] = true, ["Debuffs"] = true },
+	["TargetOfTarget"] = { ["Enable"] = true, ["Width"] = 100, ["Height"] = 24, ["PowerHeight"] = 12, ["ShowPower"] = false },
+	["Pet"] = { ["Enable"] = true, ["Width"] = 90, ["Height"] = 18, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Debuffs"] = true },
+	["Focus"] = { ["Enable"] = true, ["Width"] = 180, ["Height"] = 28, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Debuffs"] = true },
+	["FocusTarget"] = { ["Enable"] = false, ["Width"] = 80, ["Height"] = 18, ["PowerHeight"] = 12, ["ShowPower"] = true },
+	["Party"] = { ["Enable"] = true, ["Width"] = 150, ["Height"] = 22, ["PowerHeight"] = 12, ["ShowPower"] = true, ["ShowSolo"] = false, ["ShowPlayer"] = true, ["Debuffs"] = true, ["DispelHighlight"] = true, ["Portrait"] = false, ["Castbar"] = true, ["RaidStyle"] = false },
 	-- Height is the health bar, the power bar (PowerHeight) sits below it.
 	-- PowerMode: All, Mana, or None.
 	["Raid"] = { ["Enable"] = true, ["Width"] = 80, ["Height"] = 30, ["PowerHeight"] = 6, ["PowerGap"] = 6, ["PowerMode"] = "All", ["GroupsPerRow"] = 5, ["GroupBy"] = "GROUP", ["RaidWide"] = false, ["SortDirection"] = "ASC", ["Orientation"] = "DOWN_RIGHT", ["DispelHighlight"] = true, ["ShowGroupNumber"] = true },
-	["Boss"] = { ["Enable"] = true, ["Width"] = 150, ["Height"] = 24, ["PowerHeight"] = 10, ["ShowPower"] = true, ["Spacing"] = 34, ["Debuffs"] = true, ["Castbar"] = true, ["Portrait"] = true },
+	["Boss"] = { ["Enable"] = true, ["Width"] = 150, ["Height"] = 24, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Spacing"] = 34, ["Debuffs"] = true, ["Castbar"] = true, ["Portrait"] = true },
 
 	["Auras"] = {
-		["PerRow"] = 7,
-		["NumBuffs"] = 12,
-		["NumDebuffs"] = 8,
+		["PerRow"] = 6,
+		["NumBuffs"] = 24,
+		["NumDebuffs"] = 6,
 		["Spacing"] = 6,
 		["OnlyPlayerDebuffs"] = false,
 	},
@@ -350,12 +351,12 @@ C["Unitframe"] = {
 		["ShowSpark"] = true,
 		["ShowLatency"] = true,
 		["TimeToHold"] = 0.4,
-		["PlayerWidth"] = 242,
-		["PlayerHeight"] = 28,
-		["TargetWidth"] = 242,
-		["TargetHeight"] = 40,
-		["FocusWidth"] = 208,
-		["FocusHeight"] = 24,
+		["PlayerWidth"] = 360,
+		["PlayerHeight"] = 26,
+		["TargetWidth"] = 200,
+		["TargetHeight"] = 26,
+		["FocusWidth"] = 180,
+		["FocusHeight"] = 20,
 	},
 
 	-- Legacy budsUI keys (kept for compat with other modules/config GUI)

@@ -86,11 +86,11 @@ end
 -- Spawn table
 -- ---------------------------------------------------------------------------
 Module.UnitDefs = {
-	{ unit = "player", key = "Player", style = "Player", mover = "PlayerFrame", point = { "BOTTOM", "UIParent", "BOTTOM", -260, 320 } },
-	{ unit = "target", key = "Target", style = "Target", mover = "TargetFrame", point = { "BOTTOM", "UIParent", "BOTTOM", 260, 320 } },
-	{ unit = "targettarget", key = "TargetOfTarget", style = "Small", mover = "TargetOfTargetFrame", point = { "TOPLEFT", "Target", "BOTTOMRIGHT", 6, -6 } },
-	{ unit = "pet", key = "Pet", style = "Small", mover = "PetFrame", point = { "TOPRIGHT", "Player", "BOTTOMLEFT", -6, -6 } },
-	{ unit = "focus", key = "Focus", style = "Focus", mover = "FocusFrame", point = { "BOTTOMRIGHT", "Player", "TOPLEFT", -60, 200 } },
+	{ unit = "player", key = "Player", style = "Player", mover = "PlayerFrame", point = { "BOTTOM", "UIParent", "BOTTOM", -370, 580 } },
+	{ unit = "target", key = "Target", style = "Target", mover = "TargetFrame", point = { "BOTTOM", "UIParent", "BOTTOM", -370, 426 } },
+	{ unit = "targettarget", key = "TargetOfTarget", style = "Small", mover = "TargetOfTargetFrame", point = { "BOTTOMRIGHT", "Target", "TOPRIGHT", 0, 64 } },
+	{ unit = "pet", key = "Pet", style = "Small", mover = "PetFrame", point = { "TOPRIGHT", "Player", "BOTTOMLEFT", -7, 52 } },
+	{ unit = "focus", key = "Focus", style = "Focus", mover = "FocusFrame", point = { "TOP", "UIParent", "TOPLEFT", 450, -50 } },
 	{ unit = "focustarget", key = "FocusTarget", style = "Small", mover = "FocusTargetFrame", point = { "TOPLEFT", "Focus", "BOTTOMRIGHT", 6, -6 } },
 }
 
@@ -224,6 +224,7 @@ function Module:SpawnParty()
 	RegisterStateDriver(header, "visibility", visibility)
 
 	header.__testStart = -4
+	header.__childW, header.__childH, header.__childStep = width, height, partySpacing
 	self.Party = header
 end
 
@@ -291,6 +292,7 @@ function Module:SpawnRaid()
 	RegisterStateDriver(header, "visibility", "[group:raid] show; hide")
 
 	header.__testStart = -(min(40, maxColumns * perColumn) + 1)
+	header.__childW, header.__childH, header.__childStep, header.__childCols = cfg.Width, height, Module.GAP, cols
 	self.Raid = header
 
 	if cfg.ShowGroupNumber and groupByCfg == "GROUP" and not raidWide then

@@ -18,7 +18,6 @@ local K, C = Engine:unpack()
 local Module = Engine.UnitFrames
 local Build = Module.Build
 
-local floor = math.floor
 local max = math.max
 local DebuffTypeColor = DebuffTypeColor
 local UnitIsUnit = UnitIsUnit
@@ -82,24 +81,26 @@ function Build.Auras(self, cfg)
 	local width = cfg.Width or 220
 	local perRow = max(1, db.PerRow or 7)
 	local spacing = db.Spacing or 6
-	local size = max(8, floor((width - (perRow - 1) * spacing) / perRow))
+	local size = max(8, (width - (perRow - 1) * spacing) / perRow)
 	-- oUF derives its column count from the container width, so the panel
-	-- must span a full row or every icon lands on its own line.
-	local rowWidth = size * perRow + spacing * (perRow - 1)
+	-- must span a full row or every icon lands on its own line. No floor()
+	-- on the icon size: any truncation would pile up at the row's free end
+	-- and the row would stop aligning with the frame edge.
+	local rowWidth = width
 
 	if cfg.Debuffs then
 		local debuffs = CreateFrame("Frame", nil, self)
 		-- Sit above the name gradient (the stack-up anchor) rather than the
 		-- frame's top, so the debuffs clear the name cleanly.
 		local anchorTo = self.__stackUp or self
-		debuffs:SetPoint("BOTTOMLEFT", anchorTo, "TOPLEFT", 0, Module.GAP)
+		debuffs:SetPoint("BOTTOMRIGHT", anchorTo, "TOPRIGHT", 0, Module.GAP)
 		debuffs:SetSize(rowWidth, size)
 		debuffs.size = size
 		debuffs.spacing = spacing
 		debuffs.num = db.NumDebuffs or 8
 		debuffs.onlyShowPlayer = db.OnlyPlayerDebuffs or false
-		debuffs.initialAnchor = "BOTTOMLEFT"
-		debuffs["growth-x"] = "RIGHT"
+		debuffs.initialAnchor = "BOTTOMRIGHT"
+		debuffs["growth-x"] = "LEFT"
 		debuffs["growth-y"] = "UP"
 		debuffs.PostCreateIcon = StyleButton
 		debuffs.PostUpdateIcon = PostUpdateIcon
@@ -108,13 +109,13 @@ function Build.Auras(self, cfg)
 
 	if cfg.Buffs then
 		local buffs = CreateFrame("Frame", nil, self)
-		buffs:SetPoint("TOPLEFT", self, "BOTTOMLEFT", 0, -Module.GAP)
+		buffs:SetPoint("TOPRIGHT", self, "BOTTOMRIGHT", 0, -Module.GAP)
 		buffs:SetSize(rowWidth, size)
 		buffs.size = size
 		buffs.spacing = spacing
 		buffs.num = db.NumBuffs or 12
-		buffs.initialAnchor = "TOPLEFT"
-		buffs["growth-x"] = "RIGHT"
+		buffs.initialAnchor = "TOPRIGHT"
+		buffs["growth-x"] = "LEFT"
 		buffs["growth-y"] = "DOWN"
 		buffs.PostCreateIcon = StyleButton
 		buffs.PostUpdateIcon = PostUpdateIcon

@@ -19,8 +19,8 @@ local function BuildMirrored(self, cfg, nameSize, style)
 
 	Build.Health(self, cfg.Height)
 	Build.Power(self, Module.PowerHeight(cfg))
-	Build.HealthText(self, nameSize + 1)
-	Build.PowerText(self, 11)
+	Build.HealthText(self, nameSize + 3)
+	Build.PowerText(self, 13)
 
 	Build.Portrait(self, "right")
 	Build.PortraitLevel(self)
@@ -29,7 +29,7 @@ local function BuildMirrored(self, cfg, nameSize, style)
 	Build.Range(self)
 
 	-- Name first so it sits directly above health, then the aura panels on top.
-	Build.Name(self, nameSize)
+	Build.Name(self, nameSize + 3)
 	Build.Auras(self, cfg)
 end
 
@@ -40,7 +40,7 @@ Module.Styles.Target = function(self)
 	BuildMirrored(self, cfg, 12, "target")
 
 	-- Centred between the player and target frames, at their health-bar height.
-	Build.DetachedCastbar(self, "TargetCastbar", "Target Castbar", castbar.TargetWidth, castbar.TargetHeight, { "CENTER", UIParent, "CENTER", 0, -358 }, "right")
+	Build.DetachedCastbar(self, "TargetCastbar", "Target Castbar", castbar.TargetWidth, castbar.TargetHeight, { "BOTTOM", UIParent, "BOTTOM", 105, 420 }, "left")
 end
 
 Module.Styles.Focus = function(self)
@@ -49,5 +49,5 @@ Module.Styles.Focus = function(self)
 
 	BuildMirrored(self, cfg, 11, "focus")
 
-	Build.DetachedCastbar(self, "FocusCastbar", "Focus Castbar", castbar.FocusWidth, castbar.FocusHeight, { "BOTTOM", UIParent, "BOTTOM", 0, 520 }, "right")
+	Build.DetachedCastbar(self, "FocusCastbar", "Focus Castbar", castbar.FocusWidth, castbar.FocusHeight, { "BOTTOM", UIParent, "TOPLEFT", 450, -30 }, "left")
 end

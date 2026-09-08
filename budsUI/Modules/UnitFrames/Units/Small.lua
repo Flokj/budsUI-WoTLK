@@ -30,7 +30,7 @@ Module.Styles.Small = function(self, unit)
 	Build.Health(self, cfg.Height)
 	Build.Power(self, Module.PowerHeight(cfg))
 	Build.Portrait(self, unit == "pet" and "left" or "right")
-	Build.NameCenter(self, 10)
+	Build.NameCenter(self, 13)
 	Build.Indicators(self, 12)
 	Build.Range(self)
 
