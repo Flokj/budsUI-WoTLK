@@ -133,8 +133,11 @@ function Build.Runes(self)
 		bar:SetStatusBarColor(0.5, 0.5, 0.5)
 	end
 
-	self.Runes = bars
-	return bars
+	self.Runes = holder
+	for i, bar in ipairs(bars) do
+		holder[i] = bar
+	end
+	return holder
 end
 
 -- No-op on 3.3.5 (monks do not exist). Kept so the player style reads

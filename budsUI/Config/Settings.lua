@@ -299,7 +299,7 @@ C["Unitframe"] = {
 	["PowerFormat"] = "Current", -- None, Current, Percent, Both
 	["NameColor"] = true,
 	["NameLength"] = 18,
-	["NameBackground"] = true, -- dark strip behind the name/level texts
+	["NameBackground"] = false, -- dark strip behind the name/level texts
 
 	["PowerColors"] = {
 		["MANA"] = { 0.36, 0.55, 0.81 },
