@@ -88,7 +88,7 @@ end
 Module.UnitDefs = {
 	{ unit = "player", key = "Player", style = "Player", mover = "PlayerFrame", point = { "BOTTOM", "UIParent", "BOTTOM", -370, 580 } },
 	{ unit = "target", key = "Target", style = "Target", mover = "TargetFrame", point = { "BOTTOM", "UIParent", "BOTTOM", -370, 426 } },
-	{ unit = "targettarget", key = "TargetOfTarget", style = "Small", mover = "TargetOfTargetFrame", point = { "BOTTOMRIGHT", "Target", "TOPRIGHT", 0, 64 } },
+	{ unit = "targettarget", key = "TargetOfTarget", style = "Small", mover = "TargetOfTargetFrame", point = { "TOPLEFT", "Target", "TOPRIGHT", 8, 0 } },
 	{ unit = "pet", key = "Pet", style = "Small", mover = "PetFrame", point = { "TOPRIGHT", "Player", "BOTTOMLEFT", -7, 52 } },
 	{ unit = "focus", key = "Focus", style = "Focus", mover = "FocusFrame", point = { "TOP", "UIParent", "TOPLEFT", 450, -50 } },
 	{ unit = "focustarget", key = "FocusTarget", style = "Small", mover = "FocusTargetFrame", point = { "TOPLEFT", "Focus", "BOTTOMRIGHT", 6, -6 } },

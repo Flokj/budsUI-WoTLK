@@ -113,6 +113,7 @@ C["Cooldown"] = {
 	["Enable"] = true,
 	["FontSize"] = 18,
 	["Threshold"] = 3,
+	["IgnoreWeakAuras"] = false,
 }
 -- Error Options
 C["Error"] = {
@@ -321,7 +322,7 @@ C["Unitframe"] = {
 
 	["Player"] = { ["Enable"] = true, ["Width"] = 190, ["Height"] = 36, ["PowerHeight"] = 16, ["ShowPower"] = true, ["Buffs"] = false, ["Debuffs"] = false, ["ClassPower"] = true, ["AdditionalPower"] = true, ["ShowName"] = false },
 	["Target"] = { ["Enable"] = true, ["Width"] = 190, ["Height"] = 36, ["PowerHeight"] = 16, ["ShowPower"] = true, ["Buffs"] = true, ["Debuffs"] = true },
-	["TargetOfTarget"] = { ["Enable"] = true, ["Width"] = 100, ["Height"] = 24, ["PowerHeight"] = 12, ["ShowPower"] = false },
+	["TargetOfTarget"] = { ["Enable"] = true, ["Width"] = 90, ["Height"] = 24, ["PowerHeight"] = 12, ["ShowPower"] = false },
 	["Pet"] = { ["Enable"] = true, ["Width"] = 90, ["Height"] = 18, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Debuffs"] = true },
 	["Focus"] = { ["Enable"] = true, ["Width"] = 180, ["Height"] = 28, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Debuffs"] = true },
 	["FocusTarget"] = { ["Enable"] = false, ["Width"] = 80, ["Height"] = 18, ["PowerHeight"] = 12, ["ShowPower"] = true },

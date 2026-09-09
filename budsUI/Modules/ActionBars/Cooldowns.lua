@@ -98,7 +98,21 @@ local function Timer_Start(self, start, duration, charges, maxCharges)
 	local remainingCharges = charges or 0
 
 	if self:GetName() and find(self:GetName(), "ChargeCooldown") then return end
-	if start > 0 and duration > MIN_DURATION and remainingCharges == 0 and (not self.noOCC) then
+	if self.noOCC or self.noCooldownCount then return end
+	-- Like KkthnxUI OverrideWA: leave WeakAuras cooldowns to WeakAuras itself
+	if C.Cooldown.IgnoreWeakAuras then
+		local name = self.GetName and self:GetName()
+		if name and find(name, "WeakAuras") then self.noOCC = true return end
+		local parent = self:GetParent()
+		for _ = 1, 3 do
+			if not parent then break end
+			if parent.regionType then self.noOCC = true return end
+			local pname = parent.GetName and parent:GetName()
+			if pname and find(pname, "WeakAuras") then self.noOCC = true return end
+			parent = parent:GetParent()
+		end
+	end
+	if start > 0 and duration > MIN_DURATION and remainingCharges == 0 then
 		local timer = self.timer or Timer_Create(self)
 		timer.start = start
 		timer.duration = duration

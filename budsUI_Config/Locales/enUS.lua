@@ -87,6 +87,7 @@ L_GUI_COOLDOWN = "Cooldown"
 L_GUI_COOLDOWN_ENABLE = "Enable UI cooldown module"
 L_GUI_COOLDOWN_FONT_SIZE = "Cooldown font size"
 L_GUI_COOLDOWN_THRESHOLD = "Cooldown threshold number"
+L_GUI_COOLDOWN_IGNORE_WEAKAURAS = "Ignore WeakAuras cooldowns"
 -- Errors Localization
 L_GUI_ERROR = "Errors"
 L_GUI_ERROR_BLACK = "Hide errors from black list"

@@ -142,6 +142,7 @@ local function Local(o)
 	if o == "UIConfigCooldownEnable" then o = L_GUI_COOLDOWN_ENABLE end
 	if o == "UIConfigCooldownFontSize" then o = L_GUI_COOLDOWN_FONT_SIZE end
 	if o == "UIConfigCooldownThreshold" then o = L_GUI_COOLDOWN_THRESHOLD end
+	if o == "UIConfigCooldownIgnoreWeakAuras" then o = L_GUI_COOLDOWN_IGNORE_WEAKAURAS end
 	-- Error Settings
 	if o == "UIConfigError" then o = L_GUI_ERROR end
 	if o == "UIConfigErrorBlack" then o = L_GUI_ERROR_BLACK end

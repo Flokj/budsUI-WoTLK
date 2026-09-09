@@ -93,6 +93,7 @@ L_GUI_COOLDOWN = "Abklingzeit"
 L_GUI_COOLDOWN_ENABLE = "UI-Abklingzeit-Modul aktivieren"
 L_GUI_COOLDOWN_FONT_SIZE = "Abklingzeit-Schriftgröße"
 L_GUI_COOLDOWN_THRESHOLD = "Abklingzeit-Schwellenwert"
+L_GUI_COOLDOWN_IGNORE_WEAKAURAS = "WeakAuras-Abklingzeiten ignorieren"
 -- Errors Localization
 L_GUI_ERROR = "Fehler"
 L_GUI_ERROR_BLACK = "Fehler von schwarzer Liste ausblenden"

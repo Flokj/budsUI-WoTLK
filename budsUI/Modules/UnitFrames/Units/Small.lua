@@ -2,13 +2,11 @@
 Addon: budsUI
 File: Modules/UnitFrames/Units/Small.lua
 Purpose:
-	The companion frames: pet, target of target, focus target. All three are
-	the same shape, so one style covers them and looks up its own config by
-	unit token.
-
-	They carry a portrait and a name on the bar. No numbers at this size, the
-	bar itself reads them. The pet reads left-to-right like the player it
-	belongs to, so its portrait sits on the left, the others sit on the right.
+	The companion frames: pet, target of target, focus target.
+	Only the pet reads like the target frame, with the name above the bar.
+	Target of target and focus target stay compact with the name on the bar.
+	The pet reads left-to-right like the player it belongs to, so its
+	portrait sits on the left, the others sit on the right.
 -----------------------------------------------------------------------------]]
 
 local Engine = select(2, ...)
@@ -30,13 +28,16 @@ Module.Styles.Small = function(self, unit)
 	Build.Health(self, cfg.Height)
 	Build.Power(self, Module.PowerHeight(cfg))
 	Build.Portrait(self, unit == "pet" and "left" or "right")
-	Build.NameCenter(self, 13)
+	if unit == "pet" then
+		Build.Name(self, 12)
+	else
+		Build.NameCenter(self, 13)
+	end
 	Build.Indicators(self, 12)
 	Build.Range(self)
 
-	-- Debuffs on a pet matter (they are yours to dispel), on a target of
-	-- target they are noise, so this stays off unless the config asks for it.
+	-- Pet keeps the compact side row, clear of its left portrait.
 	if cfg.Debuffs then
-		Build.GroupDebuffs(self, 3, cfg.Height)
+		Build.GroupDebuffs(self, 3, cfg.Height, unit == "pet" and "right" or nil)
 	end
 end

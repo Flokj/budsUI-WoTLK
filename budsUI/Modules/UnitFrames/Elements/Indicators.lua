@@ -232,14 +232,24 @@ end
 -- Corners are assigned once, here and in the sets below, so no two icons
 -- ever land on the same one:
 --   top left     resting, leader, assistant
---   top right    raid marker
+--   top center   raid marker (double size, reads over the bar middle)
 --   bottom left  group role
 --   bottom right raid role
 -- Text always runs down the middle, so it stays clear of all four.
 function Build.Indicators(self, size)
 	local health = self.Health
 
-	self.RaidTargetIndicator = Icon(health, size or 14, "TOPRIGHT", health, "TOPRIGHT", -1, -1)
+	-- Own raised holder: the marker hangs above the bar, where the name
+	-- strip holder and the border edge (both above health's own layers)
+	-- would otherwise paint over it.
+	local markerSize = size or 24
+	local holder = CreateFrame("Frame", nil, health)
+	holder:SetSize(markerSize, markerSize)
+	holder:SetPoint("TOP", health, "TOP", 0, 8)
+	holder:SetFrameLevel(health:GetFrameLevel() + 5)
+	local marker = holder:CreateTexture(nil, "OVERLAY")
+	marker:SetAllPoints()
+	self.RaidTargetIndicator = marker
 
 	Build.Threat(self)
 end

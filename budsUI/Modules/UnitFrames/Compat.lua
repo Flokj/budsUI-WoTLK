@@ -116,11 +116,18 @@ if not K.Print then
 end
 
 function Module.Texture()
+	local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
+	if LSM then
+		local tex = LSM:Fetch("statusbar", C.Unitframe.Texture or "budsUI_StatusBar")
+		if tex then
+			return tex
+		end
+	end
 	return C.Media.Texture
 end
 
 function Module.GetTexture()
-	return C.Media.Texture
+	return Module.Texture()
 end
 if not K.GetTexture then K.GetTexture = Module.GetTexture end
 
