@@ -11,6 +11,8 @@ local GetSpell, GetText, GetName = GetSpell, GetText, GetName
 local GetGlyphSocketInfo = GetGlyphSocketInfo
 local hooksecurefunc = hooksecurefunc
 local UnitAura = UnitAura
+local UnitBuff = UnitBuff
+local UnitDebuff = UnitDebuff
 
 --	Spell/Item IDs(idTip by Silverwind)
 local debuginfo = false
@@ -34,15 +36,27 @@ GameTooltip:HookScript("OnTooltipSetSpell", function(self)
 	if id then addLine(self, id) end
 end)
 
-hooksecurefunc(GameTooltip, "SetUnitAura", function(self, ...)
-	-- WoW 3.3.5 Compatibility: UnitAura returns only 10 values, not 11
-	-- spellID (11th value) was added in Cataclysm 4.0
-	-- In 3.3.5 we cannot show spell IDs from auras, only spell names
-	local name = select(1, UnitAura(...))
-	if name and debuginfo == true and IsModifierKeyDown() then 
-		K.Print("Aura: "..name.." (SpellID not available in 3.3.5)")
+--	3.3.5 UnitAura/UnitBuff/UnitDebuff return spellID as 11th value (cf. ElvUI-7)
+local function addAuraID(self, unit, index, filter, auraFunc)
+	if not (unit and index and auraFunc) then return end
+	local id = select(11, auraFunc(unit, index, filter))
+	if id then addLine(self, id) return end
+	if debuginfo == true and IsModifierKeyDown() then
+		local name = auraFunc(unit, index, filter)
+		if name then K.Print("Aura: "..name.." (SpellID not resolved)") end
 	end
-	-- Note: We skip adding the ID line since it's not available in 3.3.5
+end
+
+hooksecurefunc(GameTooltip, "SetUnitAura", function(self, unit, index, filter)
+	addAuraID(self, unit, index, filter, UnitAura)
+end)
+
+hooksecurefunc(GameTooltip, "SetUnitBuff", function(self, unit, index, filter)
+	addAuraID(self, unit, index, filter, UnitBuff)
+end)
+
+hooksecurefunc(GameTooltip, "SetUnitDebuff", function(self, unit, index, filter)
+	addAuraID(self, unit, index, filter, UnitDebuff)
 end)
 
 hooksecurefunc("SetItemRef", function(link, ...)

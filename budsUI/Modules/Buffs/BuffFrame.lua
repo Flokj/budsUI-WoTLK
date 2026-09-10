@@ -41,7 +41,8 @@ end
 local auraPrototype = setmetatable({}, getmetatable(PlayerFrame or UIParent))
 local auraMT = { __index = auraPrototype }
 
-function auraPrototype:OnUpdate()
+function auraPrototype:OnEnter()
+	GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT")
 	if self.isTempEnchant then
 		GameTooltip:SetInventoryItem("player", self.slot)
 	else
@@ -52,13 +53,7 @@ function auraPrototype:OnUpdate()
 	end
 end
 
-function auraPrototype:OnEnter()
-	GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT")
-	self:SetScript("OnUpdate", self.OnUpdate)
-end
-
 function auraPrototype:OnLeave()
-	self:SetScript("OnUpdate", nil)
 	GameTooltip:Hide()
 end
 
