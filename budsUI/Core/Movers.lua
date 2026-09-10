@@ -620,6 +620,8 @@ if type(K.MoverFrames) ~= "table" then K.MoverFrames = {} end
 local LEGACY_MOVER_NAMES = {
 	"AchievementAnchor",
 	"ActionBarAnchor",
+	"Bar3Holder",
+	"Bar4Holder",
 	"BuffsAnchor",
 	"CaptureBarAnchor",
 	"ChatFrame1",
@@ -627,6 +629,7 @@ local LEGACY_MOVER_NAMES = {
 	"MinimapAnchor",
 	"PetActionBarAnchor",
 	"PulseCDAnchor",
+	"RightActionBarAnchor",
 	"SPECIAL_P_BUFF_ICON_Anchor",
 	"ShiftHolder",
 	"budsUI_COOLDOWN_Anchor",
