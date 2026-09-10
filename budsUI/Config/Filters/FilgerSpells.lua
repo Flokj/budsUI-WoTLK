@@ -1829,7 +1829,7 @@ C["filger_spells"] = {
 			-- Hunter
 			-- Aspect of the Viper
 			{ spellID = 34074, unitID = "player", caster = "player", filter = "BUFF" },
-			-- Aspect of the Pack
+			--[[ Aspect of the Pack
 			{ spellID = 13159, unitID = "player", caster = "player", filter = "BUFF" },
 			-- Aspect Dracondor
 			{ spellID = 61847, unitID = "player", caster = "player", filter = "BUFF" },
@@ -1882,7 +1882,7 @@ C["filger_spells"] = {
 			-- Warsong Horde(Flag)
 			{ spellID = 23333, unitID = "player", caster = "all", filter = "BUFF" },
 			-- Warsong Aliance(Flag)
-			{ spellID = 23335, unitID = "player", caster = "all", filter = "BUFF" },
+			{ spellID = 23335, unitID = "player", caster = "all", filter = "BUFF" },]]--
 		},
 	},
 }
