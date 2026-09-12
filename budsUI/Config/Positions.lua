@@ -41,13 +41,13 @@ C["Position"] = {
 		["PvECC"] = {"TOPLEFT", "UIParent", "CENTER", -700, 120},
 		["Cooldown"] = {"CENTER", "UIParent", "CENTER", 0, 300},
 
-		["PlayerProcIcon"] = {"BOTTOMLEFT", "UIParent", "CENTER", 200, -70},
+		["PlayerProcIcon"] = {"BOTTOMLEFT", "UIParent", "CENTER", 187, -73},
 		["SpecialProcIcon"] = {"BOTTOMLEFT", "UIParent", "CENTER", 0, 0},
-		["TargetBuffIcon"] = {"BOTTOMLEFT", "UIParent", "CENTER", 190, 36},
+		["TargetBuffIcon"] = {"BOTTOMLEFT", "UIParent", "CENTER", 179, 32},
 		
-		["TargetBar"] = {"BOTTOMLEFT", "UIParent", "CENTER", -176, -98},
-		["TargetDebuffIcon"] = {"BOTTOMLEFT", "UIParent", "CENTER", -176, -54},
-		["PlayerBuffIcon"] = {"BOTTOMLEFT", "UIParent", "CENTER", -176, -10},
-		["PvEDebuff"] = {"BOTTOMLEFT", "UIParent", "CENTER", -176, 36},
+		["TargetBar"] = {"BOTTOMLEFT", "UIParent", "CENTER", -171, -90},
+		["TargetDebuffIcon"] = {"BOTTOMLEFT", "UIParent", "CENTER", -171, -50},
+		["PlayerBuffIcon"] = {"BOTTOMLEFT", "UIParent", "CENTER", -171, -10},
+		["PvEDebuff"] = {"BOTTOMLEFT", "UIParent", "CENTER", -171, 30},
 	},
 }

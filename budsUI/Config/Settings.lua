@@ -98,7 +98,7 @@ C["Chat"] = {
 	["Enable"] = true,
 	["Fading"] = false,
 	["Filter"] = true,
-	["Height"] = 240,
+	["Height"] = 220,
 	["Outline"] = false,
 	["Spam"] = false,
 	["FadeTime"] = 20,
@@ -106,7 +106,7 @@ C["Chat"] = {
 	["TabsMouseover"] = true,
 	["TabsOutline"] = false,
 	["WhispSound"] = true,
-	["Width"] = 450,
+	["Width"] = 420,
 }
 -- Cooldown Options
 C["Cooldown"] = {
@@ -123,11 +123,11 @@ C["Error"] = {
 }
 -- Filger Options
 C["Filger"] = {
-	["BuffsSize"] = 40,
-	["CooldownSize"] = 30,
+	["BuffsSize"] = 34,
+	["CooldownSize"] = 24,
 	["Enable"] = true,
 	["MaxTestIcon"] = 5,
-	["PvPSize"] = 50,
+	["PvPSize"] = 42,
 	["ShowTooltip"] = false,
 	["TestMode"] = false,
 }

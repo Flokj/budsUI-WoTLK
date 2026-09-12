@@ -882,41 +882,6 @@ C["filger_spells"] = {
 	},
 	["PRIEST"] = {
 		{
-			Name = "P_BUFF_ICON",
-			Direction = "RIGHT",
-			Mode = "ICON",
-			Interval = 3,
-			Alpha = 1,
-			IconSize = C.Filger.BuffsSize,
-			Position = {"TOP", P_BUFF_ICON_Anchor},
-
-			-- Power Word: Shield
-			--P_BUFF(48066),
-			---- Renew
-			--P_BUFF(25222),
-			---- Fade
-			--P_BUFF(586),
-			---- Fear Ward
-			--P_BUFF(6346),
-			---- Hand of Protection
-			--P_BUFF_ALL(10278),
-			-- Dispersion
-			P_BUFF(47585),
-			-- Inner Fire
-			--P_BUFF(48168),
-			---- Innervate
-			--P_BUFF_ALL(29166),
-			---- Bloodlust
-			--P_BUFF_ALL(2825),
-			---- Heroism
-			--P_BUFF_ALL(32182),
-			---- Borrowed Time
-			--P_BUFF(52800),
-			---- Hyperspeed Accelerators
-			--P_BUFF(54999),
-		},
-
-		{
 			Name = "P_PROC_ICON",
 			Direction = "LEFT",
 			Mode = "ICON",

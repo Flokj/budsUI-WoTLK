@@ -120,7 +120,7 @@ local function InstallStep5_ChatWindows()
 		
 		FCF_SavePositionAndDimensions(frame)
 		FCF_StopDragging(frame)
-		FCF_SetChatWindowFontSize(nil, frame, 13)
+		FCF_SetChatWindowFontSize(nil, frame, 12)
 		
 		if i == 1 then
 			FCF_SetWindowName(frame, GENERAL)
