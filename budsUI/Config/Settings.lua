@@ -305,6 +305,8 @@ C["Unitframe"] = {
 	["NameLength"] = 18,
 	["NameBackground"] = false, -- dark strip behind the name/level texts
 	["FontOutline"] = false, -- OUTLINE on unitframe texts instead of shadow
+	["PercentHealth"] = false, -- disable ClassHealth, show plain health color
+	["BetterPowerColors"] = false, -- override global PowerBarColor table
 
 	["PowerColors"] = {
 		["MANA"] = { 0.36, 0.55, 0.81 },
@@ -364,21 +366,6 @@ C["Unitframe"] = {
 		["FocusWidth"] = 180,
 		["FocusHeight"] = 20,
 	},
-
-	-- Legacy budsUI keys (kept for compat with other modules/config GUI)
-	["ComboFrame"] = false,
-	["AuraOffsetY"] = 3,
-	["BetterPowerColors"] = false,
-	["CastBarScale"] = 1.2,
-	["ClassIcon"] = false,
-	["CombatFeedback"] = false,
-	["GroupNumber"] = false,
-	["PvPIcon"] = true,
-	["LargeAuraSize"] = 26,
-	["Outline"] = false,
-	["PercentHealth"] = false,
-	["Scale"] = 1.2,
-	["SmallAuraSize"] = 22,
 }
 -- Mover positions (integrated with profiles)
 C["MoverPositions"] = {}
@@ -441,37 +428,6 @@ local function ValidateConfig()
 		C.PowerBar.MaelstromSize = math.max(64, math.min(512, C.PowerBar.MaelstromSize))
 	else
 		C.PowerBar.MaelstromSize = 256
-	end
-
-	-- Unitframe limits
-	if type(C.Unitframe.Scale) == "number" then
-		C.Unitframe.Scale = math.max(0.5, math.min(2.5, C.Unitframe.Scale))
-	else
-		C.Unitframe.Scale = 1.2
-	end
-
-	if type(C.Unitframe.CastBarScale) == "number" then
-		C.Unitframe.CastBarScale = math.max(0.5, math.min(2.5, C.Unitframe.CastBarScale))
-	else
-		C.Unitframe.CastBarScale = 1.2
-	end
-
-	if type(C.Unitframe.LargeAuraSize) == "number" then
-		C.Unitframe.LargeAuraSize = math.max(10, math.min(50, C.Unitframe.LargeAuraSize))
-	else
-		C.Unitframe.LargeAuraSize = 26
-	end
-
-	if type(C.Unitframe.SmallAuraSize) == "number" then
-		C.Unitframe.SmallAuraSize = math.max(10, math.min(50, C.Unitframe.SmallAuraSize))
-	else
-		C.Unitframe.SmallAuraSize = 22
-	end
-
-	if type(C.Unitframe.AuraOffsetY) == "number" then
-		C.Unitframe.AuraOffsetY = math.max(-20, math.min(20, C.Unitframe.AuraOffsetY))
-	else
-		C.Unitframe.AuraOffsetY = 3
 	end
 end
 

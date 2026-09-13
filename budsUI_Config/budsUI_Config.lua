@@ -1063,15 +1063,7 @@ function CreateUIConfig()
 				if (i == "PowerBar" and j == "MaelstromSize") or (i == "Unitframe" and type(value) == "number") then
 					local sMin, sMax, sStep = 64, 512, 8
 					if i == "Unitframe" then
-						if j == "Scale" or j == "CastBarScale" then
-							sMin, sMax, sStep = 0.5, 2.5, 0.05
-						elseif j == "LargeAuraSize" or j == "SmallAuraSize" then
-							sMin, sMax, sStep = 10, 50, 1
-						elseif j == "AuraOffsetY" then
-							sMin, sMax, sStep = -20, 20, 1
-						else
-							sMin, sMax, sStep = 0, 100, 1
-						end
+						sMin, sMax, sStep = 0, 100, 1
 					end
 
 					local label = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")

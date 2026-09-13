@@ -472,8 +472,6 @@ K.ConfigValidationRules = {
 	
 	-- Unitframe settings
 	["Unitframe.Enable"] = {"boolean"},
-	["Unitframe.CastbarLatency"] = {"boolean"},
-	["Unitframe.CombatFeedback"] = {"boolean"},
 	
 	-- Filger settings
 	["Filger.Enable"] = {"boolean"},
