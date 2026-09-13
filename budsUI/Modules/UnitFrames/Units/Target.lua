@@ -19,8 +19,8 @@ local function BuildMirrored(self, cfg, nameSize, style)
 
 	Build.Health(self, cfg.Height)
 	Build.Power(self, Module.PowerHeight(cfg))
-	Build.HealthText(self, nameSize + 3)
-	Build.PowerText(self, 13)
+	Build.HealthText(self, nameSize + 2)
+	Build.PowerText(self, 12)
 
 	Build.Portrait(self, "right")
 	Build.PortraitLevel(self)
@@ -29,7 +29,7 @@ local function BuildMirrored(self, cfg, nameSize, style)
 	Build.Range(self)
 
 	-- Name first so it sits directly above health, then the aura panels on top.
-	Build.Name(self, nameSize + 3)
+	Build.Name(self, nameSize + 2, true)
 	Build.Auras(self, cfg)
 end
 

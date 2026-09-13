@@ -230,7 +230,8 @@ function Build.Health(self, height)
 	health.colorTapping = true
 	if C.Unitframe.ClassHealth then
 		health.colorClass = true
-		health.colorClassPet = true
+		-- No colorClassPet: pets/vehicles report a bogus UnitClass in 3.3.5
+		-- (warlock imp -> mage, other demons -> paladin). Reaction covers them.
 		health.colorReaction = true
 	end
 	-- Last link in oUF's colour chain either way. Without it a unit that

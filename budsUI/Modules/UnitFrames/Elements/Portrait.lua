@@ -100,7 +100,7 @@ function Build.PortraitLevel(self)
 	end
 
 	local level = Module.GradientLabel(self, holder, 12)
-	self:Tag(level, "[difficulty][buds:level]")
+	self:Tag(level, "[buds:diff][buds:level]")
 	self.LevelText = level
 	return level
 end

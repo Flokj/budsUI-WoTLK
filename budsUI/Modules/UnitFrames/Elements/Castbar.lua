@@ -25,6 +25,88 @@ local CreateFrame = CreateFrame
 local CAST_COLOR = { 0.85, 0.65, 0.13 } -- normal (gold / yellow)
 local NOINTERRUPT_COLOR = { 0.6, 0.6, 0.65 } -- cannot interrupt (silver)
 local FAIL_COLOR = { 0.85, 0.25, 0.25 } -- interrupted / failed (red)
+local TICK_COLOR = { 0, 0, 0, 0.4 } -- channel tick marks
+
+-- Channeled spells and their tick counts (3.3.5, cf. ElvUI-7 ChannelTicks).
+-- Keyed by spell ID here, resolved to localized names below since oUF only
+-- hands us the spell name on channel start.
+local CHANNEL_TICKS_BY_ID = {
+	-- Warlock
+	[1120] = 5, -- Drain Soul
+	[689] = 5, -- Drain Life
+	[5138] = 5, -- Drain Mana
+	[5740] = 4, -- Rain of Fire
+	[755] = 10, -- Health Funnel
+	[1949] = 15, -- Hellfire
+	-- Druid
+	[44203] = 4, -- Tranquility
+	[16914] = 10, -- Hurricane
+	-- Priest
+	[15407] = 3, -- Mind Flay
+	[48045] = 5, -- Mind Sear
+	[47540] = 2, -- Penance
+	[64843] = 4, -- Divine Hymn
+	[64901] = 4, -- Hymn of Hope
+	-- Mage
+	[5143] = 5, -- Arcane Missiles
+	[10] = 8, -- Blizzard
+	[12051] = 4, -- Evocation
+	-- Hunter
+	[58434] = 6, -- Volley
+	-- Death Knight
+	[42650] = 8, -- Army of the Dead
+}
+
+local channelTicksByName
+local function GetChannelTicks(name)
+	if not name then return end
+	if not channelTicksByName then
+		channelTicksByName = {}
+		for id, ticks in pairs(CHANNEL_TICKS_BY_ID) do
+			local spellName = GetSpellInfo(id)
+			if spellName then
+				channelTicksByName[spellName] = ticks
+			end
+		end
+	end
+	return channelTicksByName[name]
+end
+
+local function HideTicks(cast)
+	local ticks = cast.__ticks
+	if ticks then
+		for i = 1, #ticks do
+			ticks[i]:Hide()
+		end
+	end
+end
+
+local function ShowChannelTicks(cast)
+	HideTicks(cast)
+	local db = C.Unitframe.Castbar
+	if not db.ShowTicks or not cast.channeling then return end
+	local numTicks = GetChannelTicks(cast.spellName)
+	if not numTicks or numTicks < 2 then return end
+	local width = cast:GetWidth()
+	if not width or width <= 0 then return end
+	local ticks = cast.__ticks
+	if not ticks then
+		ticks = {}
+		cast.__ticks = ticks
+	end
+	for i = 1, numTicks - 1 do
+		local tick = ticks[i]
+		if not tick then
+			tick = cast:CreateTexture(nil, "OVERLAY")
+			tick:SetTexture(TICK_COLOR[1], TICK_COLOR[2], TICK_COLOR[3], TICK_COLOR[4])
+			tick:SetSize(2, cast:GetHeight() > 0 and cast:GetHeight() or 10)
+			ticks[i] = tick
+		end
+		tick:ClearAllPoints()
+		tick:SetPoint("CENTER", cast, "LEFT", width * i / numTicks, 0)
+		tick:Show()
+	end
+end
 
 -- ---------------------------------------------------------------------------
 -- Callbacks
@@ -33,6 +115,7 @@ local FAIL_COLOR = { 0.85, 0.25, 0.25 } -- interrupted / failed (red)
 -- Colour the whole bar by interruptibility and drive the shield.
 local function OnCastStart(self, unit)
 	self.__failed = nil
+	HideTicks(self)
 	if self.notInterruptible then
 		self:SetStatusBarColor(NOINTERRUPT_COLOR[1], NOINTERRUPT_COLOR[2], NOINTERRUPT_COLOR[3])
 	else
@@ -45,11 +128,13 @@ local function OnCastStart(self, unit)
 			self.Shield:Hide()
 		end
 	end
+	ShowChannelTicks(self)
 end
 
 local function OnCastFail(self, unit)
 	self:SetStatusBarColor(FAIL_COLOR[1], FAIL_COLOR[2], FAIL_COLOR[3])
 	self.__failed = true
+	HideTicks(self)
 	if self.Shield then
 		self.Shield:Hide()
 	end
@@ -57,6 +142,10 @@ local function OnCastFail(self, unit)
 	-- way through, the same way the other UIs show an interrupt.
 	self:SetMinMaxValues(0, 1)
 	self:SetValue(1)
+end
+
+local function OnCastStop(self, unit)
+	HideTicks(self)
 end
 
 local function CustomTimeText(self, duration)
@@ -122,6 +211,7 @@ local function CreateBar(self, opts)
 	cast.PostCastInterruptible = OnCastStart
 	cast.PostCastFail = OnCastFail
 	cast.PostCastInterrupted = OnCastFail
+	cast.PostCastStop = OnCastStop
 
 	local shield = cast:CreateTexture(nil, "OVERLAY")
 	shield:SetTexture("Interface\\CastingBar\\UI-CastingBar-Small-Shield")
@@ -263,6 +353,7 @@ function Build.TopCastbar(self, height, side)
 	cast.PostCastInterruptible = OnCastStart
 	cast.PostCastFail = OnCastFail
 	cast.PostCastInterrupted = OnCastFail
+	cast.PostCastStop = OnCastStop
 
 	local holder = CreateFrame("Frame", nil, cast)
 	holder:SetSize(height, height)

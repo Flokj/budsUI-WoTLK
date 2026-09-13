@@ -78,6 +78,9 @@ C["Blizzard"] = {
 	["CaptureBar"] = true,
 	["ClassColor"] = true,
 	["Durability"] = true,
+	["EnhanceProfessions"] = true,
+	["EnhanceTrainers"] = true,
+	["TrainAllButton"] = true,
 	["MoveAchievements"] = true,
 	["Reputations"] = true,
 }
@@ -301,6 +304,7 @@ C["Unitframe"] = {
 	["NameColor"] = true,
 	["NameLength"] = 18,
 	["NameBackground"] = false, -- dark strip behind the name/level texts
+	["FontOutline"] = false, -- OUTLINE on unitframe texts instead of shadow
 
 	["PowerColors"] = {
 		["MANA"] = { 0.36, 0.55, 0.81 },
@@ -323,7 +327,7 @@ C["Unitframe"] = {
 	["Player"] = { ["Enable"] = true, ["Width"] = 190, ["Height"] = 36, ["PowerHeight"] = 16, ["ShowPower"] = true, ["Buffs"] = false, ["Debuffs"] = false, ["ClassPower"] = true, ["AdditionalPower"] = true, ["ShowName"] = false },
 	["Target"] = { ["Enable"] = true, ["Width"] = 190, ["Height"] = 36, ["PowerHeight"] = 16, ["ShowPower"] = true, ["Buffs"] = true, ["Debuffs"] = true },
 	["TargetOfTarget"] = { ["Enable"] = true, ["Width"] = 90, ["Height"] = 24, ["PowerHeight"] = 12, ["ShowPower"] = false },
-	["Pet"] = { ["Enable"] = true, ["Width"] = 90, ["Height"] = 18, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Debuffs"] = true },
+	["Pet"] = { ["Enable"] = true, ["Width"] = 90, ["Height"] = 18, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Debuffs"] = false },
 	["Focus"] = { ["Enable"] = true, ["Width"] = 180, ["Height"] = 28, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Debuffs"] = true },
 	["FocusTarget"] = { ["Enable"] = false, ["Width"] = 80, ["Height"] = 18, ["PowerHeight"] = 12, ["ShowPower"] = true },
 	["Party"] = { ["Enable"] = false, ["Width"] = 150, ["Height"] = 22, ["PowerHeight"] = 12, ["ShowPower"] = true, ["ShowSolo"] = false, ["ShowPlayer"] = true, ["Debuffs"] = true, ["DispelHighlight"] = true, ["Portrait"] = false, ["Castbar"] = true, ["RaidStyle"] = false },
@@ -351,6 +355,7 @@ C["Unitframe"] = {
 		["ShowTimer"] = true,
 		["ShowSpark"] = true,
 		["ShowLatency"] = true,
+		["ShowTicks"] = true,
 		["TimeToHold"] = 0.4,
 		["PlayerWidth"] = 360,
 		["PlayerHeight"] = 26,

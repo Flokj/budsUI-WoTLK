@@ -99,6 +99,8 @@
 	<Script file="Modules\Blizzard\ClassColor.lua"/>
 	<Script file="Modules\Blizzard\CombatText.lua"/>
 	<Script file="Modules\Blizzard\Durability.lua"/>
+	<Script file="Modules\Blizzard\EnhanceProfessions.lua"/>
+	<Script file="Modules\Blizzard\EnhanceTrainers.lua"/>
 	<Script file="Modules\Blizzard\Errors.lua"/>
 	<Script file="Modules\Blizzard\ExpBar.lua"/>
 	<Script file="Modules\Blizzard\Fixes.lua"/>

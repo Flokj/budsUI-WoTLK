@@ -29,7 +29,9 @@ Module.Styles.Small = function(self, unit)
 	Build.Power(self, Module.PowerHeight(cfg))
 	Build.Portrait(self, unit == "pet" and "left" or "right")
 	if unit == "pet" then
-		Build.Name(self, 12)
+		-- Level after the name, like Kkthnx (its default has no portrait).
+		Build.Name(self, 12, true)
+		Build.HealthText(self, 11)
 	else
 		Build.NameCenter(self, 13)
 	end

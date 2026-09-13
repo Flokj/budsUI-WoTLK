@@ -74,7 +74,7 @@ local function GetCorner(element, corner)
 	button.Cooldown = cd
 
 	local count = button:CreateFontString(nil, "OVERLAY")
-	K.SetFont(count, 10, K.FontOutlineStyle())
+	K.SetFont(count, 12, K.FontOutlineStyle())
 	count:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 2, -1)
 	button.Count = count
 

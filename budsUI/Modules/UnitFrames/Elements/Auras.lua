@@ -45,7 +45,7 @@ local function StyleButton(_, button)
 
 	local count = button.count
 	if count then
-		K.SetFont(count, 10, K.FontOutlineStyle())
+		K.SetFont(count, 12, K.FontOutlineStyle())
 		count:ClearAllPoints()
 		count:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 1, 0)
 		count:SetJustifyH("RIGHT")

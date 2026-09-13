@@ -26,6 +26,35 @@ local UnitIsConnected = UnitIsConnected
 local UnitIsDND = UnitIsDND
 local UnitIsPlayer = UnitIsPlayer
 local UnitReaction = UnitReaction
+local GetQuestGreenRange = GetQuestGreenRange
+
+-- Difficulty colour that also works on friendlies. oUF's own [difficulty]
+-- only colours attackable units, which left your own pet's level white.
+-- (GetCreatureDifficultyColor does not exist on this client, so the
+-- thresholds are computed from the player's level directly.)
+oUF.Tags.Methods["buds:diff"] = function(unit)
+	local level = UnitLevel(unit)
+	if not level or level <= 0 then
+		return "|cffff0000"
+	end
+	local plvl = UnitLevel("player") or level
+	local diff = level - plvl
+	local greenRange = (GetQuestGreenRange and GetQuestGreenRange()) or 5
+	local r, g, b
+	if diff >= 5 then
+		r, g, b = 1, 0.1, 0.1
+	elseif diff >= 3 then
+		r, g, b = 1, 0.5, 0
+	elseif diff >= -2 then
+		r, g, b = 1, 0.9, 0
+	elseif -diff <= greenRange then
+		r, g, b = 0.25, 0.75, 0.25
+	else
+		r, g, b = 0.5, 0.5, 0.5
+	end
+	return K.RGBToHex(r, g, b)
+end
+oUF.Tags.Events["buds:diff"] = "UNIT_LEVEL PLAYER_LEVEL_UP"
 
 -- ---------------------------------------------------------------------------
 -- Name

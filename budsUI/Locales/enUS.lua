@@ -156,6 +156,10 @@ L_MISC_UNDRESS = "Undress"
 L_MISC_REPAIR = "Warning! You need to do a repair of your equipment as soon as possible!"
 L_MISC_GUILD_CLEANUP_PROMPT = "Are you sure you want to clean your guild? This will potentially kick many members!"
 L_MISC_GUILD_CLEANUP_TITLE = "Guild Cleanup"
+-- Trainer Localization
+L_TRAIN_ALL = "Train All"
+L_TRAIN_ALL_TOOLTIP_PLURAL = "Train %d skills for %s"
+L_TRAIN_ALL_TOOLTIP_SINGLE = "Train skill for %s"
 -- Popup Localization
 L_POPUP_ARMORY = "|cffffe02eArmory|r"
 L_POPUP_BOOSTUI = "|cfff02c35WARNING:|r This will optimize your performance by turning down the graphics and tweaking them. Hit accept only if you are having |cfff02c35FPS|r issues!|r"

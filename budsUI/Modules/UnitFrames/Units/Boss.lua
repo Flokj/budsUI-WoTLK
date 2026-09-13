@@ -32,7 +32,7 @@ Module.Styles.Boss = function(self)
 
 	-- Name on the gradient strip above health, health value on the health
 	-- bar, and numbers on the power bar.
-	Build.Name(self, 13)
+	Build.Name(self, 13, true)
 	Build.HealthText(self, 13)
 	Build.PowerText(self, 11)
 

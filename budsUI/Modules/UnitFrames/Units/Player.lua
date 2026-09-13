@@ -22,14 +22,14 @@ Module.Styles.Player = function(self)
 
 	Build.Health(self, cfg.Height)
 	Build.Power(self, Module.PowerHeight(cfg))
-	Build.HealthText(self, 15)
-	Build.PowerText(self, 13)
+	Build.HealthText(self, 14)
+	Build.PowerText(self, 12)
 
 	Build.Portrait(self, "left")
 	Build.PortraitLevel(self)
 
 	if cfg.ShowName then
-		Build.Name(self, 15)
+		Build.Name(self, 14)
 	end
 
 	if cfg.AdditionalPower then

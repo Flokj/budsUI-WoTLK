@@ -112,6 +112,9 @@ local function Local(o)
 	if o == "UIConfigBlizzardDarkTextures" then o = L_GUI_BLIZZARD_DARK_TEXTURES end
 	if o == "UIConfigBlizzardDarkTexturesColor" then o = L_GUI_BLIZZARD_DARK_TEXTURES_COLOR end
 	if o == "UIConfigBlizzardDurability" then o = L_GUI_BLIZZARD_DURABILITY end
+	if o == "UIConfigBlizzardEnhanceProfessions" then o = L_GUI_BLIZZARD_ENHANCE_PROFESSIONS end
+	if o == "UIConfigBlizzardEnhanceTrainers" then o = L_GUI_BLIZZARD_ENHANCE_TRAINERS end
+	if o == "UIConfigBlizzardTrainAllButton" then o = L_GUI_BLIZZARD_TRAIN_ALL end
 	if o == "UIConfigBlizzardMoveAchievements" then o = L_GUI_BLIZZARD_ACHIEVEMENTS end
 	if o == "UIConfigBlizzardReputations" then o = L_GUI_BLIZZARD_REPUTATIONS end
 	-- Auras Settings
@@ -655,6 +658,7 @@ local function BuildUnitframeOptions(frame, startOffset)
 	BoolTop("NameColor", L_GUI_UNITFRAME_NAME_COLOR)
 	NumTop("NameLength", L_GUI_UNITFRAME_NAME_length, 0, 30, 1)
 	BoolTop("NameBackground", L_GUI_UNITFRAME_NAME_BACKGROUND)
+	BoolTop("FontOutline", L_GUI_UNITFRAME_FONT_OUTLINE)
 	StrTop("Texture", L_GUI_UNITFRAME_TEXTURE)
 
 	Header(L_GUI_UNITFRAME_OPT_PLAYER)
@@ -737,6 +741,7 @@ local function BuildUnitframeOptions(frame, startOffset)
 	BoolSub("Castbar", "ShowTimer", L_GUI_UNITFRAME_OPT_SHOW_TIMER)
 	BoolSub("Castbar", "ShowSpark", L_GUI_UNITFRAME_OPT_SHOW_SPARK)
 	BoolSub("Castbar", "ShowLatency", L_GUI_UNITFRAME_OPT_SHOW_LATENCY)
+	BoolSub("Castbar", "ShowTicks", L_GUI_UNITFRAME_OPT_SHOW_TICKS)
 	NumSub("Castbar", "TimeToHold", L_GUI_UNITFRAME_OPT_HOLD_TIME, 0, 2, 0.1)
 	NumSub("Castbar", "PlayerWidth", L_GUI_UNITFRAME_OPT_PLAYER_WIDTH, 100, 400, 1)
 	NumSub("Castbar", "PlayerHeight", L_GUI_UNITFRAME_OPT_PLAYER_HEIGHT, 10, 60, 1)

@@ -76,10 +76,15 @@ end
 
 -- Name above the health bar. Pushed onto the upward stack so it always sits
 -- directly on top of health with nothing overlapping it.
-function Build.Name(self, size)
+function Build.Name(self, size, withLevel)
 	local name = Module.GradientLabel(self, self.Health or self, size or 12)
 	-- The explicit |r closes the name colour so the AFK flag keeps its own grey.
-	self:Tag(name, "[buds:namecolor][buds:name]|r[buds:afkdnd]")
+	if withLevel and not self.PortraitHolder then
+		-- No side portrait: level rides after the name, like Kkthnx.
+		self:Tag(name, "[buds:namecolor][buds:name]|r [buds:diff][buds:level]|r[buds:afkdnd]")
+	else
+		self:Tag(name, "[buds:namecolor][buds:name]|r[buds:afkdnd]")
+	end
 	self.Name = name
 	self.__stackUp = name.BG or name
 	return name
@@ -101,6 +106,27 @@ end
 -- ---------------------------------------------------------------------------
 -- Bar values
 -- ---------------------------------------------------------------------------
+
+local function HealthColorHex(pct)
+	local r, g, b
+	if pct < 20 then
+		r, g, b = 1, 0.1, 0.1
+	elseif pct < 35 then
+		r, g, b = 1, 0.5, 0
+	elseif pct < 80 then
+		r, g, b = 1, 0.9, 0.3
+	else
+		r, g, b = 1, 1, 1
+	end
+	return K.RGBToHex(r, g, b)
+end
+
+-- Main units read as the current value, with the threshold-coloured percent
+-- appended past full health. Everyone else (pet, boss, focustarget, ...) gets
+-- just the coloured percent, like KkthnxUI.
+local function IsMainUnit(unit)
+	return unit == "player" or unit == "target" or unit == "focus" or (unit and unit:sub(1, 5) == "party")
+end
 
 function Module.UpdateHealthText(element, unit, cur, max)
 	local text = element.__kkuiText
@@ -135,10 +161,19 @@ function Module.UpdateHealthText(element, unit, cur, max)
 		if max <= 0 then
 			text:SetText("")
 		elseif cur >= max then
-			-- Full health reads as just the value, no redundant 100%.
-			text:SetText(ShortValue(cur))
+			if IsMainUnit(unit) then
+				-- Full health reads as just the value, no redundant 100%.
+				text:SetText(ShortValue(cur))
+			else
+				text:SetFormattedText("%s%d%%|r", HealthColorHex(100), 100)
+			end
 		else
-			text:SetFormattedText("%s - %d%%", ShortValue(cur), cur / max * 100)
+			local pct = cur / max * 100
+			if IsMainUnit(unit) then
+				text:SetFormattedText("%s - %s%d%%|r", ShortValue(cur), HealthColorHex(pct), pct)
+			else
+				text:SetFormattedText("%s%d%%|r", HealthColorHex(pct), pct)
+			end
 		end
 	end
 end

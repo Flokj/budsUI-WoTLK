@@ -263,7 +263,7 @@ end
 function Build.PlayerIndicators(self)
 	local health = self.Health
 
-	local combat = Icon(health, 20, "LEFT", health, "LEFT", 4, 0)
+	local combat = Icon(health, 26, "LEFT", health, "LEFT", 4, 0)
 	combat:SetTexture("Interface\\CharacterFrame\\UI-StateIcon")
 	combat:SetTexCoord(0.5, 1, 0, 0.49)
 	self.CombatIndicator = combat

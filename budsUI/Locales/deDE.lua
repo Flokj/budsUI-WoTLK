@@ -159,6 +159,10 @@ L_MISC_UNDRESS = "Ausziehen"
 L_MISC_REPAIR = "Warnung! Du musst deine Ausrüstung so schnell wie möglich reparieren!"
 L_MISC_GUILD_CLEANUP_PROMPT = "Bist du sicher, dass du die Gilde bereinigen möchtest? Dies wird potenziell viele Mitglieder entfernen!"
 L_MISC_GUILD_CLEANUP_TITLE = "Gilden-Bereinigung"
+-- Trainer Localization
+L_TRAIN_ALL = "Alle lernen"
+L_TRAIN_ALL_TOOLTIP_PLURAL = "%d Fertigkeiten lernen für %s"
+L_TRAIN_ALL_TOOLTIP_SINGLE = "Fertigkeit lernen für %s"
 -- Popup Localization
 L_POPUP_ARMORY = "|cffE8CB3BArmory|r"
 L_POPUP_INSTALLUI = "|cff388bdbbudsUI|r wird zum ersten Mal mit diesem Charakter verwendet. Du musst das UI neu laden, um es einzurichten."

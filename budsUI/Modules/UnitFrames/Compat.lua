@@ -138,7 +138,7 @@ end
 
 if not K.FontOutlineStyle then
 	function K.FontOutlineStyle()
-		return (C.General and C.General.FontOutline) and "OUTLINE" or ""
+		return (C.Unitframe and C.Unitframe.FontOutline) and "OUTLINE" or ""
 	end
 end
 
