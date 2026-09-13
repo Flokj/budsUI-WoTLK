@@ -245,6 +245,7 @@ local function Local(o)
 	-- Skins Settings
 	if o == "UIConfigSkins" then o = L_GUI_SKINS end
 	if o == "UIConfigSkinsChatBubble" then o = L_GUI_SKINS_CHAT_BUBBLE end
+	if o == "UIConfigSkinsCharacterStats" then o = L_GUI_SKINS_CHARACTER_STATS end
 	if o == "UIConfigSkinsCLCRet" then o = L_GUI_SKINS_CLCR end
 	if o == "UIConfigSkinsDBM" then o = L_GUI_SKINS_DBM end
 	if o == "UIConfigSkinsMinimapButtons" then o = L_GUI_SKINS_MINIMAP_BUTTONS end

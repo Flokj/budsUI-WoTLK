@@ -249,6 +249,7 @@ C["PulseCD"] = {
 -- Skins Options
 C["Skins"] = {
 	["Spy"] = false,
+	["CharacterStats"] = true,
 	["ChatBubble"] = true,
 	["CLCRet"] = false,
 	["DBM"] = true,

@@ -197,6 +197,7 @@ L_GUI_RESET_CHAR = "Are you sure you want to reset your character's settings for
 L_GUI_SET_SAVED_SETTTINGS = "Set settings Per-Character"
 -- Skins Localization
 L_GUI_SKINS = "Stylization"
+L_GUI_SKINS_CHARACTER_STATS = "Enable extended character stats panel"
 L_GUI_SKINS_CHAT_BUBBLE = "Enable styling chat bubbles"
 L_GUI_SKINS_CLCR = "Enable styling CLCRet"
 L_GUI_SKINS_DBM = "Enable styling DeadlyBossMods"

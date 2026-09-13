@@ -197,6 +197,7 @@ L_GUI_RESET_CHAR = "Bist du sicher, dass du die Einstellungen deines Charakters 
 L_GUI_SET_SAVED_SETTTINGS = "Einstellungen pro Charakter setzen"
 -- Skins Localization
 L_GUI_SKINS = "Stilisierung"
+L_GUI_SKINS_CHARACTER_STATS = "Erweitertes Charakterwerte-Fenster aktivieren"
 L_GUI_SKINS_CHAT_BUBBLE = "Chat-Blasen-Styling aktivieren"
 L_GUI_SKINS_CLCR = "CLCRet-Styling aktivieren"
 L_GUI_SKINS_DBM = "DeadlyBossMods-Styling aktivieren"
