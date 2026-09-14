@@ -5,13 +5,11 @@ local _G = _G
 local CreateFrame = CreateFrame
 local tinsert = tinsert
 
--- Vertical channel bar to the right of the chat: a column of small buttons
--- with the channel name written on each one.
+-- Vertical channel bar to the right of the chat: a column of small
+-- colored squares (KkthnxUI style), one per channel, tooltip on hover.
 
-local BUTTON_WIDTH = 46
-local BUTTON_HEIGHT = 18
-local GAP = 4
-local FONT_SIZE = 11
+local BUTTON_SIZE = 16
+local GAP = 8
 
 local function GetChatFrame()
 	return SELECTED_DOCK_FRAME or DEFAULT_CHAT_FRAME or _G.ChatFrame1
@@ -35,15 +33,15 @@ end
 local function BuildButtons()
 	local chatFrame = GetChatFrame()
 	return {
-		-- {r, g, b, label, tooltip title, tooltip hint, onClick}
-		{1, 1, 1, "Say", SAY .. "/" .. YELL, "Left: Say | Right: Yell", function(_, btn)
+		-- {r, g, b, tooltip title, tooltip hint, onClick}
+		{1, 1, 1, SAY .. "/" .. YELL, "Left: Say | Right: Yell", function(_, btn)
 			if btn == "RightButton" then
 				ChatFrame_OpenChat("/y ", chatFrame)
 			else
 				ChatFrame_OpenChat("/s ", chatFrame)
 			end
 		end},
-		{1, 0.5, 1, "Wisp", WHISPER, "Left: Whisper target | Right: Reply", function(_, btn)
+		{1, 0.5, 1, WHISPER, "Left: Whisper target | Right: Reply", function(_, btn)
 			if btn == "RightButton" then
 				ChatFrame_ReplyTell(chatFrame)
 				local editBox = chatFrame.editBox or _G[chatFrame:GetName() .. "EditBox"]
@@ -54,28 +52,28 @@ local function BuildButtons()
 				WhisperTargetOrOpen(chatFrame)
 			end
 		end},
-		{0.65, 0.65, 1, "Party", PARTY, "Open Party chat", function()
+		{0.65, 0.65, 1, PARTY, "Open Party chat", function()
 			ChatFrame_OpenChat("/p ", chatFrame)
 		end},
-		{1, 0.5, 0, "Raid", (BATTLEGROUND or "BG") .. "/" .. RAID, "In BG: BG chat | Else: Raid chat", function()
+		{1, 0.5, 0, (BATTLEGROUND or "BG") .. "/" .. RAID, "In BG: BG chat | Else: Raid chat", function()
 			if UnitInBattleground("player") then
 				ChatFrame_OpenChat("/bg ", chatFrame)
 			else
 				ChatFrame_OpenChat("/raid ", chatFrame)
 			end
 		end},
-		{0.25, 1, 0.25, "Guild", GUILD .. "/" .. OFFICER, "Left: Guild | Right: Officer", function(_, btn)
+		{0.25, 1, 0.25, GUILD .. "/" .. OFFICER, "Left: Guild | Right: Officer", function(_, btn)
 			if btn == "RightButton" and IsGuildOfficer() then
 				ChatFrame_OpenChat("/o ", chatFrame)
 			else
 				ChatFrame_OpenChat("/g ", chatFrame)
 			end
 		end},
-		{1, 0.75, 0.75, "Emote", EMOTE or "Emote", "Open Emote chat", function()
+		{1, 0.75, 0.75, EMOTE or "Emote", "Open Emote chat", function()
 			ChatFrame_OpenChat("/e ", chatFrame)
 		end},
-		{1, 1, 0.4, "Roll", (LOOT_ROLL or "Roll") .. " (1-100)", "Click: /roll 1-100", nil, "/roll"},
-		{0.6, 0.8, 1, "Log", BINDING_NAME_TOGGLECOMBATLOG or "Combat Log", "Click: toggle /combatlog", nil, "/combatlog"},
+		{0.8, 1, 0.6, LOOT_ROLL or "Roll", "Click: /roll 1-100", nil, "/roll"},
+		{1, 1, 0, BINDING_NAME_TOGGLECOMBATLOG or "Combat Log", "Click: toggle /combatlog", nil, "/combatlog"},
 	}
 end
 
@@ -90,32 +88,24 @@ local function CreateChatbar()
 	local prev
 	local buttonInfo = BuildButtons()
 	for _, data in ipairs(buttonInfo) do
-		local r, g, b, label, title, hint, onClick, macro = data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8]
+		local r, g, b, title, hint, onClick, macro = data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8]
 
 		local bu = CreateFrame("Button", nil, bar, "SecureActionButtonTemplate")
-		bu:SetWidth(BUTTON_WIDTH)
-		bu:SetHeight(BUTTON_HEIGHT)
+		bu:SetWidth(BUTTON_SIZE)
+		bu:SetHeight(BUTTON_SIZE)
 		bu:RegisterForClicks("AnyUp")
+		bu:SetHitRectInsets(0, 0, -GAP, -GAP)
 
 		bu:SetBackdrop({
 			bgFile = C.Media.Blank,
 			edgeFile = C.Media.Blank,
 			edgeSize = 1,
 		})
-		bu:SetBackdropColor(unpack(C.Media.Backdrop_Color))
+		bu:SetBackdropColor(r, g, b, 0.9)
 		bu:SetBackdropBorderColor(0, 0, 0, 1)
 
 		if bu.CreateBorder then bu:CreateBorder() end
 		if bu.StyleButton then bu:StyleButton() end
-
-		local text = bu:CreateFontString(nil, "OVERLAY")
-		text:SetFont(C.Media.Font, FONT_SIZE, C.Media.Font_Style)
-		text:SetPoint("CENTER", bu, "CENTER", 0, 0)
-		text:SetJustifyH("CENTER")
-		text:SetText(label)
-		text:SetTextColor(r, g, b)
-		text:SetShadowColor(0, 0, 0, 1)
-		text:SetShadowOffset(K.Mult or 1, -(K.Mult or 1))
 
 		if prev then
 			bu:SetPoint("TOP", prev, "BOTTOM", 0, -GAP)
@@ -136,23 +126,21 @@ local function CreateChatbar()
 			bu:SetScript("OnClick", onClick)
 		end
 		bu:SetScript("OnEnter", function(self)
-			self:SetBackdropBorderColor(r, g, b, 1)
-			text:SetTextColor(1, 1, 1)
+			self:SetBackdropColor(r, g, b, 1)
 			GameTooltip:SetOwner(self, "ANCHOR_TOP")
 			GameTooltip:SetText(title)
 			if hint then GameTooltip:AddLine(hint, 1, 1, 1) end
 			GameTooltip:Show()
 		end)
 		bu:SetScript("OnLeave", function(self)
-			self:SetBackdropBorderColor(0, 0, 0, 1)
-			text:SetTextColor(r, g, b)
+			self:SetBackdropColor(r, g, b, 0.9)
 			GameTooltip:Hide()
 		end)
 	end
 
 	local count = #buttonInfo
-	bar:SetWidth(BUTTON_WIDTH)
-	bar:SetHeight(count * BUTTON_HEIGHT + (count - 1) * GAP)
+	bar:SetWidth(BUTTON_SIZE)
+	bar:SetHeight(count * BUTTON_SIZE + (count - 1) * GAP)
 
 	if K.MoverFrames then
 		tinsert(K.MoverFrames, bar)

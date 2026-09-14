@@ -26,7 +26,7 @@ C["Position"] = {
 	["Tooltip"] = {"BOTTOMRIGHT", "UIParent", "BOTTOMRIGHT", -3, 3},
 	["UIError"] = {"TOP", "UIParent", "TOP", 0, -80},
 	["Vehicle"] = {"TOP", "Minimap", "BOTTOM", 0, -30},
-	["VehicleBar"] = {"TOPLEFT", "MultiBarLeftButton11", "TOPRIGHT", 3, 0},
+	["VehicleBar"] = {"BOTTOMLEFT", "MultiBarRightButton12", "TOPLEFT", 60, 40},
 	-- UnitFrame positions
 	UnitFrames = {
 		["Arena"] = {"BOTTOMRIGHT", "UIParent", "RIGHT", -60, -70},

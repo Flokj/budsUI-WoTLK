@@ -25,7 +25,7 @@ local updateFS = function(self, inc, ...)
 		fstring:SetFont(C.Media.Font, C.Media.Font_Size, C.Media.Font_Style)
 		fstring:SetShadowOffset(0, -0)
 	else
-		fstring:SetFont(C.Media.Font, C.Media.Font_Size-1)
+		fstring:SetFont(C.Media.Font, C.Media.Font_Size)
 		fstring:SetShadowOffset((K.Mult or 1), -(K.Mult or 1))
 	end
 
