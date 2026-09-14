@@ -85,6 +85,7 @@ L_GUI_CHAT_TABS_MOUSEOVER = "Chat tabs on mouseover"
 L_GUI_CHAT_TABS_OUTLINE = "Apply an outline to the chat tabs font"
 L_GUI_CHAT_WHISP = "Sound when whisper"
 L_GUI_CHAT_WIDTH = "Chat width"
+L_GUI_CHAT_TIMESTAMP = "Chat timestamp format"
 -- Cooldown Localization
 L_GUI_COOLDOWN = "Cooldown"
 L_GUI_COOLDOWN_ENABLE = "Enable UI cooldown module"

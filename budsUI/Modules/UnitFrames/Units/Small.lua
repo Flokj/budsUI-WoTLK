@@ -39,7 +39,9 @@ Module.Styles.Small = function(self, unit)
 	Build.Range(self)
 
 	-- Pet keeps the compact side row, clear of its left portrait.
+	-- ToT/focustarget/pet get 3 debuffs below the frame, right to left,
+	-- stretched to the full frame width (no gap on the left).
 	if cfg.Debuffs then
-		Build.GroupDebuffs(self, 3, cfg.Height, unit == "pet" and "right" or nil)
+		Build.BottomDebuffs(self, 3, (cfg.Width - Module.GAP * 2) / 3)
 	end
 end

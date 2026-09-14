@@ -14,7 +14,17 @@ local sub = string.sub
 local GetID, GetName = GetID, GetName
 local CreateFrame = CreateFrame
 local hooksecurefunc = hooksecurefunc
+local dateFunc = BetterDate or date
 local origs = {}
+
+-- Chat timestamp formats, same options as KkthnxUI (1 = disabled, picked in /buds -> Chat)
+local timestampFormats = {
+	[2] = "[%I:%M %p] ",
+	[3] = "[%I:%M:%S %p] ",
+	[4] = "[%H:%M] ",
+	[5] = "[%H:%M:%S] ",
+}
+local GREY_TIMESTAMP = "|CFFC0C0C0"
 
 local strings = {
 	BATTLEGROUND = L_CHAT_BATTLEGROUND,
@@ -32,6 +42,13 @@ local function ShortChannel(channel)
 end
 
 local function AddMessage(frame, str, ...)
+	if type(str) ~= "string" then
+		local orig = origs[frame]
+		if orig then
+			return orig(frame, str, ...)
+		end
+		return
+	end
 	str = str:gsub("|Hchannel:(.-)|h%[(.-)%]|h", ShortChannel)
 	str = str:gsub("CHANNEL:", "")
 	str = str:gsub("^(.-|h) "..L_CHAT_WHISPERS, "%1")
@@ -41,6 +58,23 @@ local function AddMessage(frame, str, ...)
 	str = str:gsub("<"..DND..">", "[|cffE7E716"..L_CHAT_DND.."|r] ")
 	str = str:gsub("%[BN_CONVERSATION:", "%[1".."")
 	str = str:gsub("^%["..RAID_WARNING.."%]", "["..L_CHAT_RAID_WARNING.."]")
+	-- Chat timestamps, same formats as KkthnxUI (1 = disabled, picked in /buds -> Chat)
+	local fmt = C.Chat.TimestampFormat
+	if fmt and fmt > 1 and timestampFormats[fmt] then
+		-- Strip Blizzard's own timestamp to avoid doubles (Interface -> Display -> Timestamps)
+		local ok, showTS = pcall(GetCVar, "showTimestamps")
+		if ok and showTS and showTS ~= "none" then
+			local okDate, blizzTS = pcall(dateFunc, showTS)
+			if okDate and blizzTS and len(blizzTS) > 0 then
+				local escaped = blizzTS:gsub("([%%%^%$%(%)%.%[%]%*%+%-%?])", "%%%1")
+				str = str:gsub("^" .. escaped, "")
+			end
+		end
+		local okDate, stamp = pcall(dateFunc, GREY_TIMESTAMP .. timestampFormats[fmt] .. "|r")
+		if okDate and stamp then
+			str = stamp .. str
+		end
+	end
 	local orig = origs[frame]
 	if orig then
 		return orig(frame, str, ...)

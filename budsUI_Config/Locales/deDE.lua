@@ -91,6 +91,7 @@ L_GUI_CHAT_TABS_MOUSEOVER = "Chat-Tabs bei Mausberührung"
 L_GUI_CHAT_TABS_OUTLINE = "Umriss auf Chat-Tab-Schrift anwenden"
 L_GUI_CHAT_WHISP = "Ton bei Flüstern"
 L_GUI_CHAT_WIDTH = "Chat-Breite"
+L_GUI_CHAT_TIMESTAMP = "Chat-Zeitstempelformat"
 -- Cooldown Localization
 L_GUI_COOLDOWN = "Abklingzeit"
 L_GUI_COOLDOWN_ENABLE = "UI-Abklingzeit-Modul aktivieren"

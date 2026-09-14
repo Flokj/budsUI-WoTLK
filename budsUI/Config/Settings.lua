@@ -108,6 +108,7 @@ C["Chat"] = {
 	["Sticky"] = true,
 	["TabsMouseover"] = true,
 	["TabsOutline"] = false,
+	["TimestampFormat"] = 1, -- 1 = disabled, 2 = 03:27 PM, 3 = 03:27:32 PM, 4 = 15:27, 5 = 15:27:32 (same as KkthnxUI)
 	["WhispSound"] = true,
 	["Width"] = 420,
 }
@@ -330,10 +331,10 @@ C["Unitframe"] = {
 
 	["Player"] = { ["Enable"] = true, ["Width"] = 190, ["Height"] = 36, ["PowerHeight"] = 16, ["ShowPower"] = true, ["Buffs"] = false, ["Debuffs"] = false, ["ClassPower"] = true, ["AdditionalPower"] = true, ["ShowName"] = false },
 	["Target"] = { ["Enable"] = true, ["Width"] = 190, ["Height"] = 36, ["PowerHeight"] = 16, ["ShowPower"] = true, ["Buffs"] = true, ["Debuffs"] = true },
-	["TargetOfTarget"] = { ["Enable"] = true, ["Width"] = 90, ["Height"] = 24, ["PowerHeight"] = 12, ["ShowPower"] = false },
+	["TargetOfTarget"] = { ["Enable"] = true, ["Width"] = 90, ["Height"] = 24, ["PowerHeight"] = 12, ["ShowPower"] = false, ["Debuffs"] = true },
 	["Pet"] = { ["Enable"] = true, ["Width"] = 90, ["Height"] = 18, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Debuffs"] = false },
 	["Focus"] = { ["Enable"] = true, ["Width"] = 180, ["Height"] = 28, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Debuffs"] = true },
-	["FocusTarget"] = { ["Enable"] = false, ["Width"] = 80, ["Height"] = 18, ["PowerHeight"] = 12, ["ShowPower"] = true },
+	["FocusTarget"] = { ["Enable"] = false, ["Width"] = 80, ["Height"] = 18, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Debuffs"] = true },
 	["Party"] = { ["Enable"] = false, ["Width"] = 150, ["Height"] = 22, ["PowerHeight"] = 12, ["ShowPower"] = true, ["ShowSolo"] = false, ["ShowPlayer"] = true, ["Debuffs"] = true, ["DispelHighlight"] = true, ["Portrait"] = false, ["Castbar"] = true, ["RaidStyle"] = false },
 	-- Height is the health bar, the power bar (PowerHeight) sits below it.
 	-- PowerMode: All, Mana, or None.

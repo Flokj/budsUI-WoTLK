@@ -121,13 +121,13 @@ local function OnCastStart(self, unit)
 	else
 		self:SetStatusBarColor(CAST_COLOR[1], CAST_COLOR[2], CAST_COLOR[3])
 	end
-	if self.Shield then
-		if self.notInterruptible then
-			self.Shield:Show()
-		else
-			self.Shield:Hide()
-		end
-	end
+	--if self.Shield then
+	--	if self.notInterruptible then
+	--		self.Shield:Show()
+	--	else
+	--		self.Shield:Hide()
+	--	end
+	--end
 	ShowChannelTicks(self)
 end
 
@@ -135,9 +135,9 @@ local function OnCastFail(self, unit)
 	self:SetStatusBarColor(FAIL_COLOR[1], FAIL_COLOR[2], FAIL_COLOR[3])
 	self.__failed = true
 	HideTicks(self)
-	if self.Shield then
-		self.Shield:Hide()
-	end
+	--if self.Shield then
+	--	self.Shield:Hide()
+	--end
 	-- Fill the bar so a stopped cast reads as stopped rather than frozen part
 	-- way through, the same way the other UIs show an interrupt.
 	self:SetMinMaxValues(0, 1)
@@ -213,12 +213,12 @@ local function CreateBar(self, opts)
 	cast.PostCastInterrupted = OnCastFail
 	cast.PostCastStop = OnCastStop
 
-	local shield = cast:CreateTexture(nil, "OVERLAY")
-	shield:SetTexture("Interface\\CastingBar\\UI-CastingBar-Small-Shield")
-	shield:SetSize(opts.height, opts.height)
-	shield:SetPoint("CENTER", cast, "CENTER", 0, 0)
-	shield:Hide()
-	cast.Shield = shield
+	--local shield = cast:CreateTexture(nil, "OVERLAY")
+	--shield:SetTexture("Interface\\CastingBar\\UI-CastingBar-Small-Shield")
+	--shield:SetSize(opts.height, opts.height)
+	--shield:SetPoint("CENTER", cast, "CENTER", 0, 0)
+	--shield:Hide()
+	--cast.Shield = shield
 
 	if db.ShowSpark then
 		local spark = cast:CreateTexture(nil, "OVERLAY")

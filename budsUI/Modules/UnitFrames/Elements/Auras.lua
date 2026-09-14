@@ -124,8 +124,9 @@ function Build.Auras(self, cfg)
 end
 
 -- Compact debuff row beside a group frame's health bar. side "right" clears
--- the party portrait, "left" is the default for the raid.
-function Build.GroupDebuffs(self, count, size, side)
+-- the party portrait, "left" is the default for the raid. showAll skips the
+-- dispel-only filter (used by pet/tot/focustarget, which show everything).
+function Build.GroupDebuffs(self, count, size, side, showAll)
 	local spacing = Module.GAP
 	local debuffs = CreateFrame("Frame", nil, self)
 	if side == "right" then
@@ -145,7 +146,8 @@ function Build.GroupDebuffs(self, count, size, side)
 
 	-- Healers usually only want debuffs they can act on, so default the group
 	-- rows to the auras the player can dispel. Toggle off to show everything.
-	if C.Unitframe.GroupDispelOnly then
+	-- Small companion frames (pet/tot/focustarget) always show everything.
+	if not showAll and C.Unitframe.GroupDispelOnly then
 		debuffs.CustomFilter = function(element, unit, button, name, rank, icon, count, debuffType)
 			if debuffType and K.CanDispel and K.CanDispel[debuffType] then
 				return true
@@ -154,6 +156,26 @@ function Build.GroupDebuffs(self, count, size, side)
 		end
 	end
 
+	debuffs.PostCreateIcon = StyleButton
+	debuffs.PostUpdateIcon = PostUpdateIcon
+	self.Debuffs = debuffs
+	return debuffs
+end
+
+-- Bottom debuff row for the small companion frames (tot/focustarget):
+-- 3 icons below the frame, first at bottom-right, growing left.
+function Build.BottomDebuffs(self, count, size)
+	local spacing = Module.GAP
+	local debuffs = CreateFrame("Frame", nil, self)
+	local anchor = self.Power or self.Health or self
+	debuffs:SetPoint("TOPRIGHT", anchor, "BOTTOMRIGHT", 0, -spacing)
+	debuffs:SetSize(size * count + spacing * (count - 1), size)
+	debuffs.initialAnchor = "TOPRIGHT"
+	debuffs["growth-x"] = "LEFT"
+	debuffs["growth-y"] = "DOWN"
+	debuffs.size = size
+	debuffs.spacing = spacing
+	debuffs.num = count
 	debuffs.PostCreateIcon = StyleButton
 	debuffs.PostUpdateIcon = PostUpdateIcon
 	self.Debuffs = debuffs

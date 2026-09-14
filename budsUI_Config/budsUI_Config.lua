@@ -137,6 +137,7 @@ local function Local(o)
 	if o == "UIConfigChatSticky" then o = L_GUI_CHAT_STICKY end
 	if o == "UIConfigChatTabsMouseover" then o = L_GUI_CHAT_TABS_MOUSEOVER end
 	if o == "UIConfigChatTabsOutline" then o = L_GUI_CHAT_TABS_OUTLINE end
+	if o == "UIConfigChatTimestampFormat" then o = L_GUI_CHAT_TIMESTAMP end
 	if o == "UIConfigChatWhispSound" then o = L_GUI_CHAT_WHISP end
 	if o == "UIConfigChatWidth" then o = L_GUI_CHAT_WIDTH end
 	if o == "UIConfigChatHideTextures" then o = L_GUI_CHAT_HIDE_TEXTURES end
@@ -686,11 +687,13 @@ local function BuildUnitframeOptions(frame, startOffset)
 	Header(L_GUI_UNITFRAME_OPT_SMALL)
 	BoolSub("TargetOfTarget", "Enable", L_GUI_UNITFRAME_OPT_ENABLE)
 	Dims("TargetOfTarget")
+	BoolSub("TargetOfTarget", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS)
 	BoolSub("Pet", "Enable", L_GUI_UNITFRAME_OPT_ENABLE)
 	Dims("Pet")
 	BoolSub("Pet", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS)
 	BoolSub("FocusTarget", "Enable", L_GUI_UNITFRAME_OPT_ENABLE)
 	Dims("FocusTarget")
+	BoolSub("FocusTarget", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS)
 
 	Header(L_GUI_UNITFRAME_OPT_PARTY)
 	BoolSub("Party", "Enable", L_GUI_UNITFRAME_OPT_ENABLE)
@@ -1062,7 +1065,47 @@ function CreateUIConfig()
 				AttachReset(button, K.option, i, j, nil, function(d) button:SetChecked(d and true or false) end)
 				offset = offset + 25
 			elseif type(value) == "number" or type(value) == "string" then
-				if (i == "PowerBar" and j == "MaelstromSize") or (i == "Unitframe" and type(value) == "number") then
+				if i == "Chat" and j == "TimestampFormat" then
+					-- Timestamp format dropdown, same options as KkthnxUI
+					local tsOptions = {
+						{ text = "Disable", value = 1 },
+						{ text = "03:27 PM", value = 2 },
+						{ text = "03:27:32 PM", value = 3 },
+						{ text = "15:27", value = 4 },
+						{ text = "15:27:32", value = 5 },
+					}
+					local function TSLabel(v)
+						for _, opt in ipairs(tsOptions) do
+							if opt.value == v then return opt.text end
+						end
+						return "Disable"
+					end
+					local o = "UIConfig"..i..j
+					Local(o)
+					local label = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+					label:SetText(K.option)
+					label:SetSize(460, 20)
+					label:SetJustifyH("LEFT")
+					label:SetPoint("TOPLEFT", 5, -offset)
+					local dropdown = CreateFrame("Frame", "UIConfig"..i..j.."Dropdown", frame, "UIDropDownMenuTemplate")
+					dropdown:SetPoint("TOPLEFT", -10, -(offset + 20))
+					UIDropDownMenu_SetWidth(dropdown, 200)
+					UIDropDownMenu_SetText(dropdown, TSLabel(value))
+					UIDropDownMenu_Initialize(dropdown, function(self, level)
+						local info = UIDropDownMenu_CreateInfo()
+						for _, opt in ipairs(tsOptions) do
+							info.text = opt.text
+							info.checked = (opt.value == C[i][j])
+							info.func = function()
+								SetValue(i, j, opt.value)
+								UIDropDownMenu_SetText(dropdown, opt.text)
+							end
+							UIDropDownMenu_AddButton(info, level)
+						end
+					end)
+					AttachReset(dropdown, label:GetText(), i, j, nil, function(d) UIDropDownMenu_SetText(dropdown, TSLabel(d)) end)
+					offset = offset + 55
+				elseif (i == "PowerBar" and j == "MaelstromSize") or (i == "Unitframe" and type(value) == "number") then
 					local sMin, sMax, sStep = 64, 512, 8
 					if i == "Unitframe" then
 						sMin, sMax, sStep = 0, 100, 1
