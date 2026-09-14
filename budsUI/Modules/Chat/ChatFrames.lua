@@ -59,8 +59,11 @@ local function AddMessage(frame, str, ...)
 	str = str:gsub("%[BN_CONVERSATION:", "%[1".."")
 	str = str:gsub("^%["..RAID_WARNING.."%]", "["..L_CHAT_RAID_WARNING.."]")
 	-- Chat timestamps, same formats as KkthnxUI (1 = disabled, picked in /buds -> Chat)
+	-- Skip blank lines (e.g. bursts of empty service messages on spec swap):
+	-- they were invisible before, stamping them would spam visible timestamps.
+	local visible = str:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|H.-|h", ""):gsub("|h", "")
 	local fmt = C.Chat.TimestampFormat
-	if fmt and fmt > 1 and timestampFormats[fmt] then
+	if fmt and fmt > 1 and timestampFormats[fmt] and not visible:match("^%s*$") then
 		-- Strip Blizzard's own timestamp to avoid doubles (Interface -> Display -> Timestamps)
 		local ok, showTS = pcall(GetCVar, "showTimestamps")
 		if ok and showTS and showTS ~= "none" then
