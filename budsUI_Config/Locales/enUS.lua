@@ -144,6 +144,7 @@ L_GUI_MISC_HATTRICK = "Adds checkboxes to toggle the helm & cloak settings"
 L_GUI_MISC_HIDE_BG_SPAM = "Remove Boss Emote spam during BG"
 L_GUI_MISC_INVKEYWORD = "Short keyword for invite (/ainv)"
 L_GUI_MISC_ITEM_LEVEL = "Item level on character slot buttons"
+L_GUI_MISC_PVP_TIMER = "Retail-style PvP start timer (BG/arena countdown with big numbers)"
 L_GUI_MISC_SPEEDYLOAD = "Disable certain events during loading screens to drastically improve loading times."
 L_GUI_MISC_SPIN_CAMERA = "Spin camera while afk"
 -- Nameplate Localization

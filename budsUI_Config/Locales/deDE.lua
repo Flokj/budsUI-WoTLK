@@ -144,6 +144,7 @@ L_GUI_MISC_HATTRICK = "Fügt Kontrollkästchen zum Umschalten von Helm & Umhang 
 L_GUI_MISC_HIDE_BG_SPAM = "Boss-Emote-Spam während Schlachtfeldern entfernen"
 L_GUI_MISC_INVKEYWORD = "Kurzes Schlüsselwort für Einladung (/ainv)"
 L_GUI_MISC_ITEM_LEVEL = "Gegenstandsstufe auf Charakterfach-Schaltflächen"
+L_GUI_MISC_PVP_TIMER = "PvP-Starttimer im Retail-Stil (BG/Arena-Countdown mit großen Zahlen)"
 L_GUI_MISC_SPEEDYLOAD = "Bestimmte Ereignisse während Ladebildschirmen deaktivieren, um Ladezeiten drastisch zu verbessern"
 L_GUI_MISC_SPIN_CAMERA = "Kamera drehen während AFK"
 -- Nameplate Localization

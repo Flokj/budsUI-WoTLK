@@ -197,6 +197,7 @@ local function Local(o)
 	if o == "UIConfigMiscHatTrick" then o = L_GUI_MISC_HATTRICK end
 	if o == "UIConfigMiscInviteKeyword" then o = L_GUI_MISC_INVKEYWORD end
 	if o == "UIConfigMiscItemLevel" then o = L_GUI_MISC_ITEM_LEVEL end
+	if o == "UIConfigMiscPvPTimer" then o = L_GUI_MISC_PVP_TIMER end
 	if o == "UIConfigMiscSpeedyLoad" then o = L_GUI_MISC_SPEEDYLOAD end
 	-- Nameplates Settings
 	if o == "UIConfigNameplate" then o = UNIT_NAMEPLATES end

@@ -185,6 +185,7 @@ C["Misc"] = {
 	["HatTrick"] = true,
 	["InviteKeyword"] = "inv",
 	["ItemLevel"] = true,
+	["PvPTimer"] = true,
 	["SpeedyLoad"] = false,
 }
 -- Nameplate Options

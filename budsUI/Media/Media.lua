@@ -11,4 +11,6 @@ LSM:Register("font", "budsUI_Normal", [[Interface\AddOns\]] .. K.Directory .. [[
 LSM:Register("sound", "GameMaster_Whisper", [[Sound\Spells\Simongame_visual_gametick.wav]])
 LSM:Register("sound", "budsUI_Whisper", [[Interface\AddOns\]] .. K.Directory .. [[\Media\Sounds\KWhisper.ogg]])
 LSM:Register("sound", "Spell_Proc", [[Interface\AddOns\]] .. K.Directory .. [[\Media\Sounds\Proc.ogg]])
+LSM:Register("sound", "PvP_Countdown", [[Interface\AddOns\]] .. K.Directory .. [[\Media\Sounds\RetailTimer\Countdown.ogg]])
+LSM:Register("sound", "PvP_Finish", [[Interface\AddOns\]] .. K.Directory .. [[\Media\Sounds\RetailTimer\Finish.ogg]])
 LSM:Register("statusbar", "budsUI_StatusBar", [[Interface\AddOns\]] .. K.Directory .. [[\Media\Statusbars\Flat]])
