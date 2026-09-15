@@ -105,6 +105,7 @@ local function Local(o)
 	if o == "UIConfigBagBankColumns" then o = L_GUI_BAGS_BANK end
 	if o == "UIConfigBagButtonSize" then o = L_GUI_BAGS_BUTTON_SIZE end
 	if o == "UIConfigBagButtonSpace" then o = L_GUI_BAGS_BUTTON_SPACE end
+	if o == "UIConfigBagShowItemLevel" then o = L_GUI_BAGS_ITEM_LEVEL end
 	if o == "UIConfigBagEnable" then o = L_GUI_BAGS_ENABLE end
 	-- Blizzard Settings
 	if o == "UIConfigBlizzard" then o = L_GUI_BLIZZARD end

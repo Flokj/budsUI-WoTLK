@@ -119,6 +119,30 @@ local trashBag = {}
 -- mostly from carg.bags_Aurora
 local QUEST_ITEM_STRING = nil
 
+-- Hidden tooltip to detect BoE (3.3.5 has no bind-type API)
+local bindTip = CreateFrame("GameTooltip", "budsUIBagBindTip", nil, "GameTooltipTemplate")
+bindTip:SetOwner(UIParent, "ANCHOR_NONE")
+
+local function IsBoE(bag, slot)
+	bindTip:ClearLines()
+	bindTip:SetBagItem(bag, slot)
+	for i = 1, bindTip:NumLines() do
+		local line = _G["budsUIBagBindTipTextLeft" .. i]
+		if line and line:GetText() == ITEM_BIND_ON_EQUIP then
+			return true
+		end
+	end
+	return false
+end
+
+-- ElvUI-style eligibility: wearable gear only, no bags/tabards/ammo
+local function IsEligible(rarity, equipLoc)
+	if not rarity or rarity <= 1 then return false end
+	if not equipLoc or equipLoc == "" then return false end
+	return equipLoc ~= "INVTYPE_BAG" and equipLoc ~= "INVTYPE_TABARD"
+		and equipLoc ~= "INVTYPE_AMMO" and equipLoc ~= "INVTYPE_QUIVER"
+end
+
 function Stuffing:SlotUpdate(b)
 	local texture, count, locked = GetContainerItemInfo(b.bag, b.slot)
 	local clink = GetContainerItemLink(b.bag, b.slot)
@@ -151,16 +175,39 @@ function Stuffing:SlotUpdate(b)
 	SetItemButtonCount(b.frame, count)
 	SetItemButtonDesaturated(b.frame, locked)
 
-	if b.Glow then
-		b.Glow:Hide()
-		if b.rarity then
-			if b.rarity > 1 then
-				b.Glow:SetVertexColor(GetItemQualityColor(b.rarity))
-				b.Glow:Show()
-			elseif b.qitem then
-				b.Glow:SetVertexColor(1, 1, 0)
-				b.Glow:Show()
+	if b.rarity then
+		if b.rarity > 1 then
+			b.frame:SetBackdropBorderColor(GetItemQualityColor(b.rarity))
+		elseif b.qitem then
+			b.frame:SetBackdropBorderColor(1, 1, 0)
+		else
+			b.frame:SetBackdropBorderColor(unpack(C.Media.Border_Color))
+		end
+	else
+		b.frame:SetBackdropBorderColor(unpack(C.Media.Border_Color))
+	end
+
+	if b.ilvl then
+		b.ilvl:SetText("")
+		if C.Bag.ShowItemLevel and clink then
+			local _, _, rarity, itemLevel, _, _, _, _, equipLoc = GetItemInfo(clink)
+			if itemLevel and itemLevel > 1 and IsEligible(rarity, equipLoc) then
+				local r, g, bl = GetItemQualityColor(rarity)
+				b.ilvl:SetText(itemLevel)
+				b.ilvl:SetTextColor(r, g, bl)
+				if b.bindType then
+					if IsBoE(b.bag, b.slot) then
+						b.bindType:SetText("BoE")
+						b.bindType:SetTextColor(r, g, bl)
+					else
+						b.bindType:SetText("")
+					end
+				end
+			elseif b.bindType then
+				b.bindType:SetText("")
 			end
+		elseif b.bindType then
+			b.bindType:SetText("")
 		end
 	end
 
@@ -270,15 +317,35 @@ function Stuffing:SlotNew(bag, slot)
 		c:SetPoint("BOTTOMRIGHT", 1, 1)
 	end
 
-	if 1 == 1 and not ret.Glow then
-		-- from carg.bags_Aurora
-		local glow = ret.frame:CreateTexture(nil, "OVERLAY")
-		glow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
-		glow:SetBlendMode("ADD")
-		glow:SetAlpha(.8)
-		glow:SetPoint("CENTER", ret.frame)
-		ret.Glow = glow
+	if not ret.ilvl then
+		local il = ret.frame:CreateFontString(nil, "OVERLAY")
+		il:SetFont(C.Media.Font, C.Media.Font_Size, C.Media.Font_Style)
+		il:SetPoint("TOP", ret.frame, "TOP", 0, -2)
+		il:SetShadowColor(0, 0, 0)
+		il:SetShadowOffset(1, -1)
+		il:SetText("")
+		ret.ilvl = il
 	end
+
+	if not ret.bindType then
+		local bt = ret.frame:CreateFontString(nil, "OVERLAY")
+		bt:SetFont(C.Media.Font, C.Media.Font_Size, C.Media.Font_Style)
+		bt:SetPoint("BOTTOMLEFT", ret.frame, "BOTTOMLEFT", 1, 1)
+		bt:SetShadowColor(0, 0, 0)
+		bt:SetShadowOffset(1, -1)
+		bt:SetText("")
+		ret.bindType = bt
+	end
+
+	if not ret.frame.BorderTextures then
+		K.CreateBorder(ret.frame)
+	end
+
+	-- Texts above the border (same OVERLAY layer, higher sublevel)
+	local cnt = _G[ret.frame:GetName() .. "Count"]
+	if cnt and cnt.SetDrawLayer then cnt:SetDrawLayer("OVERLAY", 1) end
+	if ret.ilvl and ret.ilvl.SetDrawLayer then ret.ilvl:SetDrawLayer("OVERLAY", 1) end
+	if ret.bindType and ret.bindType.SetDrawLayer then ret.bindType:SetDrawLayer("OVERLAY", 1) end
 
 	ret.bag = bag
 	ret.slot = slot
@@ -370,17 +437,14 @@ function Stuffing:SearchUpdate(str)
 						end
 						SetItemButtonDesaturated(b.frame, true)
 						b.frame:SetAlpha(0.2)
-						if b.Glow then b.Glow:Hide() end
+						b.frame:SetBackdropBorderColor(unpack(C.Media.Border_Color))
 					else
 						if minLevel and minLevel > K.Level then
 							_G[b.frame:GetName().."IconTexture"]:SetVertexColor(1, 0.1, 0.1)
 						end
 						SetItemButtonDesaturated(b.frame, false)
 						b.frame:SetAlpha(1)
-						if b.Glow then
-							b.Glow:Show()
-							b.Glow:SetVertexColor(0.8, 0.8, 0.3)
-						end
+						b.frame:SetBackdropBorderColor(0.8, 0.8, 0.3)
 					end
 				end
 			end
@@ -875,10 +939,6 @@ function Stuffing:Layout(lb)
 					iconTex:Show()
 					b.iconTex = iconTex
 
-					if b.Glow then
-						b.Glow:SetSize(C.Bag.ButtonSize / 37 * 64, C.Bag.ButtonSize / 37 * 64)
-					end
-
 					idx = idx + 1
 				end
 			end
@@ -957,6 +1017,7 @@ function Stuffing:ADDON_LOADED(addon)
 	self:RegisterEvent("PLAYERBANKBAGSLOTS_CHANGED")
 	self:RegisterEvent("BAG_CLOSED")
 	self:RegisterEvent("BAG_UPDATE_COOLDOWN")
+	self:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 
 	self:InitBags()
 
@@ -986,6 +1047,14 @@ function Stuffing:PLAYER_ENTERING_WORLD()
 	Stuffing:UnregisterEvent("PLAYER_ENTERING_WORLD")
 	ToggleBackpack()
 	ToggleBackpack()
+end
+
+function Stuffing:GET_ITEM_INFO_RECEIVED()
+	if self.frame and self.frame:IsShown() and self.buttons then
+		for _, b in ipairs(self.buttons) do
+			self:SlotUpdate(b)
+		end
+	end
 end
 
 function Stuffing:PLAYERBANKSLOTS_CHANGED(id)

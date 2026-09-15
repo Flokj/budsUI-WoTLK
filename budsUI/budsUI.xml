@@ -11,7 +11,6 @@
 	
 	<Script file="Core\PixelPerfect.lua"/>
 
-	<Include file="Libs\oGlow\oGlow.xml"/>
 	<Script file="Libs\LibStub\LibStub.lua"/>
 	<Script file="Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua"/>
 	<Script file="Libs\LibSharedMedia-3.0\LibSharedMedia-3.0.lua"/>
@@ -107,6 +106,7 @@
 	<Script file="Modules\Blizzard\ExpBar.lua"/>
 	<Script file="Modules\Blizzard\Fixes.lua"/>
 	<Script file="Modules\Blizzard\Fonts.lua"/>
+	<Script file="Modules\Blizzard\ItemQuality.lua"/>
 	<Script file="Modules\Blizzard\Nameplate.lua"/>
 	<Script file="Modules\Blizzard\RepReward.lua"/>
 

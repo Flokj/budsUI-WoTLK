@@ -95,9 +95,10 @@ local function Threat_Init()
 		bar:SetStatusBarTexture(C.Media.Texture)
 		bar:SetMinMaxValues(0, 100)
 		bar:SetBackdrop(K.Backdrop)
+		K.CreateBorder(bar)
+		-- Colors AFTER CreateBorder: it re-applies the backdrop, resetting white
 		bar:SetBackdropColor(unpack(C.Media.Backdrop_Color))
 		bar:SetBackdropBorderColor(unpack(C.Media.Border_Color))
-		K.CreateBorder(bar)
 		bar:EnableMouse(false)
 
 		bar.left = bar:CreateFontString(nil, "OVERLAY")

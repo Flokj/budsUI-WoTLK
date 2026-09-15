@@ -72,6 +72,7 @@ C["Bag"] = {
 	["ButtonSpace"] = 4,
 	["Enable"] = true,
 	["HideSoulBag"] = false,
+	["ShowItemLevel"] = true,
 }
 -- Blizzard Options
 C["Blizzard"] = {
