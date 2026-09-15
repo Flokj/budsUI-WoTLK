@@ -155,6 +155,82 @@ local PAPERDOLL_STATCATEGORIES = {
 
 local PAPERDOLL_STATCATEGORY_DEFAULTORDER = { "ITEM_LEVEL", "BASE_STATS", "MELEE_COMBAT", "RANGED_COMBAT", "SPELL_COMBAT", "DEFENSES", "RESISTANCE" }
 
+-- Ordered frame list + drag state, like ElvUI_Enhanced.
+local StatCategoryFrames = {}
+local MOVING_STAT_CATEGORY = nil
+local STATCATEGORY_MOVING_INDENT = 4
+
+for _id, _name in ipairs(PAPERDOLL_STATCATEGORY_DEFAULTORDER) do
+	PAPERDOLL_STATCATEGORIES[_name].id = _id
+end
+
+local function FindCategoryById(id)
+	for categoryName, category in pairs(PAPERDOLL_STATCATEGORIES) do
+		if category.id == id then
+			return categoryName
+		end
+	end
+end
+
+-- Saved state per character, like E.private.enhanced.character in ElvUI_Enhanced:
+-- collapsed/collapsed2 + order/order2 (one set per talent group), panelHidden.
+-- Left-click header: toggle + autosave. Drag header: reorder (autosaved).
+local function CharStatsData()
+	if type(budsUIData) ~= "table" then budsUIData = {} end
+	if type(budsUIData.CharacterData) ~= "table" then budsUIData.CharacterData = {} end
+	local key = (K.Realm or GetRealmName()) .. "-" .. (K.Name or UnitName("player"))
+	if type(budsUIData.CharacterData[key]) ~= "table" then budsUIData.CharacterData[key] = {} end
+	local charData = budsUIData.CharacterData[key]
+	if type(charData.CharStats) ~= "table" then charData.CharStats = {} end
+	return charData.CharStats
+end
+
+local function ActiveSpec()
+	if GetActiveTalentGroup and GetActiveTalentGroup() == 2 then return 2 end
+	return 1
+end
+
+-- All categories expanded by default, like ElvUI_Enhanced Private.lua.
+
+-- Collapsed table for the active spec. First run: all expanded.
+-- Spec2 without data inherits spec1 (like ElvUI_Enhanced orderName2 init).
+local function CollapsedStore()
+	local data = CharStatsData()
+	local key = ActiveSpec() == 2 and "collapsed2" or "collapsed"
+	if type(data[key]) ~= "table" then
+		data[key] = {}
+		local source = (key == "collapsed2" and type(data.collapsed) == "table") and data.collapsed or nil
+		for _, category in ipairs(PAPERDOLL_STATCATEGORY_DEFAULTORDER) do
+			if source and source[category] ~= nil then
+				data[key][category] = source[category]
+			else
+				data[key][category] = false
+			end
+		end
+	else
+		for _, category in ipairs(PAPERDOLL_STATCATEGORY_DEFAULTORDER) do
+			if data[key][category] == nil then
+				data[key][category] = false
+			end
+		end
+	end
+	return data[key]
+end
+
+local function GetOrderData()
+	local data = CharStatsData()
+	if ActiveSpec() == 2 then
+		if data.order2 == nil and data.order ~= nil then data.order2 = data.order end
+		return data.order2 or ""
+	end
+	return data.order or ""
+end
+
+local function SaveOrderData(orderString)
+	local data = CharStatsData()
+	if ActiveSpec() == 2 then data.order2 = orderString else data.order = orderString end
+end
+
 local function ShowStatTooltip(self)
 	if self.tooltip then
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -664,15 +740,37 @@ end
 
 function module:PaperDoll_UpdateCategoryPositions()
 	if not CharacterStatsPane or not CharacterStatsPane.Categories then return end
+	if #StatCategoryFrames == 0 then
+		local prevFrame = nil
+		for index = 1, #PAPERDOLL_STATCATEGORY_DEFAULTORDER do
+			local frame = CharacterStatsPane.Categories[index]
+			if frame and frame:IsShown() then
+				frame:ClearAllPoints()
+				if prevFrame then
+					frame:SetPoint("TOPLEFT", prevFrame, "BOTTOMLEFT", 0, -4)
+				else
+					frame:SetPoint("TOPLEFT", CharacterStatsPaneScrollChild, "TOPLEFT", 1, -4)
+				end
+				prevFrame = frame
+			end
+		end
+		return
+	end
 	local prevFrame = nil
-	for index = 1, #PAPERDOLL_STATCATEGORY_DEFAULTORDER do
-		local frame = CharacterStatsPane.Categories[index]
+	for index = 1, #StatCategoryFrames do
+		local frame = StatCategoryFrames[index]
 		if frame and frame:IsShown() then
+			local xOffset = 0
+			if frame == MOVING_STAT_CATEGORY then
+				xOffset = STATCATEGORY_MOVING_INDENT
+			elseif prevFrame and prevFrame == MOVING_STAT_CATEGORY then
+				xOffset = -STATCATEGORY_MOVING_INDENT
+			end
 			frame:ClearAllPoints()
 			if prevFrame then
-				frame:SetPoint("TOPLEFT", prevFrame, "BOTTOMLEFT", 0, -4)
+				frame:SetPoint("TOPLEFT", prevFrame, "BOTTOMLEFT", xOffset, -4)
 			else
-				frame:SetPoint("TOPLEFT", CharacterStatsPaneScrollChild, "TOPLEFT", 1, -4)
+				frame:SetPoint("TOPLEFT", CharacterStatsPaneScrollChild, "TOPLEFT", 1 + xOffset, -4)
 			end
 			prevFrame = frame
 		end
@@ -705,17 +803,168 @@ function module:PaperDollFrame_UpdateStatScrollChildHeight()
 	end
 end
 
-function module:PaperDoll_InitStatCategories(defaultOrder)
+function module:CollapseStatCategory(categoryFrame)
+	if not categoryFrame or not categoryFrame.Category then return end
+	if not categoryFrame.collapsed then
+		categoryFrame.collapsed = true
+		if categoryFrame.Toolbar then categoryFrame.Toolbar:SetAlpha(0.4) end
+		self:PaperDollFrame_UpdateStatCategory(categoryFrame)
+		self:PaperDollFrame_UpdateStatScrollChildHeight()
+	end
+end
+
+function module:ExpandStatCategory(categoryFrame)
+	if not categoryFrame or not categoryFrame.Category then return end
+	if categoryFrame.collapsed then
+		categoryFrame.collapsed = false
+		if categoryFrame.Toolbar then categoryFrame.Toolbar:SetAlpha(1) end
+		self:PaperDollFrame_UpdateStatCategory(categoryFrame)
+		self:PaperDollFrame_UpdateStatScrollChildHeight()
+	end
+end
+
+function module:PaperDoll_InitStatCategories()
 	if not CharacterStatsPane or not CharacterStatsPane.Categories then return end
-	for index = 1, #defaultOrder do
-		local frame = CharacterStatsPane.Categories[index]
-		if frame then
-			frame.Category = defaultOrder[index]
-			frame:Show()
+	local defaultOrder = PAPERDOLL_STATCATEGORY_DEFAULTORDER
+	local orderData = GetOrderData()
+	local collapsedData = CollapsedStore()
+
+	local order = defaultOrder
+	if orderData and orderData ~= "" then
+		local savedOrder = {}
+		for i in string.gmatch(orderData, "(%d+),?") do
+			i = tonumber(i)
+			if i then
+				local categoryName = FindCategoryById(i)
+				if categoryName then table.insert(savedOrder, categoryName) end
+			end
+		end
+		local valid = true
+		if #savedOrder == #defaultOrder then
+			for _, category1 in ipairs(defaultOrder) do
+				local found = false
+				for _, category2 in ipairs(savedOrder) do
+					if category1 == category2 then found = true break end
+				end
+				if not found then valid = false break end
+			end
+		else
+			valid = false
+		end
+		if valid then
+			order = savedOrder
+		else
+			SaveOrderData("")
 		end
 	end
 
+	table.wipe(StatCategoryFrames)
+	for index = 1, #order do
+		local frame = CharacterStatsPane.Categories[index]
+		if frame then
+			table.insert(StatCategoryFrames, frame)
+			frame.Category = order[index]
+			frame:Show()
+			if collapsedData[frame.Category] then
+				frame.collapsed = true
+				if frame.Toolbar then frame.Toolbar:SetAlpha(0.4) end
+			else
+				frame.collapsed = false
+				if frame.Toolbar then frame.Toolbar:SetAlpha(1) end
+			end
+		end
+	end
+
+	local index = #order + 1
+	while CharacterStatsPane.Categories[index] do
+		CharacterStatsPane.Categories[index]:Hide()
+		CharacterStatsPane.Categories[index].Category = nil
+		index = index + 1
+	end
+
+	CharacterStatsPane.defaultOrder = defaultOrder
+	CharacterStatsPane.collapsedData = collapsedData
+	CharacterStatsPane.unit = "player"
+
+	self:PaperDoll_UpdateCategoryPositions()
 	self:PaperDollFrame_UpdateStats()
+end
+
+function module:SaveCollapsed(category, collapsed)
+	if CharacterStatsPane and CharacterStatsPane.collapsedData then
+		CharacterStatsPane.collapsedData[category] = collapsed
+	else
+		local ok, store = pcall(CollapsedStore)
+		if ok and store then store[category] = collapsed end
+	end
+end
+
+local function PaperDoll_SaveStatCategoryOrder()
+	if not (CharacterStatsPane and CharacterStatsPane.defaultOrder) then return end
+	if #StatCategoryFrames ~= #CharacterStatsPane.defaultOrder then return end
+	local same = true
+	for index = 1, #StatCategoryFrames do
+		if StatCategoryFrames[index].Category ~= CharacterStatsPane.defaultOrder[index] then
+			same = false
+			break
+		end
+	end
+	if same then SaveOrderData("") return end
+	local order = {}
+	for index = 1, #StatCategoryFrames do
+		order[index] = PAPERDOLL_STATCATEGORIES[StatCategoryFrames[index].Category].id
+	end
+	SaveOrderData(table.concat(order, ","))
+end
+
+local function StatCategory_OnDragUpdate(self)
+	if #StatCategoryFrames == 0 then return end
+	local _, cursorY = GetCursorPosition()
+	cursorY = cursorY / (UIParent:GetEffectiveScale() or 1)
+	local myIndex, insertIndex, closestPos
+	for index = 1, #StatCategoryFrames + 1 do
+		if StatCategoryFrames[index] == self then myIndex = index end
+		local frameY
+		if index <= #StatCategoryFrames then
+			frameY = StatCategoryFrames[index]:GetTop()
+		else
+			frameY = StatCategoryFrames[#StatCategoryFrames]:GetBottom()
+		end
+		if not frameY then return end
+		frameY = frameY - 8
+		if myIndex and index > myIndex then frameY = frameY + self:GetHeight() end
+		if not closestPos or math.abs(cursorY - frameY) < closestPos then
+			insertIndex = index
+			closestPos = math.abs(cursorY - frameY)
+		end
+	end
+	if not myIndex or not insertIndex then return end
+	if insertIndex > myIndex then insertIndex = insertIndex - 1 end
+	if myIndex ~= insertIndex then
+		table.remove(StatCategoryFrames, myIndex)
+		table.insert(StatCategoryFrames, insertIndex, self)
+		module:PaperDoll_UpdateCategoryPositions()
+	end
+end
+
+local function PaperDollStatCategory_OnDragStart(self)
+	MOVING_STAT_CATEGORY = self
+	module:PaperDoll_UpdateCategoryPositions()
+	GameTooltip:Hide()
+	self:SetScript("OnUpdate", StatCategory_OnDragUpdate)
+	for _, frame in next, StatCategoryFrames do
+		if frame ~= self then frame:SetAlpha(0.6) end
+	end
+end
+
+local function PaperDollStatCategory_OnDragStop(self)
+	MOVING_STAT_CATEGORY = nil
+	module:PaperDoll_UpdateCategoryPositions()
+	self:SetScript("OnUpdate", nil)
+	for _, frame in next, StatCategoryFrames do
+		if frame ~= self then frame:SetAlpha(1) end
+	end
+	PaperDoll_SaveStatCategoryOrder()
 end
 
 function module:Initialize()
@@ -742,6 +991,8 @@ function module:Initialize()
 	local function TogglePanel(expand)
 		if expand == nil then expand = not isExpanded end
 		isExpanded = expand
+		local ok, data = pcall(CharStatsData)
+		if ok and data then data.panelHidden = not isExpanded end
 		if isExpanded then
 			RightPanel:Show()
 			PlaySound("igCharacterInfoOpen")
@@ -786,6 +1037,7 @@ function module:Initialize()
 		})
 		toolbar:SetBackdropColor(0.15, 0.15, 0.15, 0.9)
 		toolbar:SetBackdropBorderColor(0.5, 0.5, 0.5, 0.8)
+		toolbar:RegisterForDrag("LeftButton")
 
 		local nameText = toolbar:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 		nameText:SetPoint("CENTER", toolbar, "CENTER", 0, 0)
@@ -794,10 +1046,25 @@ function module:Initialize()
 
 		toolbar:SetScript("OnClick", function(self)
 			local categoryFrame = self:GetParent()
-			categoryFrame.collapsed = not categoryFrame.collapsed
-			module:PaperDollFrame_UpdateStatCategory(categoryFrame)
+			if categoryFrame.collapsed then
+				module:ExpandStatCategory(categoryFrame)
+				if CharacterStatsPane and CharacterStatsPane.collapsedData and categoryFrame.Category then
+					CharacterStatsPane.collapsedData[categoryFrame.Category] = false
+				end
+			else
+				module:CollapseStatCategory(categoryFrame)
+				if CharacterStatsPane and CharacterStatsPane.collapsedData and categoryFrame.Category then
+					CharacterStatsPane.collapsedData[categoryFrame.Category] = true
+				end
+			end
 			module:PaperDoll_UpdateCategoryPositions()
 			module:PaperDollFrame_UpdateStatScrollChildHeight()
+		end)
+		toolbar:SetScript("OnDragStart", function(self)
+			PaperDollStatCategory_OnDragStart(self:GetParent())
+		end)
+		toolbar:SetScript("OnDragStop", function(self)
+			PaperDollStatCategory_OnDragStop(self:GetParent())
 		end)
 
 		toolbar:SetScript("OnEnter", function(self)
@@ -812,9 +1079,12 @@ function module:Initialize()
 	end
 
 	PaperDollFrame:HookScript("OnShow", function()
-		TogglePanel(isExpanded)
+		local hidden = false
+		local ok, data = pcall(CharStatsData)
+		if ok and data then hidden = data.panelHidden end
+		TogglePanel(not hidden)
 		module:PaperDollFrame_SetLevel()
-		module:PaperDoll_InitStatCategories(PAPERDOLL_STATCATEGORY_DEFAULTORDER)
+		module:PaperDoll_InitStatCategories()
 	end)
 
 	PaperDollFrame:HookScript("OnHide", function()
@@ -840,7 +1110,15 @@ module:SetScript("OnEvent", function(self, event, unit)
 		self:RegisterEvent("COMBAT_RATING_UPDATE")
 		self:RegisterEvent("UNIT_LEVEL")
 		self:RegisterEvent("PLAYER_TALENT_UPDATE")
+		self:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
 		self:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+		return
+	end
+
+	if event == "ACTIVE_TALENT_GROUP_CHANGED" then
+		if PaperDollFrame and PaperDollFrame:IsVisible() then
+			self:PaperDoll_InitStatCategories()
+		end
 		return
 	end
 
