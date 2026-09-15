@@ -15,7 +15,7 @@ local ALLOWED_GROUPS = {
 	["Filger"] = true, ["General"] = true, ["Loot"] = true,
 	["Minimap"] = true, ["Misc"] = true, ["MoverPositions"] = true,
 	["Nameplate"] = true, ["PowerBar"] = true, ["PulseCD"] = true,
-	["Skins"] = true, ["Tooltip"] = true, ["Unitframe"] = true,
+	["Skins"] = true, ["ThreatMeter"] = true, ["Tooltip"] = true, ["Unitframe"] = true,
 }
 
 -- API to create a new profile. If copyFrom is provided, deep copy it. Otherwise deep copy C

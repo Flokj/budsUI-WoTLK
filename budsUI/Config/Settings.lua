@@ -264,6 +264,15 @@ C["Skins"] = {
 	["WorldMapScale"] = 0.80,
 	["WorldMapScaleMini"] = 1.20,
 }
+-- ThreatMeter Options
+C["ThreatMeter"] = {
+	["Enable"] = true,
+	["Width"] = 200,
+	["Height"] = 18,
+	["MaxBars"] = 4,
+	["Spacing"] = 5,
+	["FontSize"] = 12,
+}
 -- Tooltip Options
 C["Tooltip"] = {
 	["Scale"] = 1,

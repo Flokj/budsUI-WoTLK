@@ -51,8 +51,9 @@ local ALLOWED_GROUPS = {
 	["PowerBar"] = 17,
 	["PulseCD"] = 18,
 	["Skins"] = 19,
-	["Tooltip"] = 20,
-	["Unitframe"] = 21,
+	["ThreatMeter"] = 20,
+	["Tooltip"] = 21,
+	["Unitframe"] = 22,
 }
 
 local function Local(o)
@@ -257,6 +258,14 @@ local function Local(o)
 	if o == "UIConfigSkinsSpy" then o = L_GUI_SKINS_SPY end
 	if o == "UIConfigSkinsWeakAuras" then o = L_GUI_SKINS_WEAKAURAS end
 	if o == "UIConfigSkinsWorldMap" then o = L_GUI_SKINS_WORLDMAP end
+	-- ThreatMeter Settings
+	if o == "UIConfigThreatMeter" then o = L_GUI_THREATMETER end
+	if o == "UIConfigThreatMeterEnable" then o = L_GUI_THREATMETER_ENABLE end
+	if o == "UIConfigThreatMeterWidth" then o = L_GUI_THREATMETER_WIDTH end
+	if o == "UIConfigThreatMeterHeight" then o = L_GUI_THREATMETER_HEIGHT end
+	if o == "UIConfigThreatMeterMaxBars" then o = L_GUI_THREATMETER_MAXBARS end
+	if o == "UIConfigThreatMeterSpacing" then o = L_GUI_THREATMETER_SPACING end
+	if o == "UIConfigThreatMeterFontSize" then o = L_GUI_THREATMETER_FONTSIZE end
 	-- Tooltip Settings
 	if o == "UIConfigTooltipScale" then o = L_GUI_TOOLTIP_SCALE end
 	if o == "UIConfigTooltip" then o = L_GUI_TOOLTIP end
