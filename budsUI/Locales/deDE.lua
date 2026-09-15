@@ -149,10 +149,6 @@ L_MAIL_NEED = "Benötige Briefkasten."
 L_MAIL_STOPPED = "Gestoppt, Inventar ist voll."
 L_MAIL_UNIQUE = "Gestoppt. Einzigartiges Duplikat in Tasche oder Bank gefunden."
 -- Map Localization
-L_MAP_FARMMODE = "|cff388bdbFarm-Modus|r"
--- FarmMode Minimap
-L_MINIMAP_FARMMODE_ON = "|cffffe02eFarm-Modus|r: |cFF008000Aktiviert|r."
-L_MINIMAP_FARMMODE_OFF = "|cffffe02eFarm-Modus|r: |cFFFF0000Deaktiviert|r."
 -- Misc Localization
 L_MISC_UI_OUTDATED = "Deine Version von |cff388bdbbudsUI|r ist veraltet. Du kannst die neueste Version von www.github.com/Budtender3000/budsUI/releases herunterladen"
 L_MISC_UNDRESS = "Ausziehen"
@@ -247,7 +243,6 @@ L_SLASHCMD_HELP = {
 	"|cff388bdb/clearchat, /cc|r - |cffE8CB3BLöscht das aktive Chat-Fenster.",
 	"|cff388bdb/clearquests, /clquests|r - |cffE8CB3BLöscht alle deine Quests.",
 	"|cff388bdb/dbmtest|r - |cffE8CB3BTestet Deadly Boss Mods.",
-	"|cff388bdb/farmmode|r - |cffE8CB3BVergrößert die Minimap.",
 	"|cff388bdb/frame|r - |cffE8CB3BZeigt Frame-Infos unter dem Cursor.",
 	"|cff388bdb/fs|r - |cffE8CB3BZeigt Framestack. Nützlich für Entwickler.",
 	"|cff388bdb/gm|r - |cffE8CB3BÖffnet das GM-Fenster.",

@@ -110,8 +110,6 @@ local function Local(o)
 	if o == "UIConfigBlizzard" then o = L_GUI_BLIZZARD end
 	if o == "UIConfigBlizzardCaptureBar" then o = L_GUI_BLIZZARD_CAPTUREBAR end
 	if o == "UIConfigBlizzardClassColor" then o = L_GUI_BLIZZARD_CLASS_COLOR end
-	if o == "UIConfigBlizzardDarkTextures" then o = L_GUI_BLIZZARD_DARK_TEXTURES end
-	if o == "UIConfigBlizzardDarkTexturesColor" then o = L_GUI_BLIZZARD_DARK_TEXTURES_COLOR end
 	if o == "UIConfigBlizzardDurability" then o = L_GUI_BLIZZARD_DURABILITY end
 	if o == "UIConfigBlizzardEnhanceProfessions" then o = L_GUI_BLIZZARD_ENHANCE_PROFESSIONS end
 	if o == "UIConfigBlizzardEnhanceTrainers" then o = L_GUI_BLIZZARD_ENHANCE_TRAINERS end

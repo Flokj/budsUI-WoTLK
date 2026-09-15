@@ -139,7 +139,6 @@
 	<Script file="Modules\Loot\MasterLoot.lua"/>
 
 	<Script file="Modules\Maps\ButtonCollect.lua"/>
-	<Script file="Modules\Maps\FarmMode.lua"/>
 	<Script file="Modules\Maps\MiniMap.lua"/>
 	<Script file="Modules\Maps\RightClick.lua"/>
 	<Script file="Modules\Maps\WhoPinged.lua"/>
