@@ -218,7 +218,7 @@ do
 	updater:RegisterEvent("TRADE_SHOW")
 	updater:RegisterEvent("TRADE_PLAYER_ITEM_CHANGED")
 	updater:RegisterEvent("TRADE_TARGET_ITEM_CHANGED")
-	updater:SetScript("OnEvent", function(_, event, _, index)
+	updater:SetScript("OnEvent", function(_, event, index)
 		if event == "TRADE_PLAYER_ITEM_CHANGED" then
 			updatePlayer(nil, nil, index)
 		elseif event == "TRADE_TARGET_ITEM_CHANGED" then

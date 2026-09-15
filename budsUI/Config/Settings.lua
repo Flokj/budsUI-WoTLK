@@ -180,7 +180,7 @@ C["Misc"] = {
 	["AlreadyKnown"] = true,
 	["Armory"] = false,
 	["BGSpam"] = true,
-	["DurabilityWarning"] = true,
+	["DurabilityWarning"] = false,
 	["EnhancedMail"] = true,
 	["HatTrick"] = true,
 	["InviteKeyword"] = "inv",
@@ -265,7 +265,7 @@ C["Skins"] = {
 }
 -- ThreatMeter Options
 C["ThreatMeter"] = {
-	["Enable"] = true,
+	["Enable"] = false,
 	["Width"] = 200,
 	["Height"] = 18,
 	["MaxBars"] = 4,
@@ -339,10 +339,10 @@ C["Unitframe"] = {
 
 	["Player"] = { ["Enable"] = true, ["Width"] = 190, ["Height"] = 36, ["PowerHeight"] = 16, ["ShowPower"] = true, ["Buffs"] = false, ["Debuffs"] = false, ["ClassPower"] = true, ["AdditionalPower"] = true, ["ShowName"] = false },
 	["Target"] = { ["Enable"] = true, ["Width"] = 190, ["Height"] = 36, ["PowerHeight"] = 16, ["ShowPower"] = true, ["Buffs"] = true, ["Debuffs"] = true },
-	["TargetOfTarget"] = { ["Enable"] = true, ["Width"] = 90, ["Height"] = 24, ["PowerHeight"] = 12, ["ShowPower"] = false, ["Debuffs"] = true },
+	["TargetOfTarget"] = { ["Enable"] = true, ["Width"] = 90, ["Height"] = 24, ["PowerHeight"] = 12, ["ShowPower"] = false, ["Debuffs"] = false },
 	["Pet"] = { ["Enable"] = true, ["Width"] = 90, ["Height"] = 18, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Debuffs"] = false },
-	["Focus"] = { ["Enable"] = true, ["Width"] = 180, ["Height"] = 28, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Debuffs"] = true },
-	["FocusTarget"] = { ["Enable"] = false, ["Width"] = 80, ["Height"] = 18, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Debuffs"] = true },
+	["Focus"] = { ["Enable"] = true, ["Width"] = 150, ["Height"] = 28, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Debuffs"] = true },
+	["FocusTarget"] = { ["Enable"] = false, ["Width"] = 80, ["Height"] = 18, ["PowerHeight"] = 12, ["ShowPower"] = true, ["Debuffs"] = false },
 	["Party"] = { ["Enable"] = false, ["Width"] = 150, ["Height"] = 22, ["PowerHeight"] = 12, ["ShowPower"] = true, ["ShowSolo"] = false, ["ShowPlayer"] = true, ["Debuffs"] = true, ["DispelHighlight"] = true, ["Portrait"] = false, ["Castbar"] = true, ["RaidStyle"] = false },
 	-- Height is the health bar, the power bar (PowerHeight) sits below it.
 	-- PowerMode: All, Mana, or None.
