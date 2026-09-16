@@ -187,27 +187,26 @@ function Stuffing:SlotUpdate(b)
 		b.frame:SetBackdropBorderColor(unpack(C.Media.Border_Color))
 	end
 
+	-- ElvUI-style: always clear texts first, then set conditionally,
+	-- so no stale ilvl/bind stays on a reused cell.
 	if b.ilvl then
 		b.ilvl:SetText("")
-		if C.Bag.ShowItemLevel and clink then
-			local _, _, rarity, itemLevel, _, _, _, _, equipLoc = GetItemInfo(clink)
-			if itemLevel and itemLevel > 1 and IsEligible(rarity, equipLoc) then
+	end
+	if b.bindType then
+		b.bindType:SetText("")
+	end
+	if C.Bag.ShowItemLevel and clink then
+		local _, _, rarity, itemLevel, _, _, _, _, equipLoc = GetItemInfo(clink)
+		if itemLevel and itemLevel > 1 and IsEligible(rarity, equipLoc) then
+			if b.ilvl then
 				local r, g, bl = GetItemQualityColor(rarity)
 				b.ilvl:SetText(itemLevel)
 				b.ilvl:SetTextColor(r, g, bl)
-				if b.bindType then
-					if IsBoE(b.bag, b.slot) then
-						b.bindType:SetText("BoE")
-						b.bindType:SetTextColor(r, g, bl)
-					else
-						b.bindType:SetText("")
-					end
+				if b.bindType and IsBoE(b.bag, b.slot) then
+					b.bindType:SetText("BoE")
+					b.bindType:SetTextColor(r, g, bl)
 				end
-			elseif b.bindType then
-				b.bindType:SetText("")
 			end
-		elseif b.bindType then
-			b.bindType:SetText("")
 		end
 	end
 
@@ -274,6 +273,9 @@ function Stuffing:SlotNew(bag, slot)
 	for _, v in ipairs(self.buttons) do
 		if v.bag == bag and v.slot == slot then
 			v.lock = false
+			-- ElvUI-style: reused buttons must refresh, bag contents may have
+			-- changed (e.g. bags swapped) while the (bag, slot) key stayed.
+			self:SlotUpdate(v)
 			return v, false
 		end
 	end
@@ -317,7 +319,12 @@ function Stuffing:SlotNew(bag, slot)
 		c:SetPoint("BOTTOMRIGHT", 1, 1)
 	end
 
-	if not ret.ilvl then
+	-- Frames are recycled through trashButton (e.g. after swapping bags):
+	-- reuse their texts instead of stacking new FontStrings, orphans would
+	-- keep showing the stale ilvl on the cell.
+	if ret.frame.ilvl then
+		ret.ilvl = ret.frame.ilvl
+	else
 		local il = ret.frame:CreateFontString(nil, "OVERLAY")
 		il:SetFont(C.Media.Font, C.Media.Font_Size, C.Media.Font_Style)
 		il:SetPoint("TOP", ret.frame, "TOP", 0, -2)
@@ -325,9 +332,12 @@ function Stuffing:SlotNew(bag, slot)
 		il:SetShadowOffset(1, -1)
 		il:SetText("")
 		ret.ilvl = il
+		ret.frame.ilvl = il
 	end
 
-	if not ret.bindType then
+	if ret.frame.bindType then
+		ret.bindType = ret.frame.bindType
+	else
 		local bt = ret.frame:CreateFontString(nil, "OVERLAY")
 		bt:SetFont(C.Media.Font, C.Media.Font_Size, C.Media.Font_Style)
 		bt:SetPoint("BOTTOMLEFT", ret.frame, "BOTTOMLEFT", 1, 1)
@@ -335,6 +345,7 @@ function Stuffing:SlotNew(bag, slot)
 		bt:SetShadowOffset(1, -1)
 		bt:SetText("")
 		ret.bindType = bt
+		ret.frame.bindType = bt
 	end
 
 	if not ret.frame.BorderTextures then

@@ -1345,11 +1345,11 @@ C["filger_spells"] = {
 			-- Hyperspeed Accelerators
 			{ spellID = 54999, unitID = "player", caster = "player", filter = "BUFF" },
 			-- AMSHA
-			{ spellID = 48707, unitID = "player", caster = "player", filter = "BUFF" },
+			--{ spellID = 48707, unitID = "player", caster = "player", filter = "BUFF" },
 			-- Icebound
-			{ spellID = 48792, unitID = "player", caster = "player", filter = "BUFF" },
+			--{ spellID = 48792, unitID = "player", caster = "player", filter = "BUFF" },
 			-- Vampiric Blood
-			{ spellID = 55233, unitID = "player", caster = "player", filter = "BUFF" },
+			--{ spellID = 55233, unitID = "player", caster = "player", filter = "BUFF" },
 		},
 
 		{
