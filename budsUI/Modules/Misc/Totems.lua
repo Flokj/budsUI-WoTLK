@@ -70,7 +70,13 @@ local function Totem_Init()
 	local updater = CreateFrame("Frame")
 	updater:RegisterEvent("PLAYER_TOTEM_UPDATE")
 	updater:RegisterEvent("PLAYER_ENTERING_WORLD")
-	updater:SetScript("OnEvent", Totem_UpdateAll)
+	updater:SetScript("OnEvent", function(_, event, slot)
+		if event == "PLAYER_TOTEM_UPDATE" and slot and slot >= 1 and slot <= 4 then
+			Totem_UpdateCooldown(slot)
+		else
+			Totem_UpdateAll()
+		end
+	end)
 	Totem_UpdateAll()
 end
 

@@ -294,3 +294,39 @@ easyDelFrame:SetScript("OnEvent", function()
         end
     end
 end)
+
+--------------------------------------------------
+-- Bags: bottom right corner
+
+KeyRingButton:SetParent(UIParent)
+MainMenuBarBackpackButton:SetParent(UIParent)
+MainMenuBarBackpackButton:SetPoint("BOTTOMRIGHT", -2, 40)
+
+local previous = MainMenuBarBackpackButton
+for i = 0, NUM_BAG_SLOTS - 1 do
+	local bag = _G["CharacterBag" .. i .. "Slot"]
+	bag:SetParent(UIParent)
+	bag:ClearAllPoints()
+	bag:SetPoint("BOTTOMRIGHT", previous, "BOTTOMLEFT", -3, 0)
+	previous = bag
+end
+
+--------------------------------------------------
+-- Micro menu: bottom right corner, above the bags
+
+for _, button in ipairs({
+	CharacterMicroButton,
+	SpellbookMicroButton,
+	TalentMicroButton,
+	AchievementMicroButton,
+	QuestLogMicroButton,
+	SocialsMicroButton,
+	PVPMicroButton,
+	LFDMicroButton,
+	MainMenuMicroButton,
+	HelpMicroButton,
+}) do
+	button:SetParent(UIParent)
+end
+
+CharacterMicroButton:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMRIGHT", -254, 2)

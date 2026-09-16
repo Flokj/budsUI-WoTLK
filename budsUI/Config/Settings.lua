@@ -109,7 +109,7 @@ C["Chat"] = {
 	["Sticky"] = true,
 	["TabsMouseover"] = true,
 	["TabsOutline"] = false,
-	["TimestampFormat"] = 1, -- 1 = disabled, 2 = 03:27 PM, 3 = 03:27:32 PM, 4 = 15:27, 5 = 15:27:32 (same as KkthnxUI)
+	["TimestampFormat"] = 4, -- 1 = disabled, 2 = 03:27 PM, 3 = 03:27:32 PM, 4 = 15:27, 5 = 15:27:32 (same as KkthnxUI)
 	["WhispSound"] = true,
 	["Width"] = 420,
 }

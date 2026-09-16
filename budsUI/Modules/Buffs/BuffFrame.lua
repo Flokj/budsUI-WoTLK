@@ -144,7 +144,7 @@ function groupPrototype:UpdateAuras()
 
 	-- Temporary Weapon Enchants (Helpful, player only)
 	if filter == "HELPFUL" and unit == "player" then
-		local hasMH, mhExp, mhCount, _, hasOH, ohExp, ohCount = GetWeaponEnchantInfo()
+		local hasMH, mhExp, mhCount, hasOH, ohExp, ohCount = GetWeaponEnchantInfo()
 		local tempEnchants = {}
 
 		if hasMH then
