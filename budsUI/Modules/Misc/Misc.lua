@@ -297,9 +297,6 @@ end)
 
 --------------------------------------------------
 -- Bags/Micro menu: bottom right corner
-
-KeyRingButton:SetParent(UIParent)
-
 for i = 0, NUM_BAG_SLOTS - 1 do
 	(_G["CharacterBag" .. i .. "Slot"]):Kill()
 end
