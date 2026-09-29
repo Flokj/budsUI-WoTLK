@@ -255,7 +255,6 @@ C["Skins"] = {
 	["CLCRet"] = false,
 	["DBM"] = true,
 	["MinimapButtons"] = true,
-	["RaidRoll"] = true,
 	["Recount"] = false,
 	["Skada"] = true,
 	["WeakAuras"] = true,

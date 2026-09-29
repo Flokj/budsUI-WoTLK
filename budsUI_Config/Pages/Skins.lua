@@ -42,10 +42,6 @@ ns.RegisterPage({
 			type = "toggle", reload = true,
 			desc = "Enable styling Spy.",
 		}),
-		T("RaidRoll", L_GUI_SKINS_RAIDROLL or "RaidRoll", {
-			type = "toggle", reload = true,
-			desc = "Enable styling RaidRoll.",
-		}),
 		T("CLCRet", L_GUI_SKINS_CLCR or "CLCRet", {
 			type = "toggle", reload = true,
 			desc = "Enable styling CLCRet.",
