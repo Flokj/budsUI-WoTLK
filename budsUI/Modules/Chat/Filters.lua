@@ -84,3 +84,133 @@ if C.Chat.Spam == true then
 	ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL", tradeFilter)
 	ChatFrame_AddMessageEventFilter("CHAT_MSG_YELL", tradeFilter)
 end
+
+-- ═══════════════════════════════════════════════════════════════
+--  Battleground / arena announcements filter (ported from FrostAtomUI)
+--  Kills CAMPAIGN-spam ([BG Queue Announcer] / server adverts),
+--  arena-result spam, and battleground player join/leave
+--  notifications while inside a BG.
+-- ═══════════════════════════════════════════════════════════════
+if C.Chat.Filter == true then
+	local IsInInstance = IsInInstance
+	local GetTime = GetTime
+	local find, match, gsub, sub = string.find, string.match, string.gsub, string.sub
+
+	-- Server/spam advertise lines (also covers the BG Queue Announcer)
+	local SYSTEM_SPAM = {
+		"^|cffff0000%[BG Queue Announcer%]:|r",
+		"wowcircle%.net",
+		"control panel at our website",
+		"Speeding up the battle start",
+		"/join english",
+	}
+
+	local function formatToPattern(text)
+		return "^" .. gsub(gsub(text, "[%(%)%.%%%+%-%*%?%[%]%^%$]", "%%%0"), "%%%%[sd]", "(.-)") .. "$"
+	end
+	local function withOptionalPeriod(pattern)
+		return sub(pattern, 1, -2) .. "%.?$"
+	end
+
+	local BG_JOINED = {
+		withOptionalPeriod(formatToPattern(ERR_BG_PLAYER_JOINED_SS)),
+		withOptionalPeriod(formatToPattern((gsub(ERR_BG_PLAYER_JOINED_SS, "|H.-|h.-|h", "%%s", 1)))),
+		formatToPattern(ERR_RAID_MEMBER_ADDED_S),
+	}
+	local BG_LEFT = {
+		withOptionalPeriod(formatToPattern(ERR_BG_PLAYER_LEFT_S)),
+		formatToPattern(ERR_RAID_MEMBER_REMOVED_S),
+	}
+
+	local function appendFormatPatterns(patterns, ...)
+		for i = 1, select("#", ...) do
+			patterns[#patterns + 1] = formatToPattern((select(i, ...)))
+		end
+		return patterns
+	end
+
+	local ARENA_SPAM = appendFormatPatterns(
+		{
+			BG_JOINED[1],
+			BG_JOINED[2],
+			"^One minute until the Arena battle begins!$",
+			"^Thirty seconds until the Arena battle begins!$",
+			"^Fifteen seconds until the Arena battle begins!$",
+			"^The Arena battle has begun!$",
+			"^Speeding up the battle start! Players ready: %d+%.$",
+			"^You are in Spectator Mode%. ",
+			"^The %a+ Team wins!$",
+		},
+		ERR_SET_LOOT_FREEFORALL,
+		ERR_SET_LOOT_GROUP,
+		ERR_SET_LOOT_MASTER,
+		ERR_SET_LOOT_ROUNDROBIN,
+		ERR_SET_LOOT_THRESHOLD_S,
+		ERR_RAID_YOU_JOINED,
+		ERR_RAID_YOU_LEFT,
+		ERR_RAID_MEMBER_ADDED_S,
+		ERR_RAID_MEMBER_REMOVED_S,
+		ERR_BG_PLAYER_LEFT_S,
+		ERR_PLAYER_DIED_S,
+		ERR_LEFT_GROUP_S,
+		ERR_NEW_LEADER_YOU,
+		ERR_NEW_LEADER_S
+	)
+
+	local wasInArena, arenaLeftAt = false, 0
+	local inBattleground = false
+	local ARENA_SPAM_AFTER_LEAVE = 10
+
+	local function matchesAny(message, patterns)
+		for i = 1, #patterns do
+			if find(message, patterns[i]) then
+				return true
+			end
+		end
+		return false
+	end
+
+	local function isServerSpam(message)
+		return matchesAny(message, SYSTEM_SPAM)
+	end
+
+	local function isBattlegroundJoinLeave(message)
+		if not inBattleground then
+			return false
+		end
+		return matchesAny(message, BG_JOINED) or matchesAny(message, BG_LEFT)
+	end
+
+	local function isArenaSpam(message)
+		if not wasInArena and GetTime() - arenaLeftAt > ARENA_SPAM_AFTER_LEAVE then
+			return false
+		end
+		return matchesAny(message, ARENA_SPAM)
+	end
+
+	local function filterSystem(self, event, message)
+		if isServerSpam(message) or isArenaSpam(message) or isBattlegroundJoinLeave(message) then
+			return true
+		end
+	end
+
+	local function filterBgSystem(self, event, message)
+		return isArenaSpam(message)
+	end
+
+	ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", filterSystem)
+	ChatFrame_AddMessageEventFilter("CHAT_MSG_BG_SYSTEM_NEUTRAL", filterBgSystem)
+
+	-- Track which instance we're in so the filters only fire when relevant.
+	local bgStateFrame = CreateFrame("Frame")
+	bgStateFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+	bgStateFrame:SetScript("OnEvent", function()
+		local _, instanceType = IsInInstance()
+		local inArena = instanceType == "arena"
+		if wasInArena and not inArena then
+			arenaLeftAt = GetTime()
+		end
+		wasInArena = inArena
+		inBattleground = instanceType == "pvp"
+	end)
+end

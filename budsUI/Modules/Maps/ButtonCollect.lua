@@ -213,8 +213,8 @@ local function createCollector()
 	collectorPanel = CreateFrame("Frame", "ButtonCollectPanel", UIParent)
 	collectorPanel:SetFrameStrata("HIGH")
 	collectorPanel:SetClampedToScreen(true)
-	collectorPanel:SetPoint("TOPRIGHT", Minimap, "TOPLEFT",
-		-ICON_INSET - COLLECTOR_TOGGLE_SZ - 4, 3)
+	collectorPanel:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMLEFT",
+		-ICON_INSET - COLLECTOR_TOGGLE_SZ - 4, -3)
 	collectorPanel:SetBackdrop(K.Backdrop)
 	collectorPanel:SetBackdropColor(0.05, 0.05, 0.05, 0.85)
 	collectorPanel:SetBackdropBorderColor(unpack(C.Media.Border_Color))
