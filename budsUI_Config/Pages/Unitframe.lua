@@ -95,6 +95,30 @@ local schema = {
 		type = "toggle",
 		desc = "Show incoming heals on health bars.",
 	}),
+	T("AbsorbShields", L_GUI_UNITFRAME_ABSORB_SHIELDS or "Absorb shields", {
+		type = "toggle",
+		desc = "Show absorb shields on health bars.",
+	}),
+	T("HealthPredictionSplit", L_GUI_UNITFRAME_HEALTH_PREDICTION_SPLIT or "Split own heals", {
+		type = "toggle",
+		desc = "Show your own incoming heals as a separate segment.",
+		enabledBy = "Unitframe.HealthPrediction",
+	}),
+	T("HealthPredictionColor", L_GUI_UNITFRAME_HEALTH_PREDICTION_COLOR or "Incoming heals color", {
+		type = "color",
+		desc = "Color of incoming heals from others.",
+		enabledBy = "Unitframe.HealthPrediction",
+	}),
+	T("HealthPredictionOwnColor", L_GUI_UNITFRAME_HEALTH_PREDICTION_OWN_COLOR or "Own heals color", {
+		type = "color",
+		desc = "Color of your own incoming heals.",
+		enabledBy = { "Unitframe.HealthPrediction", "Unitframe.HealthPredictionSplit" },
+	}),
+	T("AbsorbColor", L_GUI_UNITFRAME_ABSORB_COLOR or "Absorb shields color", {
+		type = "color",
+		desc = "Color of absorb shields.",
+		enabledBy = "Unitframe.AbsorbShields",
+	}),
 	T("RangeFade", L_GUI_UNITFRAME_RANGE_FADE or "Range fade", {
 		type = "toggle",
 		desc = "Fade frames of out-of-range units.",

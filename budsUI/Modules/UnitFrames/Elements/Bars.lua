@@ -8,12 +8,13 @@ Purpose:
 	Health and power are separate bordered boxes, so each one owns its own
 	background and border rather than sharing one on the parent frame.
 
-	Ported from KkthnxUI retail to WoW 3.3.5:
-	- bar smoothing (Enum.StatusBarInterpolation) does not exist, dropped;
-	- Midnight secret-value handling is gone;
-	- absorb bars are gone (no absorb API); incoming heals ride on
-	  UnitGetIncomingHeals when the client provides it.
------------------------------------------------------------------------------]]
+ 	Ported from KkthnxUI retail to WoW 3.3.5:
+ 	- bar smoothing does not exist on this client, dropped;
+ 	- Midnight secret-value handling is gone;
+ 	- the client has no incoming-heal / absorb prediction APIs, so the
+ 	  incoming-heal and absorb segments ride on Module.HealPrediction
+ 	  (LibHealComm-4.0 plus combat-log shields) instead of Blizzard APIs.
+ -----------------------------------------------------------------------------]]
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()
@@ -26,8 +27,8 @@ local UnitClass = UnitClass
 local UnitIsPlayer = UnitIsPlayer
 local UnitReaction = UnitReaction
 local UnitCanAttack = UnitCanAttack
+local UnitGUID = UnitGUID
 local UnitThreatSituation = UnitThreatSituation
-local UnitGetIncomingHeals = UnitGetIncomingHeals
 
 -- A bordered status bar box: our backdrop, border, and addon texture.
 -- The empty part of the bar shows the backdrop, matching the rest of the UI.
@@ -88,40 +89,24 @@ end
 -- Health
 -- ---------------------------------------------------------------------------
 
--- Incoming heals ride on top of the health fill. Updated from the health
--- bar's own PostUpdate (oUF's classic core has no prediction element).
-local function AddPrediction(health)
-	if not UnitGetIncomingHeals then
+-- Incoming heals + absorb shields ride on top of the health fill as three
+-- narrow segments (own heals, other heals, absorbs) walking right from the
+-- fill edge. State lives in Module.HealPrediction; this file only refreshes
+-- the bar it owns from the health bar's own PostUpdate.
+local function RefreshPrediction(health, unit)
+	if not health.prediction then
 		return
 	end
-	local healing = CreateFrame("StatusBar", nil, health)
-	healing:SetStatusBarTexture(Module.Texture())
-	healing:SetStatusBarColor(0.0, 0.72, 0.35, 0.35)
-	healing:SetFrameLevel(health:GetFrameLevel() + 1)
-	healing:SetPoint("TOP")
-	healing:SetPoint("BOTTOM")
-	healing:SetPoint("LEFT", health:GetStatusBarTexture(), "RIGHT", 0, 0)
-	healing:SetMinMaxValues(0, 1)
-	healing:SetValue(0)
-	healing:Show()
-	health.HealingPrediction = healing
-end
-
-local function UpdatePrediction(health, unit)
-	local healing = health.HealingPrediction
-	if not healing then
+	local HealPrediction = Module.HealPrediction
+	if not HealPrediction then
 		return
 	end
-	local incoming = UnitGetIncomingHeals(unit) or 0
-	local max = UnitHealthMax(unit)
-	if not max or max <= 0 or incoming <= 0 then
-		healing:SetValue(0)
+	local guid = unit and UnitGUID(unit)
+	if not guid then
 		return
 	end
-	local cur = UnitHealth(unit) or 0
-	healing:SetMinMaxValues(0, max)
-	healing:SetValue(math.min(cur + incoming, max))
-	healing:SetPoint("LEFT", health:GetStatusBarTexture(), "RIGHT", 0, 0)
+	HealPrediction.Follow(health)
+	HealPrediction.Refresh(health, guid, unit, C.Unitframe.HealthPrediction, C.Unitframe.AbsorbShields)
 end
 
 -- ---------------------------------------------------------------------------
@@ -212,7 +197,7 @@ local function OnHealthColor(element, unit)
 end
 
 local function OnHealthUpdate(element, unit, cur, max)
-	UpdatePrediction(element, unit)
+	RefreshPrediction(element, unit)
 	if element.__kkuiText then
 		Module.UpdateHealthText(element, unit, cur, max)
 	end
@@ -238,8 +223,11 @@ function Build.Health(self, height)
 	-- matches none of the above keeps whatever colour the bar had last.
 	health.colorHealth = true
 
-	if C.Unitframe.HealthPrediction then
-		AddPrediction(health)
+	if C.Unitframe.HealthPrediction or C.Unitframe.AbsorbShields then
+		local HealPrediction = Module.HealPrediction
+		if HealPrediction and HealPrediction.CreateBars then
+			HealPrediction.CreateBars(health)
+		end
 	end
 
 	self.Health = health

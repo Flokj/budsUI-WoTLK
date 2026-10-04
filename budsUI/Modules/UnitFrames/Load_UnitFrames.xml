@@ -7,6 +7,7 @@
 	<Script file="AuraFilter.lua" />
 	<Script file="AuraWatchList.lua" />
 	<Script file="Tags.lua" />
+	<Script file="HealPrediction.lua" />
 
 	<!-- Element builders fill Module.Build. -->
 	<Script file="Elements\Bars.lua" />
