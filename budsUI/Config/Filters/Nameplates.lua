@@ -87,7 +87,7 @@ K.DebuffWhiteList = {
 	[SpellName(20549)] = true,]]
 }
 
-K.PlateBlacklist = {--[[
+K.PlateBlacklist = {
 	["Dragonmaw War Banner"] = true,
 	["Healing Tide Totem"] = true,
 
@@ -148,7 +148,6 @@ K.PlateBlacklist = {--[[
 	["Nature Resistance Totem III"] = true,
 	["Nature Resistance Totem IV"] = true,
 	["Nature Resistance Totem V"] = true,
-	["Nature Resistance Totem V"] = true,
 	["Poison Cleansing Totem"] = true,
 	["Searing Totem"] = true,
 	["Searing Totem II"] = true,
@@ -197,9 +196,18 @@ K.PlateBlacklist = {--[[
 	--The gayest ability in the game
 	["Army of the Dead Ghoul"] = true,
 
+	--Death Knight summons
+	["Bloodworm"] = true,
+
 	--Hunter Trap
 	["Venomous Snake"] = true,
-	["Viper"] = true,]]
+	["Viper"] = true,
+
+	--FrostAtomUI parity (pet/minion plates)
+	["Mirror Image"] = true,
+	["Treant"] = true,
+	["Spirit Wolf"] = true,
+	["Val'kyr Protector"] = true,
 }
 
 _G["NAMEPLATE_IGNORELIST"] = {

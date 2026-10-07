@@ -192,7 +192,9 @@ C["Misc"] = {
 C["Nameplate"] = {
 	["AdditionalHeight"] = 0,
 	["AdditionalWidth"] = 0,
-	["AuraSize"] = 20,
+	["AuraSize"] = 24,
+	["AuraSizeHighlight"] = 28,
+	["AuraOffsetY"] = 22,
 	["BadColor"] = {199/255, 64/255, 64/255},
 	["ClassIcons"] = false,
 	["Combat"] = false,
@@ -204,7 +206,7 @@ C["Nameplate"] = {
 	["NameAbbreviate"] = true,
 	["NearColor"] = {217/255, 196/255, 92/255},
 	["CastBarName"] = true,
-	["Auras"] = false,
+	["Auras"] = true,
 	["Width"] = 180,
 }
 -- PowerBar Options

@@ -69,6 +69,11 @@ ns.RegisterPage({
 			type = "number", min = 10, max = 50, step = 1,
 			enabledBy = { "Nameplate.Enable", "Nameplate.Auras" },
 		}),
+		T("AuraSizeHighlight", L_GUI_NAMEPLATE_DEBUFFS_SIZE_HIGHLIGHT or "Highlight size", {
+			type = "number", min = 10, max = 50, step = 1,
+			enabledBy = { "Nameplate.Enable", "Nameplate.Auras" },
+		}),
+		T("AuraOffsetY", L_GUI_NAMEPLATE_AURA_OFFSET_Y or "Aura offset", { type = "number", min = 0, max = 60, step = 1, enabledBy = { "Nameplate.Enable", "Nameplate.Auras" } }),
 		T("CastBarName", L_GUI_NAMEPLATE_CASTBAR_NAME or "Castbar name", {
 			type = "toggle",
 			desc = "Show castbar name.",

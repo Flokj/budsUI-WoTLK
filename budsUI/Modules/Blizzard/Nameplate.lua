@@ -5,8 +5,14 @@ local tonumber, pairs, select, unpack = tonumber, pairs, select, unpack
 local match = string.match
 local floor = math.floor
 local find = string.find
+local band = bit.band
 local CreateFrame = CreateFrame
 local UnitGUID = UnitGUID
+local UnitName = UnitName
+local UnitExists = UnitExists
+local GetNumRaidMembers = GetNumRaidMembers
+local GetNumPartyMembers = GetNumPartyMembers
+local wipe = wipe
 local InCombatLockdown = InCombatLockdown
 local SetCVar = SetCVar
 local GetUnitName = GetUnitName
@@ -14,6 +20,9 @@ local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 local WorldFrame = WorldFrame
 
 local frames, numChildren, scanThrottle = {}, -1, 0
+-- Persistent guid -> plate uniqueness table (FrostAtom Identity.lua setGUID model).
+-- Declared up here so OnHide (below) can release bindings on plate hide.
+local plateByGuid = {}
 local goodR, goodG, goodB = unpack(C.Nameplate.GoodColor)
 local badR, badG, badB = unpack(C.Nameplate.BadColor)
 local transitionR, transitionG, transitionB = unpack(C.Nameplate.NearColor)
@@ -36,9 +45,6 @@ local OVERLAY = [=[Interface\TargetingFrame\UI-TargetingFrame-Flash]=]
 -- Based on dNameplates(by Dawn, editor Kkthnx)
 local NamePlates = CreateFrame("Frame", nil, UIParent)
 NamePlates:SetScript("OnEvent", function(self, event, ...) self[event](self, ...) end)
-if C.Nameplate.Auras == true then
-	NamePlates:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-end
 
 local function Abbrev(name)
 	local newname = (string.len(name) > 18) and string.gsub(name, "%s?(.[\128-\191]*)%S+%s", "%1. ") or name
@@ -89,122 +95,7 @@ local function CreateVirtualFrame(parent, point)
 	end
 end
 
--- Create aura icons
-local function CreateAuraIcon(frame)
-	local button = CreateFrame("Frame", nil, frame.hp)
-	button:SetSize(C.Nameplate.AuraSize, C.Nameplate.AuraSize * 16/25)
-
-	button.shadow = CreateFrame("Frame", nil, button)
-	button.shadow:SetFrameLevel(0)
-	button.shadow:SetBackdrop({
-		bgFile = C.Media.Blank,
-		edgeFile = C.Media.Glow,
-		edgeSize = 3 * K.NoScaleMult,
-		insets = {top = 3 * K.NoScaleMult, left = 3 * K.NoScaleMult, bottom = 3 * K.NoScaleMult, right = 3 * K.NoScaleMult}
-	})
-	button.shadow:SetPoint("TOPLEFT", button, -3 * K.NoScaleMult, 3 * K.NoScaleMult)
-	button.shadow:SetPoint("BOTTOMRIGHT", button, 3 * K.NoScaleMult, -3 * K.NoScaleMult)
-	button.shadow:SetBackdropColor(.05, .05, .05, .9)
-	button.shadow:SetBackdropBorderColor(0, 0, 0, 1)
-
-	button.bord = button:CreateTexture(nil, "BORDER")
-	button.bord:SetTexture(0/255, 0/255, 0/255, 1)
-	button.bord:SetPoint("TOPLEFT", button, "TOPLEFT", K.NoScaleMult, -K.NoScaleMult)
-	button.bord:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -K.NoScaleMult, K.NoScaleMult)
-
-	button.icon = button:CreateTexture(nil, "OVERLAY")
-	button.icon:SetAllPoints(button)
-	button.icon:SetTexCoord(.07, 1-.07, .23, 1-.23)
-
-	button.text = button:CreateFontString(nil, "OVERLAY")
-	button.text:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, -3)
-	button.text:SetJustifyH("CENTER")
-	button.text:SetFont(C.Media.Font, C.Media.Font_Size * (C.Nameplate.AuraSize / 24), C.Media.Font_Style)
-	button.text:SetShadowColor(0/255, 0/255, 0/255, 1)
-	button.text:SetShadowOffset((0), -(0))
-
-	button.cd = CreateFrame("Cooldown", nil, button)
-	button.cd:SetAllPoints(button)
-	button.cd:SetReverse(true)
-
-	button.count = button:CreateFontString(nil, "OVERLAY")
-	button.count:SetFont(C.Media.Font, C.Media.Font_Size * (C.Nameplate.AuraSize / 24), C.Media.Font_Style)
-	button.count:SetShadowOffset((0), -(0))
-	button.count:SetPoint("TOPRIGHT", button, "TOPRIGHT", 0, 3)
-
-	return button
-end
-
--- Update an aura icon
-local function UpdateAuraIcon(button, unit, index, filter)
-	-- WoW 3.3.5 Compatibility: UnitAura returns only 10 values, not 11
-	-- spellID (11th value) was added in Cataclysm 4.0
-	local name, _, icon, count, _, duration, expirationTime = UnitAura(unit, index, filter)
-
-	button.icon:SetTexture(icon)
-	button.cd:SetCooldown(expirationTime - duration, duration)
-	button.expirationTime = expirationTime
-	button.duration = duration
-	button.spellID = name -- Use spell name instead of ID in 3.3.5
-	if count > 1 then
-		button.count:SetText(count)
-	else
-		button.count:SetText("")
-	end
-	button.cd:SetScript("OnUpdate", function(self)
-		if not button.cd.timer then
-			self:SetScript("OnUpdate", nil)
-			return
-		end
-		button.cd.timer.text:SetFont(C.Media.Font, C.Media.Font_Size * K.NoScaleMult, C.Media.Font_Style)
-		button.cd.timer.text:SetShadowOffset((0), -(0))
-	end)
-	button:Show()
-end
-
--- Throttle cache for aura updates
-local auraUpdateThrottle = {}
-local AURA_UPDATE_INTERVAL = 0.2 -- Max 5x/Sekunde pro Nameplate
-
--- Filter auras on nameplate, and determine if we need to update them or not
-local function OnAura(frame, unit)
-	if not frame.icons or not frame.unit or not C.Nameplate.Auras then return end
-	
-	-- Throttle per-frame updates
-	local now = GetTime()
-	local lastUpdate = auraUpdateThrottle[frame] or 0
-	if (now - lastUpdate) < AURA_UPDATE_INTERVAL then
-		return
-	end
-	auraUpdateThrottle[frame] = now
-	
-	-- Wrap in pcall for error safety
-	local success, err = pcall(function()
-		local i = 1
-		for index = 1, 5 do -- Temp until I fix this to show 2 row if 5 is already shown
-			if i > C.Nameplate.Width / C.Nameplate.AuraSize then return end
-			local match
-			-- WoW 3.3.5 Compatibility: UnitAura returns only 10 values, not 11 (no spellID)
-			local name, _, _, _, _, duration, _, caster = UnitAura(frame.unit, index, "HARMFUL")
-
-			if K.DebuffWhiteList[name] and caster == "player" then match = true end
-
-			if duration and match == true then
-				if not frame.icons[i] then frame.icons[i] = CreateAuraIcon(frame) end
-				local icon = frame.icons[i]
-				if i == 1 then icon:SetPoint("RIGHT", frame.icons, "RIGHT") end
-				if i ~= 1 and i <= C.Nameplate.Width / C.Nameplate.AuraSize then icon:SetPoint("RIGHT", frame.icons[i-1], "LEFT", -2, 0) end
-				i = i + 1
-				UpdateAuraIcon(icon, frame.unit, index, "HARMFUL")
-			end
-		end
-		for index = i, #frame.icons do frame.icons[index]:Hide() end
-	end)
-	
-	if not success and C.General.DeveloperMode then
-		K.Print("OnAura error:", err)
-	end
-end
+-- Aura icons are provided by the NamePlateAuras engine (Modules/Blizzard/NamePlateAuras.lua)
 
 local function CastTextUpdate(frame, curValue)
 	local _, maxValue = frame:GetMinMaxValues()
@@ -231,16 +122,17 @@ end
 
 -- We need to reset everything when a nameplate it hidden
 local function OnHide(frame)
-	-- Cleanup throttle cache
-	if auraUpdateThrottle[frame] then
-		auraUpdateThrottle[frame] = nil
+	-- Release ported aura icons (NamePlateAuras engine)
+	if K.NamePlateAuras_Hide then
+		K.NamePlateAuras_Hide(frame)
 	end
-	
-	-- Unregister events wenn registriert
-	if frame.icons and frame:IsEventRegistered("UNIT_AURA") then
-		frame:UnregisterEvent("UNIT_AURA")
+
+	-- Release guid ownership so a hidden plate never blocks a new bind
+	local g = frame.guid
+	if g and plateByGuid[g] == frame then
+		plateByGuid[g] = nil
 	end
-	
+
 	-- Visual cleanup
 	frame.hp:SetStatusBarColor(frame.hp.rcolor, frame.hp.gcolor, frame.hp.bcolor)
 	frame.hp:SetScale(1)
@@ -249,17 +141,14 @@ local function OnHide(frame)
 	frame.cb:SetScale(1)
 	frame.unit = nil
 	frame.guid = nil
+	frame.boundName = nil
+	frame.confirmedAt = 0
 	frame.isClass = nil
 	frame.isFriendly = nil
 	frame.hp.rcolor = nil
 	frame.hp.gcolor = nil
 	frame.hp.bcolor = nil
 	frame.blacklistChecked = nil -- Reset blacklist check flag
-	if frame.icons then
-		for _, icon in ipairs(frame.icons) do
-			icon:Hide()
-		end
-	end
 	frame:SetScript("OnUpdate", nil)
 end
 
@@ -493,17 +382,8 @@ local function SkinObjects(frame, nameFrame)
 	cb:HookScript("OnValueChanged", CastTextUpdate)
 	frame.cb = cb
 
-	-- Aura tracking
-	if C.Nameplate.Auras == true then
-		if not frame.icons then
-			frame.icons = CreateFrame("Frame", nil, frame.hp)
-			frame.icons:SetPoint("BOTTOMRIGHT", frame.hp, "TOPRIGHT", 0, C.Media.Font_Size + 5)
-			frame.icons:SetSize(20 + C.Nameplate.Width, C.Nameplate.AuraSize)
-			frame.icons:SetFrameLevel(frame.hp:GetFrameLevel() + 2)
-			frame:RegisterEvent("UNIT_AURA")
-			frame:HookScript("OnEvent", OnAura)
-		end
-	end
+	-- Aura icons are owned by the NamePlateAuras engine and bound once per
+	-- update pass by ResolvePlateAuras (one plate per guid).
 
 	-- Highlight texture
 	if not frame.overlay then
@@ -579,9 +459,12 @@ local function UpdateThreat(frame, elapsed)
 end
 
 -- Create our blacklist for nameplates
+-- Matches the full, un-abbreviated unit name (oldname), so the blacklist
+-- keeps working even with NameAbbreviate enabled (mirroring FrostAtomUI,
+-- which hides by the full unit name).
 local function CheckBlacklist(frame, ...)
-	if C.Nameplate.NameAbbreviate == true then return end
-	if K.PlateBlacklist[frame.hp.name:GetText()] then
+	local name = frame.hp and (frame.hp.oldname and frame.hp.oldname:GetText() or frame.hp.name and frame.hp.name:GetText())
+	if name and K.PlateBlacklist[name] then
 		frame:SetScript("OnUpdate", function() end)
 		frame.hp:SetAlpha(0)
 		frame.cb:Hide()
@@ -631,32 +514,388 @@ local function ShowHealth(frame, ...)
 	end
 end
 
--- Scan all visible nameplate for a known unit
-local function CheckUnit_Guid(frame, ...)
-	if UnitExists("target") and frame:GetAlpha() == 1 and GetUnitName("target") == frame.hp.name:GetText() then
-		frame.guid = UnitGUID("target")
-		frame.unit = "target"
-		OnAura(frame, "target")
-	elseif frame.overlay:IsShown() and UnitExists("mouseover") and GetUnitName("mouseover") == frame.hp.name:GetText() then
-		frame.guid = UnitGUID("mouseover")
-		frame.unit = "mouseover"
-		OnAura(frame, "mouseover")
+-- Unit resolution for aura coverage (FrostAtomUI Identity.lua philosophy):
+-- Blizzard recycles stock nameplate frames and 3.3.5 exposes no plate->unit
+-- token, so each update pass re-resolves from EVERY unit token the client can
+-- resolve (target/focus/mouseover/boss/arena/pet/party/raid targets) and binds
+-- exactly ONE plate per guid. Same-name duplicate plates are disambiguated by
+-- health fraction; a plate keeps its sticky guid (frame.guid) until it is
+-- explicitly rebound, stolen, hidden, or recycled, so a mob that was once
+-- target/mouseover keeps showing ITS OWN cached auras instead of leaking a
+-- neighbor's.
+local HEALTH_TOLERANCE = 0.02
+local CONFIRM_HOLD = 1
+local UnitHealth = UnitHealth
+local UnitHealthMax = UnitHealthMax
+local UnitIsPlayer = UnitIsPlayer
+local GetTime = GetTime
+
+local nameIndex = {} -- plate name -> single visible plate, or false on duplicates
+local claims = {} -- plate -> guid resolved this pass
+local owners = {} -- guid -> plate resolved this pass
+local claimUnit = {} -- plate -> unit token resolved this pass
+local resolveUnits = {} -- ordered unit tokens for this pass (priority order)
+
+local function GetPlateName(frame)
+	local hp = frame.hp
+	if not hp then return nil end
+	if hp.oldname then
+		local n = hp.oldname:GetText()
+		if n then return n end
+	end
+	if hp.name then
+		return hp.name:GetText()
+	end
+	return nil
+end
+
+local function HealthMatches(frame, unit)
+	local hb = frame.healthOriginal
+	if not hb or not hb.GetMinMaxValues then return false end
+	local _, max = hb:GetMinMaxValues()
+	local cur = hb:GetValue()
+	if not max or max <= 0 then return false end
+	local uMax = UnitHealthMax(unit)
+	if not uMax or uMax <= 0 then return false end
+	local uCur = UnitHealth(unit)
+	if not uCur then return false end
+	local d = (cur / max) - (uCur / uMax)
+	if d < 0 then d = -d end
+	return d <= HEALTH_TOLERANCE
+end
+
+local function IsCandidate(frame, guid, now)
+	local claimed = claims[frame]
+	if claimed then
+		return claimed == guid
+	end
+	return frame.guid == nil or frame.guid == guid or (now - (frame.confirmedAt or 0)) > CONFIRM_HOLD
+end
+
+local function KnownPlate(guid, name)
+	local plate = plateByGuid[guid]
+	if plate and plate:IsShown() and not plate.hide and GetPlateName(plate) == name then
+		return plate
+	end
+	return nil
+end
+
+local function TargetPlate(name)
+	if not UnitExists("target") then return nil end
+	local found = nil
+	for frame in pairs(frames) do
+		if frame:IsShown() and not frame.hide and GetPlateName(frame) == name and HealthMatches(frame, "target") then
+			if found then return nil end
+			found = frame
+		end
+	end
+	return found
+end
+
+local function MouseoverPlate(name)
+	if not UnitExists("mouseover") then return nil end
+	local found = nil
+	for frame in pairs(frames) do
+		if frame:IsShown() and not frame.hide and GetPlateName(frame) == name and HealthMatches(frame, "mouseover") then
+			if found then return nil end
+			found = frame
+		end
+	end
+	return found
+end
+
+local function MatchPlate(unit, guid, name, now)
+	local candidate = nameIndex[name]
+	if candidate == nil then return nil end
+	if candidate then
+		-- Uniquely-named plate: still require health agreement for mobs so a
+		-- same-name mob elsewhere can never steal the bind; players skip it.
+		if IsCandidate(candidate, guid, now) and (UnitIsPlayer(unit) or HealthMatches(candidate, unit)) then
+			return candidate
+		end
+		return nil
+	end
+	-- Duplicate name (nameIndex == false): scan every same-named plate and
+	-- require a health-fraction match; ambiguous (>1 match) binds nothing.
+	local found = nil
+	for frame in pairs(frames) do
+		if frame:IsShown() and not frame.hide and GetPlateName(frame) == name and IsCandidate(frame, guid, now) and HealthMatches(frame, unit) then
+			if found then return nil end
+			found = frame
+		end
+	end
+	return found
+end
+
+local function ResolveUnit(unit, now)
+	if not UnitExists(unit) then return nil end
+	local guid = UnitGUID(unit)
+	if not guid then return nil end
+	if owners[guid] then return owners[guid] end
+	local name = UnitName(unit)
+	if not name then return nil end
+	local plate = nil
+	if unit == "target" then
+		plate = TargetPlate(name) or KnownPlate(guid, name)
+	elseif unit == "mouseover" then
+		plate = MouseoverPlate(name) or KnownPlate(guid, name)
 	else
-		frame.unit = nil
+		plate = KnownPlate(guid, name) or MatchPlate(unit, guid, name, now)
+	end
+	if not plate or claims[plate] then return nil end
+	owners[guid] = plate
+	claims[plate] = guid
+	claimUnit[plate] = unit
+	return plate
+end
+
+-- Priority matches FrostAtom FIXED_UNITS spirit adapted to budsUI tokens:
+-- target -> focus -> mouseover -> boss1-4 -> arena1-5 -> pet -> group targets.
+local function BuildResolveUnits()
+	wipe(resolveUnits)
+	local n = 0
+	local function push(u)
+		if UnitExists(u) then
+			n = n + 1
+			resolveUnits[n] = u
+		end
+	end
+	push("target")
+	push("focus")
+	push("mouseover")
+	for i = 1, 4 do push("boss" .. i) end
+	for i = 1, 5 do push("arena" .. i) end
+	push("pet")
+	push("pettarget")
+	if GetNumRaidMembers and GetNumRaidMembers() > 0 then
+		for i = 1, GetNumRaidMembers() do push("raid" .. i .. "target") end
+		for i = 1, GetNumRaidMembers() do push("raid" .. i) end
+	elseif GetNumPartyMembers then
+		for i = 1, GetNumPartyMembers() do push("party" .. i .. "target") end
+		for i = 1, GetNumPartyMembers() do push("party" .. i) end
+	end
+	return resolveUnits
+end
+
+-- Combat-log name -> guid map for token-less enemy plates (FrostAtomUI
+-- Identity.lua rememberEnemy/bindEnemyPlayers pattern). Blizzard nameplates
+-- for enemy players in the world/BGs have no unit token on 3.3.5, so we learn
+-- hostile PLAYER guids from combat-log traffic and bind visible plates by
+-- (realm-stripped) name. Mobs with duplicate names are deliberately NOT
+-- learned (one guid per name would misattribute auras); they stay token-only.
+local enemyGuidByName = {}
+local BAND_TYPE_PLAYER = COMBATLOG_OBJECT_TYPE_PLAYER or 0x00000400
+local BAND_REACTION_HOSTILE = COMBATLOG_OBJECT_REACTION_HOSTILE or 0x00000040
+
+local COMBATLOG_NAME_EVENTS = {
+	SWING_DAMAGE = true,
+	RANGE_DAMAGE = true,
+	SPELL_DAMAGE = true,
+	SPELL_PERIODIC_DAMAGE = true,
+	SPELL_HEAL = true,
+	SPELL_PERIODIC_HEAL = true,
+	SPELL_CAST_SUCCESS = true,
+	SPELL_CAST_START = true,
+	SPELL_AURA_APPLIED = true,
+	SPELL_AURA_REFRESH = true,
+	SPELL_MISSED = true,
+}
+
+local function StripBaseName(name)
+	if not name then return nil end
+	return match(name, "^[^%-]+") or name
+end
+
+local function RememberEnemyGuid(guid, name, flags)
+	if not guid or not name or not flags then return end
+	if band(flags, BAND_TYPE_PLAYER) == 0 then return end
+	if band(flags, BAND_REACTION_HOSTILE) == 0 then return end
+	enemyGuidByName[StripBaseName(name)] = guid
+end
+
+function NamePlates:COMBAT_LOG_EVENT_UNFILTERED(timestamp, event, srcGUID, srcName, srcFlags, dstGUID, dstName, dstFlags, ...)
+	if not COMBATLOG_NAME_EVENTS[event] then return end
+	if srcName then RememberEnemyGuid(srcGUID, srcName, srcFlags) end
+	if dstName then RememberEnemyGuid(dstGUID, dstName, dstFlags) end
+end
+
+-- Plate-name skips for the guid (token-less) path. The engine still applies
+-- the donor UnitCreatureType/name skips on the token path; this mirrors them
+-- where no token exists to query (totems have no token, so match by suffix).
+local PLATE_AURA_SKIPS = {
+	["Viper"] = true,
+	["Venomous Snake"] = true,
+	["Army of the Dead Ghoul"] = true,
+}
+
+local function PlateNameSkipped(base)
+	if not base then return true end
+	if PLATE_AURA_SKIPS[base] then return true end
+	if base:sub(-5) == "Totem" then return true end
+	return false
+end
+
+-- One-guid-per-plate bind helpers (FrostAtom Identity.lua setGUID spirit).
+-- plateByGuid is the single uniqueness table: a guid is never owned by two
+-- plates at once. Evicting the previous owner always hides its icons first so
+-- no stale aura row lingers on the wrong plate.
+local function ReleasePlate(frame, hideIcons)
+	if not frame then return end
+	local g = frame.guid
+	if g and plateByGuid[g] == frame then
+		plateByGuid[g] = nil
+	end
+	frame.guid = nil
+	frame.unit = nil
+	frame.boundName = nil
+	frame.confirmedAt = 0
+	if hideIcons ~= false and K.NamePlateAuras_Hide then
+		K.NamePlateAuras_Hide(frame)
 	end
 end
 
--- Attempt to match a nameplate with a GUID from the combat log
-local function MatchGUID(frame, destGUID, spellID)
-	if not frame.guid then return end
+local function BindPlateToUnit(frame, unit, guid, now)
+	local other = plateByGuid[guid]
+	if other and other ~= frame then
+		if K.NamePlateAuras_Hide then
+			K.NamePlateAuras_Hide(other)
+		end
+		other.guid = nil
+		other.unit = nil
+		other.boundName = nil
+		other.confirmedAt = 0
+	end
+	local old = frame.guid
+	if old and old ~= guid and plateByGuid[old] == frame then
+		plateByGuid[old] = nil
+	end
+	frame.guid = guid
+	frame.unit = unit
+	frame.boundName = GetPlateName(frame)
+	frame.confirmedAt = now
+	plateByGuid[guid] = frame
+	K.NamePlateAuras_Update(frame, unit)
+end
 
-	if frame.guid == destGUID then
-		for _, icon in ipairs(frame.icons) do
-			if icon.spellID == spellID then
-				icon:Hide()
+local function BindPlateToGuid(frame, guid, now)
+	local other = plateByGuid[guid]
+	if other and other ~= frame then
+		return false
+	end
+	local old = frame.guid
+	if old and old ~= guid and plateByGuid[old] == frame then
+		plateByGuid[old] = nil
+	end
+	frame.guid = guid
+	frame.unit = nil
+	frame.boundName = GetPlateName(frame)
+	frame.confirmedAt = now
+	plateByGuid[guid] = frame
+	owners[guid] = frame
+	K.NamePlateAuras_Update(frame, guid)
+	return true
+end
+
+-- Per-pass aura resolution (runs ONCE per 0.2s ticker, not once per plate):
+-- 1. rebuild nameIndex (unique plate, or false on duplicate names);
+-- 2. resolve every unit token in priority order to exactly one plate;
+-- 3. bind claimed plates via the token path (exact UnitAura scan);
+-- 4. for unclaimed plates: keep the sticky guid alive (redraw from the
+--    combat-log cache), bind token-less enemy PLAYERS by unique name, or
+--    release. Sticky guids + health disambiguation are what keep two
+--    same-named mobs on their own aura rows.
+local function ResolvePlateAuras(now)
+	if C.Nameplate.Auras ~= true or not K.NamePlateAuras_Update then return end
+	now = now or GetTime()
+	wipe(nameIndex)
+	wipe(claims)
+	wipe(owners)
+	wipe(claimUnit)
+	for frame in pairs(frames) do
+		if frame:IsShown() and not frame.hide then
+			local pname = GetPlateName(frame)
+			if pname then
+				local cur = nameIndex[pname]
+				if cur == nil then
+					nameIndex[pname] = frame
+				elseif cur ~= frame then
+					nameIndex[pname] = false
+				end
 			end
 		end
 	end
+	BuildResolveUnits()
+	for i = 1, #resolveUnits do
+		ResolveUnit(resolveUnits[i], now)
+	end
+	for plate, guid in pairs(claims) do
+		local unit = claimUnit[plate]
+		if plate:IsShown() and not plate.hide and unit and UnitExists(unit) then
+			local base = StripBaseName(GetPlateName(plate))
+			if base and not PlateNameSkipped(base) then
+				BindPlateToUnit(plate, unit, guid, now)
+			else
+				ReleasePlate(plate, true)
+			end
+		end
+	end
+	for frame in pairs(frames) do
+		if frame:IsShown() and not claims[frame] then
+			if frame.hide then
+				if frame.unit ~= nil or frame.guid ~= nil then
+					ReleasePlate(frame, true)
+				end
+			else
+				local pname = GetPlateName(frame)
+				local sticky = frame.guid
+				-- Recycled stock frame showing a new name: drop the old bind.
+				if sticky and frame.boundName and pname ~= frame.boundName then
+					ReleasePlate(frame, true)
+					sticky = nil
+				end
+				-- Guid stolen by a claimed plate this pass: drop it.
+				if sticky and plateByGuid[sticky] and plateByGuid[sticky] ~= frame then
+					ReleasePlate(frame, true)
+					sticky = nil
+				end
+				if sticky and owners[sticky] and owners[sticky] ~= frame then
+					ReleasePlate(frame, true)
+					sticky = nil
+				end
+				if sticky then
+					if not plateByGuid[sticky] then
+						plateByGuid[sticky] = frame
+					end
+					local base = pname and StripBaseName(pname) or nil
+					if base and not PlateNameSkipped(base) then
+						K.NamePlateAuras_Update(frame, sticky)
+					else
+						ReleasePlate(frame, true)
+					end
+				else
+					-- Token-less enemy PLAYER bind: unique visible name only,
+					-- guid not taken by any claimed/sticky plate this pass.
+					local done = false
+					local base = pname and StripBaseName(pname) or nil
+					if base and not PlateNameSkipped(base) and nameIndex[pname] == frame then
+						local eGuid = enemyGuidByName[base]
+						if eGuid and not owners[eGuid] and (not plateByGuid[eGuid] or plateByGuid[eGuid] == frame) then
+							done = BindPlateToGuid(frame, eGuid, now)
+						end
+					end
+					if not done and frame.unit ~= nil then
+						ReleasePlate(frame, true)
+					end
+				end
+			end
+		end
+	end
+end
+
+-- Legacy per-plate entry kept for compatibility; the ticker now calls
+-- ResolvePlateAuras once per pass, so this is a no-op shim.
+local function CheckUnit_Guid(frame, ...)
+	return
 end
 
 -- Run a function for all visible nameplates, we use this for the blacklist, to check unitguid, and to hide drunken text
@@ -730,6 +969,14 @@ NamePlates:SetScript("OnUpdate", K.SafeOnUpdate(function(self, elapsed)
 	if updateThrottle >= UPDATE_INTERVAL then
 		-- Update visible plates cache once
 		UpdateVisiblePlates()
+
+		-- Resolve aura bindings ONCE per pass (one plate per guid), then paint.
+		if C.Nameplate.Auras then
+			local ok, err = pcall(ResolvePlateAuras, GetTime())
+			if not ok and C.General.DeveloperMode then
+				K.Print("ResolvePlateAuras error:", err)
+			end
+		end
 		
 		-- Batch-update all functions in a single loop
 		for i = 1, #visiblePlates do
@@ -753,26 +1000,11 @@ NamePlates:SetScript("OnUpdate", K.SafeOnUpdate(function(self, elapsed)
 				CheckBlacklist(frame)
 				frame.blacklistChecked = true
 			end
-			
-			-- Unit GUID check (only when auras active)
-			if C.Nameplate.Auras then
-				CheckUnit_Guid(frame)
-			end
 		end
 		
 		updateThrottle = 0
 	end
 end, "NamePlates"))
-
-function NamePlates:COMBAT_LOG_EVENT_UNFILTERED(_, event, ...)
-	if event == "SPELL_AURA_REMOVED" then
-		local _, sourceGUID, _, _, _, destGUID, _, _, _, spellID = ...
-
-		if sourceGUID == UnitGUID("player") or arg4 == UnitGUID("pet") then
-			ForEachPlate(MatchGUID, destGUID, spellID)
-		end
-	end
-end
 
 -- Only show nameplates when in combat
 -- WoW 3.3.5 Compatibility: CVar "nameplateShowEnemies" doesn't exist in 3.3.5
@@ -790,8 +1022,15 @@ if C.Nameplate.Combat == true then
 	end
 end
 
+NamePlates:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 NamePlates:RegisterEvent("PLAYER_ENTERING_WORLD")
 function NamePlates:PLAYER_ENTERING_WORLD()
+	wipe(enemyGuidByName)
+	wipe(plateByGuid)
+	wipe(nameIndex)
+	wipe(claims)
+	wipe(owners)
+	wipe(claimUnit)
 	if C.Nameplate.Combat == true then
 		if InCombatLockdown() then
 			SetCVar("ShowNameplates", 1)
