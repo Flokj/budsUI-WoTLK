@@ -76,6 +76,14 @@ end
 function Module.EnableInteraction(self, style)
 	self.mystyle = style
 	self:RegisterForClicks("AnyUp")
+	-- Middle click sets focus (same as FrostAtomUI). The standalone focus
+	-- frame clears focus instead, like FrostAtomUI's /clearfocus macro.
+	if self.unit == "focus" then
+		self:SetAttribute("*type3", "macro")
+		self:SetAttribute("macrotext", "/clearfocus")
+	else
+		self:SetAttribute("*type3", "focus")
+	end
 	self:SetScript("OnEnter", SafeOnEnter)
 	self:SetScript("OnLeave", UnitFrame_OnLeave)
 
