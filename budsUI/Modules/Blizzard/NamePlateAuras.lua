@@ -348,6 +348,18 @@ local function DurationFor(spellId, spellName)
 	return DURATION_DEFAULTS_BY_ID[spellId] or durationsByName[spellName] or FALLBACK_AURA_DURATION
 end
 
+-- Learned real durations (FrostAtom Auras.lua `learned` spirit, keyed by NAME
+-- for 3.3.5 where UnitAura has no spellID). Exact scans feed real `duration`
+-- values here (max wins); combat-log auras prefer them over static defaults.
+local learnedDurations = {}
+local function LearnDuration(spellName, seconds)
+	if type(spellName) ~= "string" then return end
+	if type(seconds) ~= "number" or seconds <= 0 then return end
+	if (learnedDurations[spellName] or 0) < seconds then
+		learnedDurations[spellName] = seconds
+	end
+end
+
 -- GUID-keyed aura cache (FrostAtomUI Auras.lua model).
 -- auraCache[guid] = map of spellName -> entry
 -- entry = { spellId, name, texture, count, duration, expires, isHighlight, debuffType }
@@ -431,7 +443,7 @@ local function TrackLogAura(guid, spellId, spellName, auraType, isMineCaster)
 	if not set then return end
 	local entry = set[spellName]
 	local now = GetTime()
-	local duration = DurationFor(spellId, spellName)
+	local duration = learnedDurations[spellName] or DurationFor(spellId, spellName)
 	if not entry then
 		entry = TableNew()
 		set[spellName] = entry
@@ -548,6 +560,9 @@ local function ExactScanIntoCache(unit, guid)
 				local old = set[spellName]
 				if old then TableDel(old) end
 				set[spellName] = entry
+				if type(duration) == "number" and duration > 0 then
+					LearnDuration(spellName, duration)
+				end
 			end
 		else
 			if not filter then
@@ -666,10 +681,10 @@ if C.Nameplate.Auras == true then
 	petGUID = UnitGUID("pet")
 end
 
--- Time formatting (donor math.lua)
-local function MathRound(x)
-	return floor(x + 0.51)
-end
+-- Time formatting (FrostAtom CooldownTimer ceil semantics: display never below reality)
+local TIMER_DECIMAL_THRESHOLD = 3
+local TIMER_UPDATE_INTERVAL = 0.1
+local TIMER_TICK_MARGIN = 0.01
 local function ShortTime(x, isColored)
 	if x < 0 then
 		return nil
@@ -681,22 +696,51 @@ local function ShortTime(x, isColored)
 		end
 	elseif x < 60 then
 		if isColored then
-			return ("|cffffff00%d|r"):format(MathRound(x))
+			return ("|cffffff00%d|r"):format(math.ceil(x))
 		else
-			return MathRound(x)
+			return ("%d"):format(math.ceil(x))
 		end
 	elseif x <= 3600 then
-		return ("%dm"):format(MathRound(x / 60))
+		return ("%dm"):format(math.ceil(x / 60))
 	else
 		if isColored then
-			return ("|cffbbbbbb%dh|r"):format(MathRound(x / 3600))
+			return ("|cffbbbbbb%dh|r"):format(math.ceil(x / 3600))
 		else
-			return ("%dh"):format(MathRound(x / 3600))
+			return ("%dh"):format(math.ceil(x / 3600))
 		end
 	end
 end
 
+-- Faithful port of FrostAtom CooldownTimer.untilTextChanges: seconds until
+-- the displayed text must change, so SetText only fires on value changes.
+local function TimerUntilChange(remain)
+	if remain <= TIMER_DECIMAL_THRESHOLD then
+		return TIMER_UPDATE_INTERVAL
+	end
+	local unit
+	if remain <= 60 then
+		unit = 1
+	elseif remain <= 3600 then
+		unit = 60
+	else
+		unit = 3600
+	end
+	local step = remain - (math.ceil(remain / unit) - 1) * unit + TIMER_TICK_MARGIN
+	local maxStep = remain - TIMER_DECIMAL_THRESHOLD + TIMER_TICK_MARGIN
+	if step > maxStep then
+		step = maxStep
+	end
+	if step < 0 then
+		step = 0
+	end
+	return step
+end
+
 -- Debuff-type border colors
+-- NOTE: 3.3.5 DebuffTypeColor has only Magic/Curse/Disease/Poison -- there is
+-- deliberately NO "none" entry. The combat-log path stores debuffType = "none"
+-- (unknown type), so the renderer MUST guard this lookup (see UpdateIcons);
+-- an unguarded unpack(debuffType2colors["none"]) throws and aborts the pass.
 local debuffType2colors = {}
 for k, v in next, DebuffTypeColor do
 	debuffType2colors[k] = {v.r, v.g, v.b}
@@ -717,9 +761,13 @@ local function Icon_OnUpdate(self, elapsed)
 	if remain < 0 then
 		self.timer:SetText(nil)
 		self.remain = nil
+		self.nextUpdate = nil
 	else
-		self.timer:SetText(ShortTime(remain, true))
 		self.remain = remain
+		if not self.nextUpdate or self.nextUpdate == 0 or remain <= self.nextUpdate then
+			self.timer:SetText(ShortTime(remain, true))
+			self.nextUpdate = remain - TimerUntilChange(remain)
+		end
 	end
 end
 
@@ -776,7 +824,12 @@ local function ReleaseIcon(icon)
 	if icon.__pooled then return nil end
 	icon.__pooled = true
 	icon.remain = nil
+	icon.nextUpdate = nil
 	icon.texturePath = nil
+	if icon.border then
+		icon.border:Hide()
+		icon.border:SetVertexColor(1, 1, 1)
+	end
 	if icon.timer then icon.timer:SetText(nil) end
 	if icon.count then icon.count:SetText(nil) end
 	icon:ClearAllPoints()
@@ -885,16 +938,28 @@ local function UpdateIcons(plate, auraInfo)
 
 		if info.expirationTime == 0 then
 			icon.remain = nil
+			icon.nextUpdate = nil
 			icon.timer:SetText(nil)
 		else
 			icon.remain = info.expirationTime - curTime
+			icon.nextUpdate = 0
 		end
 
-		if info.debuffType then
+		-- Guarded color lookup: the combat-log path stores debuffType = "none"
+		-- (unknown type) and 3.3.5 DebuffTypeColor has no "none" key, so an
+		-- unguarded unpack(debuffType2colors["none"]) throws and aborts this
+		-- whole UpdateIcons pass (swallowed by the CLEU pcall), leaving the
+		-- icon frame shown with no texture and no border until a later
+		-- redraw -- that aborted pass is the border delay. Unknown/"none"
+		-- renders the icon with NO colored border (matches FrostAtom: no
+		-- debuff-type outline for generic debuffs); the exact scan re-colors
+		-- it the moment a real UnitAura debuffType is known.
+		local borderColor = info.debuffType and debuffType2colors[info.debuffType]
+		if borderColor then
 			if USE_MODERN_BORDER then
-				icon:SetBackdropBorderColor(unpack(debuffType2colors[info.debuffType]))
+				icon:SetBackdropBorderColor(unpack(borderColor))
 			else
-				icon.border:SetVertexColor(unpack(debuffType2colors[info.debuffType]))
+				icon.border:SetVertexColor(unpack(borderColor))
 				icon.border:Show()
 			end
 		else
@@ -905,7 +970,15 @@ local function UpdateIcons(plate, auraInfo)
 			end
 		end
 
+		-- Same-frame icon+border: apply the texture synchronously in this pass
+		-- instead of waiting a full OnUpdate tick via texturePath, so the
+		-- border Show above and the icon pixels land together. texturePath is
+		-- still assigned first so Icon_OnUpdate applies anything not set here.
 		icon.texturePath = info.texture
+		if info.texture then
+			icon.texture:SetTexture(info.texture)
+			icon.texturePath = nil
+		end
 		icon.count:SetText((info.count or 0) > 1 and info.count or nil)
 
 		auraInfo[i] = nil
