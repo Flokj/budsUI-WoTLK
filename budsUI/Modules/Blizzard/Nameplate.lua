@@ -120,6 +120,107 @@ local function HealthBar_ValueChanged(frame)
 	frame.hp:SetValue(frame.healthOriginal:GetValue())
 end
 
+-- Blacklist concealment helpers (FrostAtom "hiddenByName" intent, 3.3.5-style).
+-- A blacklisted plate must be BOTH invisible AND non-interactive: hiding the
+-- healthbar alone leaves the stock plate frame's own hit rect alive, so the
+-- Blizzard mouseover highlight still lights up the empty spot and the plate
+-- stays clickable. 3.3.5 nameplate frames ARE PROTECTED (IsProtected() returns
+-- true), so plain frame:SetSize()/EnableMouse() is filtered or errors in
+-- combat lockdown. The hit zone is therefore zeroed through the secure-frame
+-- HitRect module (NameplateHitRect.lua, ported from FrostAtom HitRect.lua):
+-- K.NameplateHitRect_Update(frame, w, 0, true) writes the size into a secure
+-- marker's clamp rect and the header WrapScript sweep applies
+-- plate:SetSize(w, 0) from inside the protected environment.
+
+-- Hide every visible bit of a blacklisted plate and neutralize its hit zone.
+local function ApplyBlacklistHide(frame)
+	if not frame or not frame.hp then return end
+	-- Remember the normal hit size once so un-blacklist can restore it.
+	if not frame.blacklistW then
+		local w, h = frame:GetWidth(), frame:GetHeight()
+		if w and w > 1 then frame.blacklistW = w end
+		if h and h > 1 then frame.blacklistH = h end
+	end
+	frame:SetScript("OnUpdate", function() end)
+	frame.hp:SetAlpha(0)
+	if frame.cb then frame.cb:Hide() end
+	if frame.overlay then frame.overlay:Hide() end
+	if frame.raidicon then frame.raidicon:Hide() end
+	if frame.threat then frame.threat:Hide() end
+	local hp = frame.hp
+	if hp.oldname then hp.oldname:Hide() end
+	if hp.oldlevel then hp.oldlevel:Hide() end
+	if hp.boss then hp.boss:Hide() end
+	if hp.elite then hp.elite:Hide() end
+	if hp.name then hp.name:Hide() end
+	if hp.level then hp.level:Hide() end
+	if hp.value then hp.value:Hide() end
+	if hp.bg then hp.bg:Hide() end
+	if hp.backdrop then hp.backdrop:Hide() end
+	if frame.cb then
+		if frame.cb.backdrop then frame.cb.backdrop:Hide() end
+		if frame.cb.icon then frame.cb.icon:Hide() end
+		if frame.cb.shield then frame.cb.shield:Hide() end
+	end
+	if frame.class then frame.class:Hide() end
+	if frame.class and frame.class.Glow then frame.class.Glow:Hide() end
+	-- Neutralize the hit zone via the secure HitRect module: click rect (w, 0).
+	-- Runs inside the WrapScript sweep, so it survives combat lockdown.
+	if K.NameplateHitRect_Update then
+		local w = frame.blacklistW or frame:GetWidth()
+		if w and w > 1 then
+			K.NameplateHitRect_Update(frame, w, 0, true)
+		end
+	end
+	frame.hide = true
+end
+
+-- Restore a plate leaving the blacklist. Castbar/overlay/raid and cast icons
+-- are left for Blizzard to re-drive (shown on cast/hover/mark); everything
+-- else is re-shown here so no region stays hidden.
+local function RestoreBlacklistShow(frame)
+	if not frame then return end
+	frame:SetScript("OnUpdate", nil)
+	if frame.hp then frame.hp:SetAlpha(1) end
+	if frame.blacklistW then
+		local w, h = frame.blacklistW, frame.blacklistH or frame:GetHeight()
+		if K.NameplateHitRect_Update then
+			K.NameplateHitRect_Update(frame, w, h, false)
+		end
+	end
+	if frame.hp then
+		local hp = frame.hp
+		if hp.name then hp.name:Show() end
+		if hp.level then hp.level:Show() end
+		if hp.value then hp.value:Show() end
+		if hp.bg then hp.bg:Show() end
+		if hp.backdrop then hp.backdrop:Show() end
+		if hp.oldname then hp.oldname:Show() end
+		if hp.oldlevel then hp.oldlevel:Show() end
+		if hp.boss then hp.boss:Show() end
+		if hp.elite then hp.elite:Show() end
+	end
+	if frame.threat then frame.threat:Show() end
+	if frame.cb and frame.cb.backdrop then frame.cb.backdrop:Show() end
+	if frame.cb and frame.cb.shield then frame.cb.shield:Show() end
+	if frame.class then frame.class:Show() end
+	-- NOTE: frame.cb, frame.overlay, frame.raidicon and frame.cb.icon stay
+	-- hidden here on purpose; Blizzard re-shows them on next cast / hover /
+	-- mark (or next plate Show), so un-blacklist never flashes a stale
+	-- castbar, highlight, or raid/cast icon.
+	frame.hide = false
+end
+
+-- Re-assert blacklist concealment whenever Blizzard re-shows a plate, so a
+-- re-drawn stock frame never resurrects the click zone/highlight.
+local function OnPlateShow(frame)
+	if not frame or not frame.hp then return end
+	local name = (frame.hp.oldname and frame.hp.oldname:GetText()) or (frame.hp.name and frame.hp.name:GetText())
+	if (name and K.PlateBlacklist[name]) or frame.hide then
+		pcall(ApplyBlacklistHide, frame)
+	end
+end
+
 -- We need to reset everything when a nameplate it hidden
 local function OnHide(frame)
 	-- Release ported aura icons (NamePlateAuras engine)
@@ -149,6 +250,14 @@ local function OnHide(frame)
 	frame.hp.gcolor = nil
 	frame.hp.bcolor = nil
 	frame.blacklistChecked = nil -- Reset blacklist check flag
+	-- Reset blacklist concealment so a recycled stock frame never inherits a
+	-- dead click zone, zero-height size, or invisible content.
+	if frame.hide or frame.blacklistW then
+		RestoreBlacklistShow(frame)
+	end
+	frame.hide = false
+	frame.blacklistW = nil
+	frame.blacklistH = nil
 	frame:SetScript("OnUpdate", nil)
 end
 
@@ -414,6 +523,7 @@ local function SkinObjects(frame, nameFrame)
 
 	--frame.hp:HookScript("OnShow", UpdateObjects)
 	frame:HookScript("OnHide", OnHide)
+	frame:HookScript("OnShow", OnPlateShow)
 	frames[frame] = true
 end
 
@@ -465,15 +575,9 @@ end
 local function CheckBlacklist(frame, ...)
 	local name = frame.hp and (frame.hp.oldname and frame.hp.oldname:GetText() or frame.hp.name and frame.hp.name:GetText())
 	if name and K.PlateBlacklist[name] then
-		frame:SetScript("OnUpdate", function() end)
-		frame.hp:SetAlpha(0)
-		frame.cb:Hide()
-		frame.overlay:Hide()
-		frame.hp.oldlevel:Hide()
-		frame.hide = true
+		ApplyBlacklistHide(frame)
 	elseif frame.hide then
-		frame.hp:SetAlpha(1)
-		frame.hide = false
+		RestoreBlacklistShow(frame)
 	end
 end
 
@@ -999,6 +1103,11 @@ NamePlates:SetScript("OnUpdate", K.SafeOnUpdate(function(self, elapsed)
 			if not frame.blacklistChecked then
 				CheckBlacklist(frame)
 				frame.blacklistChecked = true
+			elseif frame.hide then
+				-- Steady-state re-assert: Blizzard re-draws stock regions and
+				-- the frame size on show, which would resurrect the hover
+				-- highlight and click zone; keep them neutralized.
+				pcall(ApplyBlacklistHide, frame)
 			end
 		end
 		

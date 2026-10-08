@@ -110,6 +110,7 @@
 	<Script file="Modules\Blizzard\Fonts.lua"/>
 	<Script file="Modules\Blizzard\ItemQuality.lua"/>
 	<Script file="Modules\Blizzard\NamePlateAuras.lua"/>
+	<Script file="Modules\Blizzard\NameplateHitRect.lua"/>
 	<Script file="Modules\Blizzard\Nameplate.lua"/>
 	<Script file="Modules\Blizzard\RepReward.lua"/>
 
