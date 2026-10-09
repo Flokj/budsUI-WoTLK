@@ -9,7 +9,7 @@ local CreateFrame = CreateFrame
 local GetTalentTabInfo = GetTalentTabInfo
 local isInspect = isInspect
 local GetText, GetMouseFocus, GetUnit = GetText, GetMouseFocus, GetUnit
-local UnitIsPlayer, UnitLevel, UnitIsPlayer, UnitName, UnitIsUnit = UnitIsPlayer, UnitLevel, UnitIsPlayer, UnitName, UnitIsUnit
+local UnitIsPlayer, UnitLevel, UnitIsPlayer, UnitName, UnitIsUnit, UnitGUID = UnitIsPlayer, UnitLevel, UnitIsPlayer, UnitName, UnitIsUnit, UnitGUID
 local CanInspect = CanInspect
 local GatherTalents = GatherTalents
 local InspectFrame = InspectFrame
@@ -71,7 +71,8 @@ if C.Tooltip.Talents == true then
 		-- Organise Cache
 		local cacheSize = (TipTac_Config and TipTac_Config.talentCacheSize or CACHE_SIZE)
 		for i = #cache, 1, -1 do
-			if (current.name == cache[i].name) then
+			if (current.guid and cache[i].guid and current.guid == cache[i].guid)
+			or (not current.guid and current.name == cache[i].name) then
 				tremove(cache,i)
 				break
 			end
@@ -88,8 +89,11 @@ if C.Tooltip.Talents == true then
 	-- OnEvent
 	ttt:SetScript("OnEvent",function(self,event)
 		self:UnregisterEvent("INSPECT_TALENT_READY")
-		if (gtt:GetUnit() == current.name) then
+		local tipUnit = gtt:GetUnit()
+		if (tipUnit and current.guid and UnitGUID(tipUnit) == current.guid) then
 			GatherTalents(1)
+		elseif (not tipUnit) then
+			-- tooltip closed meanwhile: don't force it open, cache was still updated on next show via inspect
 		end
 	end)
 
@@ -107,6 +111,8 @@ if C.Tooltip.Talents == true then
 		if (UnitIsPlayer(unit)) and (UnitLevel(unit) > 9 or UnitLevel(unit) == -1) and (CanInspect(unit)) then
 			wipe(current)
 			current.name = UnitName(unit)
+			current.guid = UnitGUID(unit)
+			current.unit = unit
 			-- Player
 			if (UnitIsUnit(unit,"player")) then
 				GatherTalents()
@@ -117,15 +123,17 @@ if C.Tooltip.Talents == true then
 					ttt:RegisterEvent("INSPECT_TALENT_READY")
 					NotifyInspect(unit)
 				end
-				for _, entry in ipairs(cache) do
-					if (current.name == entry.name) then
-						self:AddLine(TALENTS_PREFIX..entry.format)
-						current.tree = entry.tree
-						current.format = entry.format
-						current[1], current[2], current[3] = entry[1], entry[2], entry[3]
-						return
-					end
+			for _, entry in ipairs(cache) do
+				if (current.guid and entry.guid and current.guid == entry.guid)
+				or (not current.guid and current.name == entry.name) then
+					self:AddLine(TALENTS_PREFIX..entry.format)
+					current.tree = entry.tree
+					current.format = entry.format
+					current[1], current[2], current[3] = entry[1], entry[2], entry[3]
+					current.guid = entry.guid
+					return
 				end
+			end
 				if (allowInspect) then
 					self:AddLine(TALENTS_PREFIX..L_TOOLTIP_LOADING)
 				end
