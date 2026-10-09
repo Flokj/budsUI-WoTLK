@@ -55,6 +55,21 @@ T_DE_BUFF_BAR_Anchor:SetSize(C.Filger.BuffsSize, C.Filger.BuffsSize)
 local Filger = {}
 local MyUnits = {player = true, vehicle = true, pet = true}
 
+-- 3.3.5 fix: UnitBuff/UnitDebuff(unit, name) returns the FIRST aura with that
+-- name and ignores the caster. When several raidmates share identical DoTs on
+-- one target, that first match is often a raidmate's copy, so the OnEvent
+-- caster check (caster == data.caster / MyUnits[caster]) fails and the
+-- player's own DoT never shows. Scan by index and prefer the wanted caster.
+local function IsPreferredCaster(unitCaster, wantCaster)
+	if MyUnits[unitCaster] then
+		return true
+	end
+	if wantCaster ~= nil and wantCaster ~= "all" and unitCaster == wantCaster then
+		return true
+	end
+	return false
+end
+
 function Filger:TooltipOnEnter()
 	if self.spellID > 20 then
 		local str = "spell:%s"
@@ -69,32 +84,52 @@ function Filger:TooltipOnLeave()
 	GameTooltip:Hide()
 end
 
-function Filger:UnitBuff(unitID, inSpellID, spn, absID)
-	if absID then
-		for i = 1, 40, 1 do
-			local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellID = UnitBuff(unitID, i)
-			if not name then break end
-			if inSpellID == spellID then
+function Filger:UnitBuff(unitID, inSpellID, spn, absID, wantCaster)
+	if not spn then return nil end
+	-- NOTE (3.3.5): UnitBuff(unit, i) returns only 10 values (spellID is always
+	-- nil), so the scan is keyed on the resolved name (spn) only. inSpellID /
+	-- absID are kept in the signature for caller compatibility.
+	local fbName, fbRank, fbIcon, fbCount, fbDebuffType, fbDuration, fbExpirationTime, fbUnitCaster, fbIsStealable, fbShouldConsolidate, fbSpellID
+	local foundFallback = false
+	for i = 1, 40 do
+		local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellID = UnitBuff(unitID, i)
+		if not name then break end
+		if name == spn then
+			if IsPreferredCaster(unitCaster, wantCaster) then
 				return name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellID
+			elseif not foundFallback then
+				fbName, fbRank, fbIcon, fbCount, fbDebuffType, fbDuration, fbExpirationTime, fbUnitCaster, fbIsStealable, fbShouldConsolidate, fbSpellID = name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellID
+				foundFallback = true
 			end
 		end
-	else
-		return UnitBuff(unitID, spn)
+	end
+	if foundFallback then
+		return fbName, fbRank, fbIcon, fbCount, fbDebuffType, fbDuration, fbExpirationTime, fbUnitCaster, fbIsStealable, fbShouldConsolidate, fbSpellID
 	end
 	return nil
 end
 
-function Filger:UnitDebuff(unitID, inSpellID, spn, absID)
-	if absID then
-		for i = 1, 40, 1 do
-			local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellID = UnitDebuff(unitID, i)
-			if not name then break end
-			if inSpellID == spellID then
+function Filger:UnitDebuff(unitID, inSpellID, spn, absID, wantCaster)
+	if not spn then return nil end
+	-- NOTE (3.3.5): UnitDebuff(unit, i) returns only 10 values (spellID is always
+	-- nil), so the scan is keyed on the resolved name (spn) only. inSpellID /
+	-- absID are kept in the signature for caller compatibility.
+	local fbName, fbRank, fbIcon, fbCount, fbDebuffType, fbDuration, fbExpirationTime, fbUnitCaster, fbIsStealable, fbShouldConsolidate, fbSpellID
+	local foundFallback = false
+	for i = 1, 40 do
+		local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellID = UnitDebuff(unitID, i)
+		if not name then break end
+		if name == spn then
+			if IsPreferredCaster(unitCaster, wantCaster) then
 				return name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellID
+			elseif not foundFallback then
+				fbName, fbRank, fbIcon, fbCount, fbDebuffType, fbDuration, fbExpirationTime, fbUnitCaster, fbIsStealable, fbShouldConsolidate, fbSpellID = name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellID
+				foundFallback = true
 			end
 		end
-	else
-		return UnitDebuff(unitID, spn)
+	end
+	if foundFallback then
+		return fbName, fbRank, fbIcon, fbCount, fbDebuffType, fbDuration, fbExpirationTime, fbUnitCaster, fbIsStealable, fbShouldConsolidate, fbSpellID
 	end
 	return nil
 end
@@ -343,7 +378,7 @@ function Filger:OnEvent(event, unit)
 				local caster, spn, expirationTime
 				spn, _, _ = GetSpellInfo(data.spellID)
 				if spn then
-					name, _, icon, count, _, duration, expirationTime, caster, _, _, spid = Filger:UnitBuff(data.unitID, data.spellID, spn, data.absID)
+					name, _, icon, count, _, duration, expirationTime, caster, _, _, spid = Filger:UnitBuff(data.unitID, data.spellID, spn, data.absID, data.caster)
 					if name and (data.caster ~= 1 and (caster == data.caster or data.caster == "all") or MyUnits[caster]) then
 						if not data.count or count >= data.count then
 							start = expirationTime - duration
@@ -355,7 +390,7 @@ function Filger:OnEvent(event, unit)
 				local caster, spn, expirationTime
 				spn, _, _ = GetSpellInfo(data.spellID)
 				if spn then
-					name, _, icon, count, _, duration, expirationTime, caster, _, _, spid = Filger:UnitDebuff(data.unitID, data.spellID, spn, data.absID)
+					name, _, icon, count, _, duration, expirationTime, caster, _, _, spid = Filger:UnitDebuff(data.unitID, data.spellID, spn, data.absID, data.caster)
 					if name and (data.caster ~= 1 and (caster == data.caster or data.caster == "all") or MyUnits[caster]) then
 						start = expirationTime - duration
 						found = true
