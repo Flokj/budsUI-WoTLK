@@ -107,6 +107,8 @@ C["Chat"] = {
 	["Spam"] = false,
 	["FadeTime"] = 20,
 	["Sticky"] = true,
+	["SavedHistoryLines"] = 100,
+	["SavedCommands"] = 50,
 	["TabsMouseover"] = true,
 	["TabsOutline"] = false,
 	["TimestampFormat"] = 4, -- 1 = disabled, 2 = 03:27 PM, 3 = 03:27:32 PM, 4 = 15:27, 5 = 15:27:32 (same as KkthnxUI)

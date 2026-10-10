@@ -70,6 +70,8 @@ L_CHAT_YELLS = "yells"
 -- BigChat Localization
 L_CHAT_BIGCHAT_OFF = "|cffffe02eBig Chat Mode|r: Off"
 L_CHAT_BIGCHAT_ON = "|cffffe02eBig Chat Mode|r: On"
+-- Chat History Localization
+L_CHAT_HISTORY_SEPARATOR = "— messages before the reload —"
 -- Class Localization
 L_CLASS_HUNTER_CONTENT = "Your pet is content!"
 L_CLASS_HUNTER_HAPPY = "Your pet is happy!"

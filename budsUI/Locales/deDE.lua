@@ -74,6 +74,8 @@ L_CHAT_YELLS = "schreit"
 -- BigChat Localization
 L_CHAT_BIGCHAT_OFF = "|cffffe02eGroßer Chat-Modus|r: |cFFFF0000Aus|r."
 L_CHAT_BIGCHAT_ON = "|cffffe02eGroßer Chat-Modus|r: |cFF008000An|r."
+-- Chat History Localization
+L_CHAT_HISTORY_SEPARATOR = "— Nachrichten vor dem Neuladen —"
 -- Class Localization
 L_CLASS_HUNTER_CONTENT = "Dein Begleiter ist zufrieden!"
 L_CLASS_HUNTER_HAPPY = "Dein Begleiter ist glücklich!"

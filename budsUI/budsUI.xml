@@ -117,6 +117,8 @@
 	<Script file="Modules\Buffs\AuraSource.lua"/>
 	<Script file="Modules\Buffs\BuffFrame.lua"/>
 
+	<!-- History.lua must load before ChatFrames.lua: it captures the raw AddMessage -->
+	<Script file="Modules\Chat\History.lua"/>
 	<Script file="Modules\Chat\ChatFrames.lua"/>
 	<Script file="Modules\Chat\ChatTabs.lua"/>
 	<Script file="Modules\Chat\CopyChat.lua"/>

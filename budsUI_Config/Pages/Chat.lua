@@ -95,5 +95,14 @@ ns.RegisterPage({
 			type = "toggle",
 			desc = "Merge damage meter spam in one line-link.",
 		}),
+		{ header = L_GUI_CHAT_HISTORY or "Chat history", advanced = true },
+		T("SavedHistoryLines", L_GUI_CHAT_SAVED_LINES or "Saved chat lines", {
+			type = "number", min = 0, max = 500, step = 10,
+			desc = "How many chat lines per window survive a /reload (0 = disabled).",
+		}),
+		T("SavedCommands", L_GUI_CHAT_SAVED_COMMANDS or "Saved chat commands", {
+			type = "number", min = 0, max = 500, step = 1,
+			desc = "How many edit-box commands survive a /reload (0 = disabled).",
+		}),
 	},
 })
