@@ -113,6 +113,7 @@
 	<Script file="Modules\Blizzard\NameplateHitRect.lua"/>
 	<Script file="Modules\Blizzard\Nameplate.lua"/>
 	<Script file="Modules\Blizzard\RepReward.lua"/>
+	<Script file="Modules\Blizzard\SpellBook.lua"/>
 
 	<Script file="Modules\Buffs\AuraSource.lua"/>
 	<Script file="Modules\Buffs\BuffFrame.lua"/>

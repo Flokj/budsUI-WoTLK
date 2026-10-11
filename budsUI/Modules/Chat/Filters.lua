@@ -115,11 +115,9 @@ if C.Chat.Filter == true then
 	local BG_JOINED = {
 		withOptionalPeriod(formatToPattern(ERR_BG_PLAYER_JOINED_SS)),
 		withOptionalPeriod(formatToPattern((gsub(ERR_BG_PLAYER_JOINED_SS, "|H.-|h.-|h", "%%s", 1)))),
-		formatToPattern(ERR_RAID_MEMBER_ADDED_S),
 	}
 	local BG_LEFT = {
 		withOptionalPeriod(formatToPattern(ERR_BG_PLAYER_LEFT_S)),
-		formatToPattern(ERR_RAID_MEMBER_REMOVED_S),
 	}
 
 	local function appendFormatPatterns(patterns, ...)

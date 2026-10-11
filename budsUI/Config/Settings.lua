@@ -84,6 +84,9 @@ C["Blizzard"] = {
 	["TrainAllButton"] = true,
 	["MoveAchievements"] = true,
 	["Reputations"] = true,
+	["SpellBook"] = true,
+		["SpellBookHidePassive"] = false,
+		["SpellBookHideAuras"] = false,
 }
 -- Buffs & Debuffs Options
 C["Aura"] = {

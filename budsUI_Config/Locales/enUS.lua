@@ -60,6 +60,13 @@ L_GUI_BLIZZARD_ENHANCE_PROFESSIONS = "Enhanced profession window (double-wide, m
 L_GUI_BLIZZARD_ENHANCE_TRAINERS = "Enhanced trainer window (double-wide, more skills)"
 L_GUI_BLIZZARD_TRAIN_ALL = "Show Train All button in the trainer window"
 L_GUI_BLIZZARD_REPUTATIONS = "Display reputation rewards for quests"
+L_GUI_BLIZZARD_SPELLBOOK = "Spellbook"
+L_GUI_BLIZZARD_SPELLBOOK_DESC = "Replaces the spellbook: all tabs and the pet book in one wide window, four columns, search and a switch to hide passive abilities"
+L_SPELLBOOK_SEARCH = "Search"
+L_SPELLBOOK_HIDE_PASSIVE = "Hide passive abilities"
+L_SPELLBOOK_HIDE_AURAS = "Hide auras"
+L_SPELLBOOK_SEARCH_COMBAT = "Search applies after combat"
+L_SPELLBOOK_EMPTY = "Nothing found"
 -- Buffs & Debuffs Localization
 L_GUI_AURA = "Buffs & Debuffs"
 L_GUI_AURA_ENABLE = "Enable Player Buffs/Debuffs"

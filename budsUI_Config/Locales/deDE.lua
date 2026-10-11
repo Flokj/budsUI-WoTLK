@@ -66,6 +66,13 @@ L_GUI_BLIZZARD_ENHANCE_PROFESSIONS = "Verbessertes Berufsfenster (doppelt breit,
 L_GUI_BLIZZARD_ENHANCE_TRAINERS = "Verbessertes Lehrerfenster (doppelt breit, mehr Fertigkeiten)"
 L_GUI_BLIZZARD_TRAIN_ALL = "Alle-lernen-Knopf im Lehrerfenster anzeigen"
 L_GUI_BLIZZARD_REPUTATIONS = "Rufbelohnungen für Quests anzeigen"
+L_GUI_BLIZZARD_SPELLBOOK = "Zauberbuch"
+L_GUI_BLIZZARD_SPELLBOOK_DESC = "Ersetzt das Zauberbuch: alle Tabs und das Begleiterbuch in einem breiten Fenster, vier Spalten, Suche und Schalter zum Ausblenden passiver Fähigkeiten"
+L_SPELLBOOK_SEARCH = "Suche"
+L_SPELLBOOK_HIDE_PASSIVE = "Passive Fähigkeiten ausblenden"
+L_SPELLBOOK_HIDE_AURAS = "Auren ausblenden"
+L_SPELLBOOK_SEARCH_COMBAT = "Suche wird nach dem Kampf übernommen"
+L_SPELLBOOK_EMPTY = "Nichts gefunden"
 -- Buffs & Debuffs Localization
 L_GUI_AURA = "Buffs & Debuffs"
 L_GUI_AURA_ENABLE = "Spieler-Buffs/Debuffs aktivieren"

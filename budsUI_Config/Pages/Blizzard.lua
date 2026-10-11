@@ -54,5 +54,9 @@ ns.RegisterPage({
 			type = "toggle",
 			desc = "Display reputation rewards for quests.",
 		}),
+		T("SpellBook", L_GUI_BLIZZARD_SPELLBOOK or "Spellbook", {
+			type = "toggle",
+			desc = "Replaces the spellbook: all tabs + pet book in one window, 4 columns, search, hide passive",
+		}),
 	},
 })
