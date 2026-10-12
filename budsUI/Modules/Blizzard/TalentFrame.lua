@@ -1,0 +1,1459 @@
+--[[-----------------------------------------------------------------------------
+Addon: budsUI
+File: Modules/Blizzard/TalentFrame.lua
+Purpose:
+	Replacement talent window, ported from FrostAtomUI
+	(Modules/Books/TalentFrame.lua): all three talent trees side by side,
+	glyph panel, dual spec tabs, pet talents, talent code import/export,
+	preview mode and spec switch buttons.
+
+Notes:
+	- Gated by C.Blizzard.TalentFrame (default true, needs /rl).
+	- budsUI adaptations (donor ns.* helpers are inlined):
+	  WINDOW_INSET -> { left=16, right=16, top=16, bottom=16 },
+	  SkinIconButton -> StripTextures + CreateBackdrop + TexCoord,
+	  SetShown -> Show/Hide, Defer -> one-shot OnUpdate,
+	  CreateInset -> Frame + SetTemplate("Transparent"),
+	  CreateLabel -> CreateFontString, CreateButton -> UIPanelButtonTemplate,
+	  FitButton -> SetWidth, CreateSideTab -> SpellBookSkillLineTabTemplate,
+	  CreateWindow -> custom frame + SetUIPanelLayout attributes,
+	  GlyphSpellIcon -> select(3, GetSpellInfo()) or QUESTION_MARK.
+	- StaticPopup dialogs renamed to BUDSUI_* to avoid collisions.
+	- Event registration uses a plain event frame (no module prototype).
+-----------------------------------------------------------------------------]]
+
+local K, C, L, _ = select(2, ...):unpack()
+if C.Blizzard.TalentFrame ~= true then return end
+
+local _G = _G
+local select, unpack = select, unpack
+local hooksecurefunc = hooksecurefunc
+local CreateFrame, UIParent = CreateFrame, UIParent
+
+local GetNumTalentTabs, GetTalentTabInfo, GetNumTalents, GetTalentInfo, GetTalentPrereqs =
+	GetNumTalentTabs, GetTalentTabInfo, GetNumTalents, GetTalentInfo, GetTalentPrereqs
+local GetUnspentTalentPoints, GetGroupPreviewTalentPointsSpent =
+	GetUnspentTalentPoints, GetGroupPreviewTalentPointsSpent
+local GetActiveTalentGroup, GetNumTalentGroups, SetActiveTalentGroup =
+	GetActiveTalentGroup, GetNumTalentGroups, SetActiveTalentGroup
+local LearnTalent, AddPreviewTalentPoints, ResetGroupPreviewTalentPoints, GetTalentLink =
+	LearnTalent, AddPreviewTalentPoints, ResetGroupPreviewTalentPoints, GetTalentLink
+local GetCVarBool, IsModifiedClick, IsCurrentSpell, UnitLevel = GetCVarBool, IsModifiedClick, IsCurrentSpell, UnitLevel
+local GetNumGlyphSockets, GetGlyphSocketInfo, GlyphMatchesSocket, PlaceGlyphInSocket, GetGlyphLink =
+	GetNumGlyphSockets, GetGlyphSocketInfo, GlyphMatchesSocket, PlaceGlyphInSocket, GetGlyphLink
+local GetSpellInfo, IsShiftKeyDown, SetPortraitTexture, UnitName =
+	GetSpellInfo, IsShiftKeyDown, SetPortraitTexture, UnitName
+local SetCVar = SetCVar
+local select2, min, max, abs, sort, tconcat, tonumber =
+	select, math.min, math.max, math.abs, table.sort, table.concat, tonumber
+
+local noop = function() end
+
+local FRAME_NAME = "budsUITalents"
+local INSET = { left = 16, right = 16, top = 16, bottom = 16 }
+local MAX_TABS = 3
+local COLUMNS = 4
+local CONTENT_TOP = 40
+local STATUS_HEIGHT = 26
+local PANE_GAP = 8
+local PANE_BORDER = 4
+local PANE_HEADER = 26
+local BUTTON_SIZE = 32
+local SLOT_SIZE = 56
+local CELL_X = 52
+local CELL_Y = 44
+local MARGIN = 18
+local BRANCH_SIZE = 32
+local ARROW_SIZE = 32
+local ARROW_OFFSET = 5
+local BAR_HEIGHT = 26
+local FOOTER_BOTTOM = 14
+local SIDE_TAB_X = -3
+local SIDE_TAB_Y = -60
+local PANE_WIDTH = MARGIN * 2 + (COLUMNS - 1) * CELL_X + BUTTON_SIZE
+local GLYPH_WIDTH = 246
+local WIDTH = INSET.left + INSET.right + MAX_TABS * PANE_WIDTH + MAX_TABS * PANE_GAP + GLYPH_WIDTH
+local PLAYER_TALENTS_PER_TIER, PET_TALENTS_PER_TIER = 5, 3
+local ART_CROP, ART_WIDTH, ART_HEIGHT, ART_LEFT, ART_TOP = 0.19921875, 249, 331, 205, 256
+local DEFAULT_SPEC_ICON = "Interface\\Icons\\Ability_Marksmanship"
+local QUESTION_MARK = "Interface\\Icons\\INV_Misc_QuestionMark"
+
+local BORDERS = "Interface\\Buttons\\UI-Button-Borders2"
+local INPUT_BORDER = "Interface\\Common\\Common-Input-Border"
+local BRANCH_TEXTURE = "Interface\\TalentFrame\\UI-TalentBranches"
+local ARROW_TEXTURE = "Interface\\TalentFrame\\UI-TalentArrows"
+local GLYPH_RUNE_TEXTURE = "Interface\\Spellbook\\UI-Glyph-Rune1"
+local GLYPH_LOCK_TEXTURE = "Interface\\LFGFrame\\UI-LFG-ICON-LOCK"
+local PARCHMENT_TEXTURE = "Interface\\AchievementFrame\\UI-Achievement-Parchment"
+
+local SLOT_AVAILABLE = { 0.1, 1, 0.1 }
+local SLOT_MAXED = { 1, 0.82, 0 }
+local PARCHMENT_TITLE_COLOR = { 0.18, 0.12, 0.06 }
+local PARCHMENT_TEXT_COLOR = { 0, 0, 0 }
+local PARCHMENT_DISABLED_COLOR = { 0.4, 0.26, 0.12 }
+
+-- Runtime talent-code strings (English literals; budsUI has no per-module L table).
+local STR_INVALID_CODE = "Invalid talent code"
+local STR_NEEDS_RESET = "The code needs a talent reset"
+local STR_NOT_ENOUGH = "Not enough talent points: %d needed, %d available"
+local STR_NOT_APPLIED = "The talent code could not be fully applied"
+local STR_COPY_CODE = "Copy code"
+local STR_COPY_TIP = "Talent code for the Wowhead talent calculator"
+local STR_PASTE_CODE = "Paste code"
+local STR_PASTE_TIP = "Places the talents of a Wowhead talent code as a preview, Learn learns them"
+local STR_COPY_HELP = "Ctrl+C to copy"
+local STR_PASTE_HELP = "Paste a talent code (Ctrl+V)"
+
+local BRANCH_COORDS = {
+	down = { [true] = { 0, 0.125, 0, 0.484375 }, [false] = { 0, 0.125, 0.515625, 1 } },
+	right = { [true] = { 0.2578125, 0.3828125, 0, 0.5 }, [false] = { 0.2578125, 0.3828125, 0.5, 1 } },
+	topright = { [true] = { 0.515625, 0.640625, 0, 0.5 }, [false] = { 0.515625, 0.640625, 0.5, 1 } },
+	topleft = { [true] = { 0.640625, 0.515625, 0, 0.5 }, [false] = { 0.640625, 0.515625, 0.5, 1 } },
+	bottomright = { [true] = { 0.38671875, 0.51171875, 0, 0.5 }, [false] = { 0.38671875, 0.51171875, 0.5, 1 } },
+	bottomleft = { [true] = { 0.51171875, 0.38671875, 0, 0.5 }, [false] = { 0.51171875, 0.38671875, 0.5, 1 } },
+}
+
+local ARROW_COORDS = {
+	top = { [true] = { 0, 0.5, 0, 0.5 }, [false] = { 0, 0.5, 0.5, 1 } },
+	right = { [true] = { 1, 0.5, 0, 0.5 }, [false] = { 1, 0.5, 0.5, 1 } },
+	left = { [true] = { 0.5, 1, 0, 0.5 }, [false] = { 0.5, 1, 0.5, 1 } },
+}
+
+local GLYPH_TYPES = { 1, 2, 2, 1, 2, 1 }
+local GLYPH_LABELS = { "MAJOR_GLYPH", "MINOR_GLYPH" }
+local GLYPH_COLORS = { { 1, 0.25, 0 }, { 0, 0.25, 1 } }
+local GLYPH_ICON_SIZES = { 32, 26 }
+local GLYPH_NAME_FONTS = { "QuestFont", "QuestFontNormalSmall" }
+local GLYPH_PADDING = 8
+local GLYPH_INDENT = 18
+local GLYPH_ROW_GAP = 8
+local GLYPH_PULSE = 1.6
+
+local SPECS = {
+	{ group = 1, pet = false, unit = "player", name = "TALENT_SPEC_PRIMARY", glyphName = "TALENT_SPEC_PRIMARY_GLYPH" },
+	{
+		group = 2,
+		pet = false,
+		unit = "player",
+		name = "TALENT_SPEC_SECONDARY",
+		glyphName = "TALENT_SPEC_SECONDARY_GLYPH",
+	},
+	{ group = 1, pet = true, unit = "pet", name = "TALENT_SPEC_PET_PRIMARY" },
+}
+
+local frame
+local panes = {}
+local view = { pet = false, group = 1 }
+
+-- budsUI replacements for the donor ns.* skin helpers.
+local function setShown(region, shown)
+	if shown then region:Show() else region:Hide() end
+end
+
+local function deferCall(target, fn)
+	target:SetScript("OnUpdate", function(self, e)
+		self.t = (self.t or 0) + e
+		if self.t > 0 then
+			self:SetScript("OnUpdate", nil)
+			self.t = 0
+			fn(self)
+		end
+	end)
+end
+
+local function skinIconButton(btn)
+	btn:StripTextures()
+	btn:CreateBackdrop()
+	if not btn.icon then
+		local icon = btn:CreateTexture(nil, "BORDER")
+		icon:SetAllPoints()
+		btn.icon = icon
+	end
+	btn.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+end
+
+local function createInset(parent, style)
+	local inset = CreateFrame("Frame", nil, parent)
+	if style == "panel" then
+		-- Talent panes: no backdrop, background comes from spec-specific art textures
+		inset:SetBackdrop(nil)
+	else
+		inset:SetTemplate("Transparent")
+	end
+	return inset
+end
+
+local function createLabel(parent, text, font)
+	local label = parent:CreateFontString(nil, "ARTWORK", font)
+	if text then label:SetText(text) end
+	return label
+end
+
+local function createButton(parent, text, w, h)
+	local button = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+	button:SetSize(w, h)
+	button:SetText(text)
+	return button
+end
+
+local function fitButton(btn, padding, minW)
+	btn:SetWidth(max(minW, btn:GetTextWidth() + padding))
+end
+
+local function createSideTab(parent, icon)
+	local tab = CreateFrame("CheckButton", nil, parent, "SpellBookSkillLineTabTemplate")
+	tab:SetNormalTexture(icon)
+	return tab
+end
+
+local function setUIPanelLayout(target, area, pushable)
+	target:SetAttribute("UIPanelLayout-defined", true)
+	target:SetAttribute("UIPanelLayout-enabled", true)
+	target:SetAttribute("UIPanelLayout-area", area)
+	target:SetAttribute("UIPanelLayout-pushable", pushable)
+	target:SetAttribute("UIPanelLayout-whileDead", 1)
+end
+
+local function createWindow(name, options)
+	local window = CreateFrame("Frame", name, UIParent)
+	window:Hide()
+	window:SetSize(options.width, options.height or 600)
+	window:SetFrameStrata(options.strata or "MEDIUM")
+	window:SetToplevel(true)
+	window:EnableMouse(true)
+	if options.movable ~= false then
+		window:SetMovable(true)
+		window:SetClampedToScreen(true)
+		window:RegisterForDrag("LeftButton")
+		window:SetScript("OnDragStart", window.StartMoving)
+		window:SetScript("OnDragStop", window.StopMovingOrSizing)
+	end
+	if name and options.special ~= false then
+		tinsert(UISpecialFrames, name)
+	end
+	-- Match FrostAtomUI: UI-DialogBox-Background with UI-DialogBox-Border
+	window:SetBackdrop({
+		bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+		edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+		tile = true, tileSize = 32, edgeSize = 32,
+		insets = { left = 11, right = 12, top = 12, bottom = 11 }
+	})
+	local title = window:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	title:SetPoint("TOP", 0, -17)
+	window.title = title
+	if options.title then
+		title:SetText(options.title)
+	end
+	if not options.noClose then
+		local close = CreateFrame("Button", nil, window, "UIPanelCloseButton")
+		close:SetPoint("TOPRIGHT", -3, -3)
+		close:SetScript("OnClick", HideParentPanel)
+		window.close = close
+	end
+	return window
+end
+
+-- Use K.GlyphSpellIcon from Data/GlyphIcons.lua for proper glyph spell icons
+
+local function centerX(column)
+	return MARGIN + (column - 1) * CELL_X + BUTTON_SIZE / 2
+end
+
+local function centerY(tier)
+	return MARGIN + (tier - 1) * CELL_Y + BUTTON_SIZE / 2
+end
+
+local function isEditable()
+	return view.group == GetActiveTalentGroup(false, view.pet)
+end
+
+local function setEnabled(button, enabled)
+	if enabled then
+		button:Enable()
+	else
+		button:Disable()
+	end
+end
+
+local function setColor(region, color)
+	region:SetVertexColor(color[1], color[2], color[3])
+end
+
+local function setFontColor(region, color)
+	region:SetTextColor(color.r, color.g, color.b)
+end
+
+local function createBar(parent)
+	local bar = CreateFrame("Frame", nil, parent)
+	bar:SetHeight(BAR_HEIGHT)
+
+	local background = bar:CreateTexture(nil, "BACKGROUND")
+	background:SetTexture(BORDERS)
+	background:SetTexCoord(0, 0.646484375, 0.2109375, 0.4140625)
+	background:SetAllPoints()
+
+	local left = bar:CreateTexture(nil, "BORDER")
+	left:SetTexture(BORDERS)
+	left:SetTexCoord(0, 0.01171875, 0.421875, 0.5625)
+	left:SetWidth(6)
+	left:SetPoint("TOPLEFT", 4, -5)
+	left:SetPoint("BOTTOMLEFT", 4, 5)
+
+	local right = bar:CreateTexture(nil, "BORDER")
+	right:SetTexture(BORDERS)
+	right:SetTexCoord(0.3046875, 0.31640625, 0.421875, 0.5625)
+	right:SetWidth(6)
+	right:SetPoint("TOPRIGHT", -4, -5)
+	right:SetPoint("BOTTOMRIGHT", -4, 5)
+
+	local middle = bar:CreateTexture(nil, "BORDER")
+	middle:SetTexture(BORDERS)
+	middle:SetTexCoord(0.01171875, 0.3046875, 0.421875, 0.5625)
+	middle:SetPoint("TOPLEFT", left, "TOPRIGHT")
+	middle:SetPoint("BOTTOMRIGHT", right, "BOTTOMLEFT")
+	return bar
+end
+
+local function acquireBranch(pane, key, met)
+	pane.branchCount = pane.branchCount + 1
+	local branch = pane.branches[pane.branchCount]
+	if not branch then
+		branch = pane.body:CreateTexture(nil, "ARTWORK")
+		branch:SetTexture(BRANCH_TEXTURE)
+		pane.branches[pane.branchCount] = branch
+	end
+	branch:SetTexCoord(unpack(BRANCH_COORDS[key][met]))
+	branch:ClearAllPoints()
+	branch:Show()
+	return branch
+end
+
+local function horizontalBranch(pane, x1, x2, y, met)
+	local branch = acquireBranch(pane, "right", met)
+	branch:SetPoint("TOPLEFT", pane.body, "TOPLEFT", min(x1, x2), -(y - BRANCH_SIZE / 2))
+	branch:SetSize(max(abs(x2 - x1), 1), BRANCH_SIZE)
+end
+
+local function verticalBranch(pane, x, y1, y2, met)
+	local branch = acquireBranch(pane, "down", met)
+	branch:SetPoint("TOPLEFT", pane.body, "TOPLEFT", x - BRANCH_SIZE / 2, -min(y1, y2))
+	branch:SetSize(BRANCH_SIZE, max(abs(y2 - y1), 1))
+end
+
+local function cornerBranch(pane, key, x, y, met)
+	local branch = acquireBranch(pane, key, met)
+	branch:SetPoint("CENTER", pane.body, "TOPLEFT", x, -y)
+	branch:SetSize(BRANCH_SIZE, BRANCH_SIZE)
+end
+
+local function arrow(pane, direction, x, y, met)
+	pane.arrowCount = pane.arrowCount + 1
+	local texture = pane.arrows[pane.arrowCount]
+	if not texture then
+		texture = pane.arrowLayer:CreateTexture(nil, "OVERLAY")
+		texture:SetTexture(ARROW_TEXTURE)
+		texture:SetSize(ARROW_SIZE, ARROW_SIZE)
+		pane.arrows[pane.arrowCount] = texture
+	end
+	texture:SetTexCoord(unpack(ARROW_COORDS[direction][met]))
+	texture:ClearAllPoints()
+	texture:SetPoint("CENTER", pane.body, "TOPLEFT", x, -y)
+	texture:Show()
+end
+
+local function rowBlocked(pane, tier, fromColumn, toColumn)
+	local step = fromColumn < toColumn and 1 or -1
+	for column = fromColumn + step, toColumn, step do
+		if pane.occupied[tier * COLUMNS + column] then
+			return true
+		end
+	end
+	return false
+end
+
+local function drawBranch(pane, fromTier, fromColumn, tier, column, met)
+	local reach = BUTTON_SIZE / 2 + ARROW_OFFSET
+	local half = BRANCH_SIZE / 2
+	local fromX, fromY = centerX(fromColumn), centerY(fromTier)
+	local x, y = centerX(column), centerY(tier)
+	local step = fromColumn < column and 1 or -1
+	local side = fromColumn < column and "left" or "right"
+
+	if fromColumn == column then
+		verticalBranch(pane, x, fromY, y, met)
+		arrow(pane, "top", x, y - reach, met)
+	elseif fromTier == tier then
+		horizontalBranch(pane, fromX, x, y, met)
+		arrow(pane, side, x - step * reach, y, met)
+	elseif not rowBlocked(pane, fromTier, fromColumn, column) then
+		horizontalBranch(pane, fromX, x - step * half, fromY, met)
+		cornerBranch(pane, step == 1 and "topright" or "topleft", x, fromY, met)
+		verticalBranch(pane, x, fromY + half, y, met)
+		arrow(pane, "top", x, y - reach, met)
+	else
+		verticalBranch(pane, fromX, fromY, y - half, met)
+		cornerBranch(pane, step == 1 and "bottomleft" or "bottomright", fromX, y, met)
+		horizontalBranch(pane, fromX + step * half, x, y, met)
+		arrow(pane, side, x - step * reach, y, met)
+	end
+end
+
+local function drawPrereqs(pane, tier, column, met, preview, ...)
+	for i = 1, select2("#", ...), 4 do
+		local fromTier, fromColumn, isLearnable, isPreviewLearnable = select2(i, ...)
+		if preview then
+			met = met and isPreviewLearnable and true or false
+		else
+			met = met and isLearnable and true or false
+		end
+		drawBranch(pane, fromTier, fromColumn, tier, column, met)
+	end
+	return met
+end
+
+local function showTalentTooltip(self)
+	local v = self.view
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+	GameTooltip:SetTalent(
+		self.tab,
+		self.index,
+		v.inspect,
+		v.pet,
+		v.group,
+		not v.inspect and not v.readOnly and GetCVarBool("previewTalents")
+	)
+end
+
+local function onTalentClick(self, mouseButton)
+	local v = self.view
+	local preview = not v.inspect and not v.readOnly and GetCVarBool("previewTalents")
+	if IsModifiedClick("CHATLINK") then
+		local link = GetTalentLink(self.tab, self.index, v.inspect, v.pet, v.group, preview)
+		if link then
+			ChatEdit_InsertLink(link)
+		end
+		return
+	end
+	if v.inspect or v.readOnly or not isEditable() then
+		return
+	end
+	if preview then
+		AddPreviewTalentPoints(self.tab, self.index, mouseButton == "LeftButton" and 1 or -1, view.pet, view.group)
+	elseif mouseButton == "LeftButton" then
+		LearnTalent(self.tab, self.index, view.pet, view.group)
+	end
+end
+
+local function createTalentButton(pane, index)
+	local button = CreateFrame("Button", nil, pane.body)
+	button:SetFrameLevel(pane.body:GetFrameLevel() + 1)
+	button:SetSize(BUTTON_SIZE, BUTTON_SIZE)
+	button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	skinIconButton(button)
+
+	local slot = button:CreateTexture(nil, "BACKGROUND")
+	slot:SetTexture("Interface\\Buttons\\UI-EmptySlot-White")
+	slot:SetSize(SLOT_SIZE, SLOT_SIZE)
+	slot:SetPoint("CENTER")
+	button.slot = slot
+
+	local rankBorder = button:CreateTexture(nil, "OVERLAY")
+	rankBorder:SetTexture("Interface\\TalentFrame\\TalentFrame-RankBorder")
+	rankBorder:SetSize(32, 32)
+	rankBorder:SetPoint("CENTER", button, "BOTTOMRIGHT")
+	button.rankBorder = rankBorder
+
+	local rank = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+	rank:SetPoint("CENTER", rankBorder)
+	button.rank = rank
+
+	button.index = index
+	button.view = pane.view
+	button:SetScript("OnClick", onTalentClick)
+	button:SetScript("OnEnter", showTalentTooltip)
+	button:SetScript("OnLeave", GameTooltip_Hide)
+
+	pane.buttons[index] = button
+	return button
+end
+
+local function updateTalent(button, pane, i, context)
+	local v = pane.view
+	local name, iconTexture, tier, column, rank, maxRank, _, meetsPrereq, previewRank, meetsPreviewPrereq =
+		GetTalentInfo(context.tab, i, v.inspect, v.pet, v.group)
+	if not name then
+		button:Hide()
+		return 0
+	end
+
+	local displayRank = context.preview and previewRank or rank
+	local forceDesaturated = (context.unspent <= 0 or not context.editable) and displayRank == 0
+	local tierUnlocked = (tier - 1) * context.perTier <= context.spent
+	local met = drawPrereqs(
+		pane,
+		tier,
+		column,
+		tierUnlocked and not forceDesaturated,
+		context.preview,
+		GetTalentPrereqs(context.tab, i, v.inspect, v.pet, v.group)
+	)
+
+	button.tab = context.tab
+	button:SetPoint(
+		"TOPLEFT",
+		pane.body,
+		"TOPLEFT",
+		centerX(column) - BUTTON_SIZE / 2,
+		-(centerY(tier) - BUTTON_SIZE / 2)
+	)
+	button.icon:SetTexture(iconTexture)
+	button.rank:SetText(displayRank)
+
+	if met and (context.preview and meetsPreviewPrereq or not context.preview and meetsPrereq) then
+		button.icon:SetDesaturated(false)
+		button.icon:SetVertexColor(1, 1, 1)
+		local maxed = displayRank >= maxRank
+		setColor(button.slot, maxed and SLOT_MAXED or SLOT_AVAILABLE)
+		setFontColor(button.rank, maxed and NORMAL_FONT_COLOR or GREEN_FONT_COLOR)
+		button.rankBorder:SetVertexColor(1, 1, 1)
+		button.rankBorder:Show()
+		button.rank:Show()
+	else
+		button.icon:SetDesaturated(true)
+		button.icon:SetVertexColor(0.65, 0.65, 0.65)
+		button.slot:SetVertexColor(0.5, 0.5, 0.5)
+		button.rankBorder:SetVertexColor(0.5, 0.5, 0.5)
+		setFontColor(button.rank, GRAY_FONT_COLOR)
+		setShown(button.rankBorder, displayRank > 0)
+		setShown(button.rank, displayRank > 0)
+	end
+	button:Show()
+	return tier
+end
+
+local function setBackground(pane, background, desaturated)
+	local base = "Interface\\TalentFrame\\" .. (background or "MageFire") .. "-"
+	for suffix, texture in pairs(pane.art) do
+		texture:SetTexture(base .. suffix)
+		texture:SetDesaturated(desaturated)
+	end
+end
+
+local function updatePane(pane, tab, context)
+	local v = pane.view
+	local name, icon, pointsSpent, background, previewPointsSpent = GetTalentTabInfo(tab, v.inspect, v.pet, v.group)
+	context.tab = tab
+	context.spent = (pointsSpent or 0) + (previewPointsSpent or 0)
+
+	pane.icon:SetTexture(icon)
+	pane.name:SetText(name)
+	pane.points:SetText(context.spent)
+	setBackground(pane, background, context.desaturated)
+
+	pane.branchCount, pane.arrowCount = 0, 0
+	wipe(pane.occupied)
+	local numTalents = GetNumTalents(tab, v.inspect, v.pet)
+	for i = 1, numTalents do
+		local talentName, _, tier, column = GetTalentInfo(tab, i, v.inspect, v.pet, v.group)
+		if talentName then
+			pane.occupied[tier * COLUMNS + column] = true
+		end
+	end
+
+	local maxTier = 1
+	for i = 1, numTalents do
+		local button = pane.buttons[i] or createTalentButton(pane, i)
+		maxTier = max(maxTier, updateTalent(button, pane, i, context))
+	end
+	for i = numTalents + 1, #pane.buttons do
+		pane.buttons[i]:Hide()
+	end
+	for i = pane.branchCount + 1, #pane.branches do
+		pane.branches[i]:Hide()
+	end
+	for i = pane.arrowCount + 1, #pane.arrows do
+		pane.arrows[i]:Hide()
+	end
+	return maxTier
+end
+
+local function layoutArt(pane, bodyHeight)
+	local sx = (PANE_WIDTH - PANE_BORDER * 2) / ART_WIDTH
+	local sy = (bodyHeight - PANE_BORDER) / ART_HEIGHT
+	local left, right = ART_LEFT * sx, (ART_WIDTH - ART_LEFT) * sx
+	local top, bottom = ART_TOP * sy, (ART_HEIGHT - ART_TOP) * sy
+	pane.art.TopLeft:SetSize(left, top)
+	pane.art.TopRight:SetSize(right, top)
+	pane.art.BottomLeft:SetSize(left, bottom)
+	pane.art.BottomRight:SetSize(right, bottom)
+end
+
+local function paneHeight(tiers)
+	local bodyHeight = MARGIN * 2 + (tiers - 1) * CELL_Y + BUTTON_SIZE
+	return PANE_BORDER + PANE_HEADER + bodyHeight, bodyHeight
+end
+
+local function showSpecTooltip(self)
+	local spec = self.spec
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+	if GetNumTalentGroups(false, true) <= 1 and GetNumTalentGroups(false, false) <= 1 then
+		GameTooltip:AddLine(UnitName(spec.unit), NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
+	else
+		GameTooltip:AddLine(_G[spec.name])
+		if not spec.pet and spec.group == GetActiveTalentGroup(false, false) then
+			GameTooltip:AddLine(TALENT_ACTIVE_SPEC_STATUS, GREEN_FONT_COLOR.r, GREEN_FONT_COLOR.g, GREEN_FONT_COLOR.b)
+		end
+	end
+	local cache = self.cache
+	for index = 1, cache.numTabs or 0 do
+		local info = cache[index]
+		if info and info.name then
+			local color = cache.primaryTabIndex == index and GREEN_FONT_COLOR or HIGHLIGHT_FONT_COLOR
+			GameTooltip:AddDoubleLine(
+				info.name,
+				info.pointsSpent,
+				HIGHLIGHT_FONT_COLOR.r,
+				HIGHLIGHT_FONT_COLOR.g,
+				HIGHLIGHT_FONT_COLOR.b,
+				color.r,
+				color.g,
+				color.b,
+				1
+			)
+		end
+	end
+	GameTooltip:Show()
+end
+
+local function updateSpecTabs(numGroups, numPetGroups)
+	local showTabs = numGroups > 1 or numPetGroups > 0
+	local y
+	for _, tab in ipairs(frame.specTabs) do
+		local spec = tab.spec
+		local available = spec.pet and numPetGroups > 0 or not spec.pet and spec.group <= numGroups
+		if available and showTabs then
+			local cache = tab.cache
+			TalentFrame_UpdateSpecInfoCache(cache, false, spec.pet, spec.group)
+			local normal = tab:GetNormalTexture()
+			if numGroups <= 1 then
+				SetPortraitTexture(normal, spec.unit)
+			elseif cache.primaryTabIndex > 0 then
+				normal:SetTexture(cache[cache.primaryTabIndex].icon)
+			elseif cache.numTabs > 1 and cache.totalPointsSpent > 0 then
+				normal:SetTexture(TALENT_HYBRID_ICON)
+			elseif spec.pet then
+				SetPortraitTexture(normal, spec.unit)
+			else
+				normal:SetTexture(DEFAULT_SPEC_ICON)
+			end
+
+			if y then
+				y = y - BUTTON_SIZE - (spec.pet and 39 or 22)
+			else
+				y = SIDE_TAB_Y
+			end
+			tab:ClearAllPoints()
+			tab:SetPoint("TOPLEFT", frame, "TOPRIGHT", SIDE_TAB_X, y)
+			tab:SetChecked(spec.pet == view.pet and (spec.pet or spec.group == view.group))
+			tab:Show()
+		else
+			tab:Hide()
+		end
+	end
+end
+
+local function updateStatus(numGroups)
+	local activeGroup = GetActiveTalentGroup(false, false)
+	local dual = numGroups > 1 and not view.pet
+	setShown(frame.status, dual and view.group == activeGroup)
+	local activate = frame.activate
+	if dual and view.group ~= activeGroup then
+		activate:Show()
+		setEnabled(activate, not (TALENT_ACTIVATION_SPELLS and IsCurrentSpell(TALENT_ACTIVATION_SPELLS[view.group])))
+	else
+		activate:Hide()
+	end
+end
+
+local function updateFooter(unspent, preview, editable)
+	frame.unspent:SetFormattedText(UNSPENT_TALENT_POINTS, HIGHLIGHT_FONT_COLOR_CODE .. unspent .. FONT_COLOR_CODE_CLOSE)
+	setEnabled(frame.paste, editable)
+	local showPreview = preview and editable and GetUnspentTalentPoints(false, view.pet, view.group) > 0
+	local bar = frame.pointsBar
+	bar:ClearAllPoints()
+	bar:SetPoint("BOTTOMLEFT", INSET.left, FOOTER_BOTTOM)
+	if showPreview then
+		bar:SetPoint("RIGHT", frame.previewBar, "LEFT", -2, 0)
+		local spent = GetGroupPreviewTalentPointsSpent(view.pet, view.group) > 0
+		setEnabled(frame.learn, spent)
+		setEnabled(frame.reset, spent)
+		frame.previewBar:Show()
+	else
+		bar:SetPoint("RIGHT", frame, "RIGHT", -INSET.right, 0)
+		frame.previewBar:Hide()
+	end
+end
+
+local function glyphEditable()
+	return not view.pet and view.group == GetActiveTalentGroup(false, false)
+end
+
+local function showGlyphTooltip(self)
+	self.slot:LockHighlight()
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+	GameTooltip:SetGlyph(self.socket, view.group)
+	GameTooltip:Show()
+end
+
+local function hideGlyphTooltip(self)
+	if not self.pulsing then
+		self.slot:UnlockHighlight()
+	end
+	GameTooltip:Hide()
+end
+
+local function onGlyphClick(self, mouseButton)
+	local socket = self.socket
+	if IsModifiedClick("CHATLINK") then
+		local link = GetGlyphLink(socket, view.group)
+		if link then
+			ChatEdit_InsertLink(link)
+		end
+		return
+	end
+	if not glyphEditable() then
+		return
+	end
+	local _, _, glyphSpell = GetGlyphSocketInfo(socket, view.group)
+	if mouseButton == "RightButton" then
+		if IsShiftKeyDown() and glyphSpell then
+			local dialog = StaticPopup_Show("BUDSUI_REMOVE_GLYPH", (GetSpellInfo(glyphSpell)))
+			if dialog then
+				dialog.data = socket
+			end
+		end
+	elseif glyphSpell and GlyphMatchesSocket(socket) then
+		local dialog = StaticPopup_Show("BUDSUI_GLYPH_PLACEMENT")
+		if dialog then
+			dialog.data = socket
+		end
+	else
+		PlaceGlyphInSocket(socket)
+	end
+end
+
+local function onGlyphUpdate(self, elapsed)
+	local highlight = self.slot:GetHighlightTexture()
+	if self.empty and self.editable and GlyphMatchesSocket(self.socket) then
+		self.elapsed = (self.elapsed + elapsed) % GLYPH_PULSE
+		local half = GLYPH_PULSE / 2
+		local t = self.elapsed
+		self.pulsing = true
+		self.slot:LockHighlight()
+		highlight:SetAlpha(t < half and t / half or (GLYPH_PULSE - t) / half)
+	elseif self.pulsing then
+		self.pulsing, self.elapsed = nil, 0
+		highlight:SetAlpha(1)
+		if not self:IsMouseOver() then
+			self.slot:UnlockHighlight()
+		end
+	end
+end
+
+local function createGlyphRow(panel, socket, glyphType)
+	local size = GLYPH_ICON_SIZES[glyphType]
+	local button = CreateFrame("Button", nil, panel)
+	button:SetHeight(size)
+	button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	button.socket = socket
+	button.elapsed = 0
+
+	local slot = CreateFrame("Button", nil, button)
+	slot:SetSize(size, size)
+	slot:SetPoint("LEFT")
+	slot:EnableMouse(false)
+	skinIconButton(slot)
+	button.slot = slot
+
+	local lock = slot:CreateTexture(nil, "OVERLAY")
+	lock:SetTexture(GLYPH_LOCK_TEXTURE)
+	lock:SetSize(size * 0.6, size * 0.6)
+	lock:SetPoint("CENTER")
+	button.lock = lock
+
+	local name = button:CreateFontString(nil, "ARTWORK", GLYPH_NAME_FONTS[glyphType])
+	name:SetPoint("LEFT", slot, "RIGHT", 8, 0)
+	name:SetPoint("RIGHT")
+	name:SetJustifyH("LEFT")
+	button.nameText = name
+
+	button:SetScript("OnClick", onGlyphClick)
+	button:SetScript("OnEnter", showGlyphTooltip)
+	button:SetScript("OnLeave", hideGlyphTooltip)
+	button:SetScript("OnUpdate", onGlyphUpdate)
+	panel.sockets[socket] = button
+	return button
+end
+
+local function updateGlyphRow(button, glyphType, editable)
+	local enabled, _, glyphSpell, iconFile = GetGlyphSocketInfo(button.socket, view.group)
+	button.editable = editable
+	button.empty = enabled and not glyphSpell
+	setShown(button.lock, not enabled)
+
+	local icon, name = button.slot.icon, button.nameText
+	if not glyphSpell then
+		icon:SetTexture(nil)
+		name:SetText(enabled and GLYPH_EMPTY or GLYPH_LOCKED)
+		name:SetTextColor(unpack(PARCHMENT_DISABLED_COLOR))
+	else
+		local spellIcon = K.GlyphSpellIcon(glyphSpell)
+		if spellIcon then
+			icon:SetTexture(spellIcon)
+			icon:SetVertexColor(1, 1, 1)
+		else
+			icon:SetTexture(iconFile or GLYPH_RUNE_TEXTURE)
+			setColor(icon, GLYPH_COLORS[glyphType])
+		end
+		name:SetText((GetSpellInfo(glyphSpell)))
+		name:SetTextColor(unpack(PARCHMENT_TEXT_COLOR))
+	end
+	icon:SetDesaturated(not editable)
+	button.lock:SetDesaturated(not editable)
+end
+
+local function updateGlyphs(height, numGroups)
+	local panel = frame.glyphPanel
+	local spec = SPECS[view.group]
+	panel.title:SetText(numGroups > 1 and spec and spec.glyphName and _G[spec.glyphName] or GLYPHS)
+	local editable = glyphEditable()
+	panel.background:SetDesaturated(not editable)
+	local left = PANE_BORDER + GLYPH_INDENT
+	local right = PANE_BORDER + GLYPH_PADDING
+	local y = PANE_BORDER + PANE_HEADER + GLYPH_PADDING
+	for glyphType = 1, 2 do
+		panel.headers[glyphType]:SetPoint("TOPLEFT", left, -y)
+		y = y + 22
+		for socket = 1, GetNumGlyphSockets() do
+			local _, socketType = GetGlyphSocketInfo(socket, view.group)
+			if (socketType or GLYPH_TYPES[socket]) == glyphType then
+				local button = panel.sockets[socket] or createGlyphRow(panel, socket, glyphType)
+				button:SetPoint("TOPLEFT", left, -y)
+				button:SetPoint("RIGHT", -right, 0)
+				updateGlyphRow(button, glyphType, editable)
+				y = y + GLYPH_ICON_SIZES[glyphType] + GLYPH_ROW_GAP
+			end
+		end
+		y = y + GLYPH_PADDING
+	end
+	panel:SetHeight(height)
+	local owner = GameTooltip:GetOwner()
+	if owner and owner.socket and owner:GetParent() == panel and owner:IsMouseOver() then
+		showGlyphTooltip(owner)
+	end
+end
+
+local function createGlyphPanel()
+	local panel = createInset(frame, "panel")
+	panel:SetWidth(GLYPH_WIDTH)
+
+	local background = panel:CreateTexture(nil, "BACKGROUND")
+	background:SetTexture(PARCHMENT_TEXTURE)
+	background:SetPoint("TOPLEFT", PANE_BORDER, -(PANE_BORDER + PANE_HEADER))
+	background:SetPoint("BOTTOMRIGHT", -PANE_BORDER, PANE_BORDER)
+	panel.background = background
+
+	local header = createBar(panel)
+	header:SetHeight(PANE_HEADER)
+	header:SetPoint("TOPLEFT", PANE_BORDER, -PANE_BORDER)
+	header:SetPoint("TOPRIGHT", -PANE_BORDER, -PANE_BORDER)
+	local title = header:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	title:SetPoint("CENTER", 0, 1)
+	panel.title = title
+
+	panel.headers = {}
+	for glyphType, label in ipairs(GLYPH_LABELS) do
+		local headerText = createLabel(panel, _G[label], "QuestTitleFont")
+		headerText:SetTextColor(unpack(PARCHMENT_TITLE_COLOR))
+		panel.headers[glyphType] = headerText
+	end
+	panel.sockets = {}
+	frame.glyphPanel = panel
+end
+
+local function refresh()
+	if not frame or not frame:IsShown() then
+		return
+	end
+	local numGroups = GetNumTalentGroups(false, false)
+	local numPetGroups = GetNumTalentGroups(false, true)
+	if view.pet and numPetGroups == 0 then
+		view.pet, view.group = false, GetActiveTalentGroup(false, false)
+	end
+	if not view.pet and view.group > numGroups then
+		view.group = GetActiveTalentGroup(false, false)
+	end
+
+	local preview = GetCVarBool("previewTalents")
+	local editable = isEditable()
+	local unspent = GetUnspentTalentPoints(false, view.pet, view.group)
+		- GetGroupPreviewTalentPointsSpent(view.pet, view.group)
+	local context = {
+		preview = preview,
+		editable = editable,
+		desaturated = not editable,
+		unspent = unspent,
+		perTier = view.pet and PET_TALENTS_PER_TIER or PLAYER_TALENTS_PER_TIER,
+	}
+
+	local spec = view.pet and SPECS[3] or SPECS[view.group]
+	frame.title:SetText((view.pet or numGroups > 1) and _G[spec.name] or TALENTS)
+
+	local paneTop = CONTENT_TOP + (numGroups > 1 and STATUS_HEIGHT or 0)
+	local numTabs = min(GetNumTalentTabs(false, view.pet), MAX_TABS)
+	local showGlyphs = not view.pet and UnitLevel("player") >= SHOW_INSCRIPTION_LEVEL
+	local contentWidth = numTabs * PANE_WIDTH + (numTabs - 1) * PANE_GAP
+	if showGlyphs then
+		contentWidth = contentWidth + PANE_GAP + GLYPH_WIDTH
+	end
+	local left = (WIDTH - contentWidth) / 2
+	local tiers = 1
+	for tab = 1, MAX_TABS do
+		local pane = panes[tab]
+		if tab <= numTabs then
+			pane:ClearAllPoints()
+			pane:SetPoint("TOPLEFT", left + (tab - 1) * (PANE_WIDTH + PANE_GAP), -paneTop)
+			tiers = max(tiers, updatePane(pane, tab, context))
+			pane:Show()
+		else
+			pane:Hide()
+		end
+	end
+
+	local height, bodyHeight = paneHeight(tiers)
+	for tab = 1, numTabs do
+		panes[tab]:SetHeight(height)
+		layoutArt(panes[tab], bodyHeight)
+	end
+	frame:SetHeight(paneTop + height + 6 + BAR_HEIGHT + FOOTER_BOTTOM)
+
+	local glyphPanel = frame.glyphPanel
+	if showGlyphs then
+		glyphPanel:ClearAllPoints()
+		glyphPanel:SetPoint("TOPLEFT", panes[numTabs], "TOPRIGHT", PANE_GAP, 0)
+		updateGlyphs(height, numGroups)
+		glyphPanel:Show()
+	else
+		glyphPanel:Hide()
+	end
+
+	updateSpecTabs(numGroups, numPetGroups)
+	updateStatus(numGroups)
+	updateFooter(unspent, preview, editable)
+
+	local owner = GameTooltip:GetOwner()
+	if owner and owner.tab and owner:IsShown() and owner:GetParent() and owner:GetParent().pane then
+		showTalentTooltip(owner)
+	end
+end
+
+local function queueRefresh()
+	if frame and frame:IsShown() then
+		deferCall(frame, refresh)
+	end
+end
+
+local function createPane(parent, paneView)
+	local pane = createInset(parent, "panel")
+	pane:SetWidth(PANE_WIDTH)
+	pane.view = paneView
+
+	local header = createBar(pane)
+	header:SetHeight(PANE_HEADER)
+	header:SetPoint("TOPLEFT", PANE_BORDER, -PANE_BORDER)
+	header:SetPoint("TOPRIGHT", -PANE_BORDER, -PANE_BORDER)
+
+	local icon = header:CreateTexture(nil, "ARTWORK")
+	icon:SetSize(18, 18)
+	icon:SetPoint("LEFT", 8, 0)
+	icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+	pane.icon = icon
+
+	local name = header:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	name:SetPoint("LEFT", icon, "RIGHT", 6, 1)
+	pane.name = name
+
+	local points = header:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	points:SetPoint("RIGHT", -10, 1)
+	pane.points = points
+
+	local body = CreateFrame("Frame", nil, pane)
+	body:SetPoint("TOPLEFT", 0, -(PANE_BORDER + PANE_HEADER))
+	body:SetPoint("BOTTOMRIGHT")
+	body.pane = pane
+	pane.body = body
+
+	local art = {}
+	for _, suffix in ipairs({ "TopLeft", "TopRight", "BottomLeft", "BottomRight" }) do
+		art[suffix] = body:CreateTexture(nil, "BACKGROUND")
+	end
+	art.TopLeft:SetPoint("TOPLEFT", PANE_BORDER, 0)
+	art.TopRight:SetPoint("TOPLEFT", art.TopLeft, "TOPRIGHT")
+	art.BottomLeft:SetPoint("TOPLEFT", art.TopLeft, "BOTTOMLEFT")
+	art.BottomRight:SetPoint("TOPLEFT", art.TopLeft, "BOTTOMRIGHT")
+	art.TopLeft:SetTexCoord(ART_CROP, 1, 0, 1)
+	art.TopRight:SetTexCoord(0, 0.6875, 0, 1)
+	art.BottomLeft:SetTexCoord(ART_CROP, 1, 0, 0.5859375)
+	art.BottomRight:SetTexCoord(0, 0.6875, 0, 0.5859375)
+	pane.art = art
+
+	local arrowLayer = CreateFrame("Frame", nil, body)
+	arrowLayer:SetAllPoints()
+	arrowLayer:SetFrameLevel(body:GetFrameLevel() + 5)
+	pane.arrowLayer = arrowLayer
+
+	pane.buttons, pane.branches, pane.arrows, pane.occupied = {}, {}, {}, {}
+	pane.branchCount, pane.arrowCount = 0, 0
+	return pane
+end
+
+local function orderedTalents(tab, inspect, pet, group)
+	local list = {}
+	for i = 1, GetNumTalents(tab, inspect, pet) or 0 do
+		local name, _, tier, column, _, maxRank = GetTalentInfo(tab, i, inspect, pet, group)
+		if name then
+			list[#list + 1] = { index = i, tier = tier, column = column, maxRank = maxRank }
+		end
+	end
+	sort(list, function(a, b)
+		if a.tier ~= b.tier then
+			return a.tier < b.tier
+		end
+		return a.column < b.column
+	end)
+	return list
+end
+
+local function talentCode(inspect, pet, group, preview)
+	local trees = {}
+	for tab = 1, GetNumTalentTabs(inspect, pet) or 0 do
+		local digits = {}
+		for _, talent in ipairs(orderedTalents(tab, inspect, pet, group)) do
+			local _, _, _, _, rank, _, _, _, previewRank = GetTalentInfo(tab, talent.index, inspect, pet, group)
+			digits[#digits + 1] = (preview and previewRank or rank) or 0
+		end
+		trees[tab] = tconcat(digits)
+	end
+	return tconcat(trees, "-")
+end
+
+local function parseCode(text)
+	local best = ""
+	for token in (text or ""):gmatch("[%d%-]+") do
+		if token:find("%d") and #token > #best then
+			best = token
+		end
+	end
+	if best == "" then
+		return nil
+	end
+	local trees = {}
+	for segment in (best .. "-"):gmatch("([^%-]*)%-") do
+		trees[#trees + 1] = segment
+	end
+	return trees
+end
+
+local function previewRank(tab, index, pet, group)
+	return select2(9, GetTalentInfo(tab, index, false, pet, group)) or 0
+end
+
+local function applyCode(text, pet, group)
+	local trees = parseCode(text)
+	local numTabs = GetNumTalentTabs(false, pet) or 0
+	if not trees or #trees > numTabs then
+		return STR_INVALID_CODE
+	end
+	local targets, needed = {}, 0
+	for tab = 1, numTabs do
+		local list = orderedTalents(tab, false, pet, group)
+		local digits = trees[tab] or ""
+		if #digits > #list then
+			return STR_INVALID_CODE
+		end
+		for position, talent in ipairs(list) do
+			local target = tonumber(digits:sub(position, position)) or 0
+			if target > talent.maxRank then
+				return STR_INVALID_CODE
+			end
+			local rank = select2(5, GetTalentInfo(tab, talent.index, false, pet, group)) or 0
+			if rank > target then
+				return STR_NEEDS_RESET
+			end
+			needed = needed + target - rank
+			talent.tab, talent.target = tab, target
+			targets[#targets + 1] = talent
+		end
+	end
+	local unspent = GetUnspentTalentPoints(false, pet, group)
+	if needed > unspent then
+		return STR_NOT_ENOUGH:format(needed, unspent)
+	end
+
+	SetCVar("previewTalents", "1")
+	ResetGroupPreviewTalentPoints(pet, group)
+	local progress = true
+	while progress do
+		progress = false
+		for _, talent in ipairs(targets) do
+			local current = previewRank(talent.tab, talent.index, pet, group)
+			if current < talent.target then
+				AddPreviewTalentPoints(talent.tab, talent.index, talent.target - current, pet, group)
+				if previewRank(talent.tab, talent.index, pet, group) > current then
+					progress = true
+				end
+			end
+		end
+	end
+	for _, talent in ipairs(targets) do
+		if previewRank(talent.tab, talent.index, pet, group) ~= talent.target then
+			return STR_NOT_APPLIED
+		end
+	end
+end
+
+local function showCode(code)
+	local popup = StaticPopup_Show("BUDSUI_TALENT_CODE")
+	if popup then
+		popup.data = code
+		local box = _G[popup:GetName() .. "WideEditBox"]
+		box:SetText(code)
+		box:SetFocus()
+		box:HighlightText()
+	end
+end
+
+StaticPopupDialogs.BUDSUI_TALENT_CODE = {
+	text = STR_COPY_HELP,
+	button1 = CLOSE,
+	hasEditBox = 1,
+	hasWideEditBox = 1,
+	maxLetters = 255,
+	timeout = 0,
+	whileDead = 1,
+	hideOnEscape = 1,
+	preferredIndex = 3,
+	EditBoxOnEnterPressed = function(self)
+		self:GetParent():Hide()
+	end,
+	EditBoxOnEscapePressed = function(self)
+		self:GetParent():Hide()
+	end,
+}
+
+local function importFromPopup(popup)
+	if not isEditable() then
+		return
+	end
+	local message = applyCode(_G[popup:GetName() .. "WideEditBox"]:GetText(), view.pet, view.group)
+	if message then
+		UIErrorsFrame:AddMessage(message, 1, 0.1, 0.1)
+		return true
+	end
+end
+
+StaticPopupDialogs.BUDSUI_TALENT_IMPORT = {
+	text = STR_PASTE_HELP,
+	button1 = ACCEPT,
+	button2 = CANCEL,
+	hasEditBox = 1,
+	hasWideEditBox = 1,
+	maxLetters = 255,
+	timeout = 0,
+	whileDead = 1,
+	hideOnEscape = 1,
+	preferredIndex = 3,
+	OnShow = function(self)
+		_G[self:GetName() .. "WideEditBox"]:SetFocus()
+	end,
+	OnAccept = importFromPopup,
+	EditBoxOnEnterPressed = function(self)
+		local popup = self:GetParent()
+		if not importFromPopup(popup) then
+			popup:Hide()
+		end
+	end,
+	EditBoxOnEscapePressed = function(self)
+		self:GetParent():Hide()
+	end,
+}
+
+local function selectSpec(self)
+	view.pet, view.group = self.spec.pet, self.spec.group
+	PlaySound("igCharacterInfoTab")
+	refresh()
+end
+
+local function showButtonTooltip(self)
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+	GameTooltip:SetText(self.tooltip)
+end
+
+local function createFooterButton(parent, text, tooltip, onClick, fit)
+	local button = createButton(parent, text, 80, 22)
+	if fit then
+		fitButton(button, 24, 80)
+	end
+	button.tooltip = tooltip
+	button:SetScript("OnEnter", showButtonTooltip)
+	button:SetScript("OnLeave", GameTooltip_Hide)
+	button:SetScript("OnClick", onClick)
+	return button
+end
+
+local function createStatus()
+	local status = CreateFrame("Frame", nil, frame)
+	status:SetSize(264, 20)
+	status:SetPoint("TOP", 0, -CONTENT_TOP)
+
+	local left = status:CreateTexture(nil, "BACKGROUND")
+	left:SetTexture(INPUT_BORDER)
+	left:SetTexCoord(0, 0.0625, 0, 0.625)
+	left:SetSize(8, 20)
+	left:SetPoint("LEFT")
+
+	local right = status:CreateTexture(nil, "BACKGROUND")
+	right:SetTexture(INPUT_BORDER)
+	right:SetTexCoord(0.9375, 1, 0, 0.625)
+	right:SetSize(8, 20)
+	right:SetPoint("RIGHT")
+
+	local middle = status:CreateTexture(nil, "BACKGROUND")
+	middle:SetTexture(INPUT_BORDER)
+	middle:SetTexCoord(0.0625, 0.9375, 0, 0.625)
+	middle:SetPoint("TOPLEFT", left, "TOPRIGHT")
+	middle:SetPoint("BOTTOMRIGHT", right, "BOTTOMLEFT")
+
+	local text = status:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+	text:SetPoint("CENTER")
+	text:SetText(TALENT_ACTIVE_SPEC_STATUS)
+	frame.status = status
+
+	local activate = createButton(frame, TALENT_SPEC_ACTIVATE, 80, 22)
+	fitButton(activate, 24, 80)
+	activate:SetPoint("TOP", 0, -CONTENT_TOP + 1)
+	activate:SetScript("OnClick", function()
+		SetActiveTalentGroup(view.group)
+	end)
+	frame.activate = activate
+end
+
+local function createFooter()
+	local pointsBar = createBar(frame)
+	local unspent = pointsBar:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	unspent:SetPoint("RIGHT", -12, 1)
+	frame.unspent = unspent
+	frame.pointsBar = pointsBar
+
+	local copy = createFooterButton(
+		pointsBar,
+		STR_COPY_CODE,
+		STR_COPY_TIP,
+		function()
+			showCode(talentCode(false, view.pet, view.group, GetCVarBool("previewTalents")))
+		end,
+		true
+	)
+	copy:SetPoint("LEFT", 4, 0)
+
+	local paste = createFooterButton(
+		pointsBar,
+		STR_PASTE_CODE,
+		STR_PASTE_TIP,
+		function()
+			StaticPopup_Show("BUDSUI_TALENT_IMPORT")
+		end,
+		true
+	)
+	paste:SetPoint("LEFT", copy, "RIGHT")
+	frame.paste = paste
+
+	local previewBar = CreateFrame("Frame", nil, frame)
+	previewBar:SetSize(164, BAR_HEIGHT)
+	previewBar:SetPoint("BOTTOMRIGHT", -INSET.right, FOOTER_BOTTOM)
+	local border = previewBar:CreateTexture(nil, "BORDER")
+	border:SetTexture(BORDERS)
+	border:SetTexCoord(0.16015625, 0.470703125, 0, 0.203125)
+	border:SetAllPoints()
+	frame.previewBar = previewBar
+
+	local reset = createFooterButton(previewBar, RESET, TALENT_TOOLTIP_RESETTALENTGROUP, function()
+		ResetGroupPreviewTalentPoints(view.pet, view.group)
+	end)
+	reset:SetPoint("RIGHT", -4, 0)
+	frame.reset = reset
+
+	local learn = createFooterButton(previewBar, LEARN, TALENT_TOOLTIP_LEARNTALENTGROUP, function()
+		StaticPopup_Show("BUDSUI_LEARN_PREVIEW_TALENTS")
+	end)
+	learn:SetPoint("RIGHT", reset, "LEFT")
+	frame.learn = learn
+end
+
+local function createFrame()
+	frame = createWindow(
+		FRAME_NAME,
+		{ width = WIDTH, height = 600, title = TALENTS, strata = "MEDIUM", movable = false, special = false }
+	)
+	frame.close:SetScript("OnClick", HideParentPanel)
+	setUIPanelLayout(frame, "left", 6)
+
+	local specTabs = {}
+	for i, spec in ipairs(SPECS) do
+		local tab = createSideTab(frame, DEFAULT_SPEC_ICON)
+		tab.spec = spec
+		tab.cache = {}
+		tab:SetScript("OnClick", selectSpec)
+		tab:SetScript("OnEnter", showSpecTooltip)
+		specTabs[i] = tab
+	end
+	frame.specTabs = specTabs
+
+	createStatus()
+	for i = 1, MAX_TABS do
+		panes[i] = createPane(frame, view)
+	end
+	createGlyphPanel()
+	createFooter()
+
+	frame:SetScript("OnShow", function()
+		PlaySound("TalentScreenOpen")
+		SetButtonPulse(TalentMicroButton, 0, 1)
+		TalentMicroButton:SetButtonState("PUSHED", 1)
+		refresh()
+	end)
+	frame:SetScript("OnHide", function()
+		PlaySound("TalentScreenClose")
+		TalentMicroButton:SetButtonState("NORMAL")
+	end)
+end
+
+StaticPopupDialogs.BUDSUI_LEARN_PREVIEW_TALENTS = {
+	text = CONFIRM_LEARN_PREVIEW_TALENTS,
+	button1 = YES,
+	button2 = NO,
+	OnAccept = function()
+		LearnPreviewTalents(view.pet)
+	end,
+	timeout = 0,
+	exclusive = 1,
+	hideOnEscape = 1,
+	preferredIndex = 3,
+}
+
+StaticPopupDialogs.BUDSUI_REMOVE_GLYPH = {
+	text = CONFIRM_REMOVE_GLYPH,
+	button1 = YES,
+	button2 = NO,
+	OnAccept = function(self)
+		if glyphEditable() then
+			RemoveGlyphFromSocket(self.data)
+		end
+	end,
+	timeout = 0,
+	hideOnEscape = 1,
+	preferredIndex = 3,
+}
+
+StaticPopupDialogs.BUDSUI_GLYPH_PLACEMENT = {
+	text = CONFIRM_GLYPH_PLACEMENT,
+	button1 = YES,
+	button2 = NO,
+	OnAccept = function(self)
+		PlaceGlyphInSocket(self.data)
+	end,
+	timeout = 0,
+	exclusive = 1,
+	hideOnEscape = 1,
+	preferredIndex = 3,
+}
+
+local function open()
+	if UnitLevel("player") < SHOW_TALENT_LEVEL then
+		return
+	end
+	if not frame then
+		createFrame()
+	end
+	if frame:IsShown() then
+		refresh()
+	else
+		view.pet, view.group = false, GetActiveTalentGroup(false, false)
+		ShowUIPanel(frame)
+	end
+end
+
+local function toggle()
+	if frame and frame:IsShown() then
+		HideUIPanel(frame)
+	else
+		open()
+	end
+end
+
+local function setMicroButtonState()
+	if frame and frame:IsShown() then
+		TalentMicroButton:SetButtonState("PUSHED", 1)
+	end
+end
+
+local function hide()
+	if frame and frame:IsShown() then
+		HideUIPanel(frame)
+	end
+end
+
+local function Initialize()
+	TalentFrame_LoadUI = noop
+	GlyphFrame_LoadUI = noop
+	ToggleTalentFrame = toggle
+	ToggleGlyphFrame = toggle
+	OpenGlyphFrame = open
+	TalentMicroButton:SetScript("OnClick", toggle)
+	hooksecurefunc("UpdateMicroButtons", setMicroButtonState)
+	hooksecurefunc(StaticPopupDialogs.CONFIRM_TALENT_WIPE, "OnCancel", hide)
+
+	local events = CreateFrame("Frame")
+	events:RegisterEvent("CONFIRM_TALENT_WIPE")
+	events:RegisterEvent("PLAYER_TALENT_UPDATE")
+	events:RegisterEvent("PET_TALENT_UPDATE")
+	events:RegisterEvent("PREVIEW_TALENT_POINTS_CHANGED")
+	events:RegisterEvent("PREVIEW_PET_TALENT_POINTS_CHANGED")
+	events:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
+	events:RegisterEvent("CHARACTER_POINTS_CHANGED")
+	events:RegisterEvent("PLAYER_LEVEL_UP")
+	events:RegisterEvent("CURRENT_SPELL_CAST_CHANGED")
+	events:RegisterEvent("GLYPH_ADDED")
+	events:RegisterEvent("GLYPH_REMOVED")
+	events:RegisterEvent("GLYPH_UPDATED")
+	events:RegisterEvent("USE_GLYPH")
+	events:RegisterEvent("UNIT_PET")
+	events:RegisterEvent("UNIT_PORTRAIT_UPDATE")
+	events:SetScript("OnEvent", function(_, event, unit)
+		if event == "CONFIRM_TALENT_WIPE" then
+			open()
+		elseif event == "UNIT_PET" then
+			if unit == "player" then
+				queueRefresh()
+			end
+		elseif event == "UNIT_PORTRAIT_UPDATE" then
+			if unit == "player" or unit == "pet" then
+				queueRefresh()
+			end
+		else
+			queueRefresh()
+		end
+	end)
+end
+
+Initialize()
