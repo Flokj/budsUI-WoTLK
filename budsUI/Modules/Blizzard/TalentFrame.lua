@@ -10,14 +10,15 @@ Purpose:
 Notes:
 	- Gated by C.Blizzard.TalentFrame (default true, needs /rl).
 	- budsUI adaptations (donor ns.* helpers are inlined):
-	  WINDOW_INSET -> { left=16, right=16, top=16, bottom=16 },
-	  SkinIconButton -> StripTextures + CreateBackdrop + TexCoord,
-	  SetShown -> Show/Hide, Defer -> one-shot OnUpdate,
-	  CreateInset -> Frame + SetTemplate("Transparent"),
+	  WINDOW_INSET -> { left=16, right=16, top=16, bottom=16 } (top/bottom unused by layout),
+	  SkinIconButton -> StripTextures + CreateBackdrop + TexCoord + highlight texture,
+	  SetShown -> Show/Hide, Defer -> one-shot OnUpdate (queueRefresh only; glyphs update synchronously),
+	  CreateInset -> "panel" keeps spec/parchment art bright (no dark Transparent bg),
 	  CreateLabel -> CreateFontString, CreateButton -> UIPanelButtonTemplate,
 	  FitButton -> SetWidth, CreateSideTab -> SpellBookSkillLineTabTemplate,
 	  CreateWindow -> custom frame + SetUIPanelLayout attributes,
-	  GlyphSpellIcon -> select(3, GetSpellInfo()) or QUESTION_MARK.
+	  GlyphSpellIcon -> K.GlyphSpellIcon from Data/GlyphIcons.lua,
+	  TalentTree export -> K.TalentTree (donor ns.TalentTree parity).
 	- StaticPopup dialogs renamed to BUDSUI_* to avoid collisions.
 	- Event registration uses a plain event frame (no module prototype).
 -----------------------------------------------------------------------------]]
@@ -170,6 +171,10 @@ local function skinIconButton(btn)
 		btn.icon = icon
 	end
 	btn.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+	
+	-- Highlight texture for glyph pulsing (FrostAtomUI parity)
+	btn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square")
+	btn:GetHighlightTexture():SetBlendMode("ADD")
 end
 
 local function createInset(parent, style)
@@ -1192,6 +1197,18 @@ StaticPopupDialogs.BUDSUI_TALENT_IMPORT = {
 	EditBoxOnEscapePressed = function(self)
 		self:GetParent():Hide()
 	end,
+}
+
+-- Donor parity: ns.TalentTree export for external consumers.
+K.TalentTree = {
+	PANE_WIDTH = PANE_WIDTH,
+	PER_TIER = PLAYER_TALENTS_PER_TIER,
+	CreatePane = createPane,
+	UpdatePane = updatePane,
+	LayoutArt = layoutArt,
+	PaneHeight = paneHeight,
+	Code = talentCode,
+	ShowCode = showCode,
 }
 
 local function selectSpec(self)

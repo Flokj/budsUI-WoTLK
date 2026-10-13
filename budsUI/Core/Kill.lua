@@ -67,7 +67,6 @@ frame:SetScript("OnEvent", function(self, event, addon, ...)
 	end
 
 	if C.Nameplate.Enable then
-		InterfaceOptionsCombatPanelEnemyCastBarsOnNameplates:Kill()
 		SetCVar("ShowClassColorInNameplate", 1)
 		if C.Nameplate.EnhanceThreat == true then
 			InterfaceOptionsDisplayPanelAggroWarningDisplay:Kill()

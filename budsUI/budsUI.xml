@@ -131,6 +131,8 @@
 	<Script file="Modules\Chat\SpamageMeters.lua"/>
 	<Script file="Modules\Chat\TellTarget.lua"/>
 	<Script file="Modules\Chat\ChatBars.lua"/>
+	<Script file="Modules\Chat\WorldChildren.lua"/>
+	<Script file="Modules\Chat\BubbleLayer.lua"/>
 
 	<Script file="Modules\Class\Hunter.lua"/>
 	<Script file="Modules\Class\Shaman.lua"/>

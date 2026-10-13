@@ -82,6 +82,19 @@ ns.RegisterPage({
 			type = "toggle",
 			desc = "Sound when whisper.",
 		}),
+		{ header = "Chat Bubbles" },
+		T("BubbleShowSender", L_GUI_CHAT_BUBBLE_SHOW_SENDER or "Show sender name on chat bubbles", {
+			type = "toggle",
+			desc = "Show sender name on chat bubbles.",
+		}),
+		T("BubbleTypeBorder", L_GUI_CHAT_BUBBLE_TYPE_BORDER or "Color chat bubble border by message type", {
+			type = "toggle",
+			desc = "Color chat bubble border by message type.",
+		}),
+		T("BubbleMaxWidth", L_GUI_CHAT_BUBBLE_MAX_WIDTH or "Maximum chat bubble width", {
+			type = "number", min = 100, max = 600, step = 10,
+			desc = "Maximum chat bubble width.",
+		}),
 		{ header = "Spam filter", advanced = true },
 		T("Filter", L_GUI_CHAT_SPAM or "Systems spam filter", {
 			type = "toggle",

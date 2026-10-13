@@ -1,81 +1,163 @@
 local K, C, L, _ = select(2, ...):unpack()
+
 if C.Skins.ChatBubble ~= true then return end
-if IsAddOnLoaded("BossEncounter2") == true then return end --> i don't know wtf this addon is doing but it broke my bubble script.
+if IsAddOnLoaded("BossEncounter2") then return end
 
-local next = next
-local select, unpack, type = select, unpack, type
-local strlower = strlower
-local CreateFrame = CreateFrame
+local DEBUG = C.General and C.General.DeveloperMode == true
+local function dbg(...)
+	if DEBUG then
+		print("|cffff7d0abudsUI Bubbles:|r", ...)
+	end
+end
 
-local chatbubblehook = CreateFrame("Frame", nil, UIParent)
-local tslu = 0
-local numkids = 0
-local bubbles = {}
+local BubbleLayer = K.BubbleLayer
+if not BubbleLayer then
+	dbg("K.BubbleLayer missing (load order!), aborting")
+	return
+end
 
-local function skinbubble(frame)
-	for i = 1, frame:GetNumRegions() do
-		local region = select(i, frame:GetRegions())
-		if region:GetObjectType() == "Texture" then
-			region:SetTexture(nil)
-		elseif region:GetObjectType() == "FontString" then
-			frame.text = region
+dbg("consumer enabled (BubbleLayer + WorldChildren architecture)")
+
+local find, gsub, sub, lower, match = string.find, string.gsub, string.sub, string.lower, string.match
+local min, max = math.min, math.max
+
+local GetPlayerInfoByGUID = GetPlayerInfoByGUID
+
+local ICON_TAG_LIST = ICON_TAG_LIST
+local ICON_LIST = ICON_LIST
+
+local BACKDROP = {
+	bgFile = C.Media.Blank,
+	edgeFile = C.Media.Blizz,
+	edgeSize = 14,
+	insets = { left = 2.5, right = 2.5, top = 2.5, bottom = 2.5 }
+}
+local PADDING = 4
+local BORDER_INSET = 2.5
+local SENDER_GAP = 2
+
+local function iconTagToTexture(tag)
+	local index = ICON_TAG_LIST[lower(sub(tag, 2, -2))]
+	return index and ICON_LIST[index] and (ICON_LIST[index] .. "0|t") or tag
+end
+
+local function senderColor(info)
+	-- FrostAtomUI PlateLayer.IsPlayerGUID(guid) replaced with a simple
+	-- guid-truthy + GetPlayerInfoByGUID check (brief mapping).
+	local guid = info.guid
+	if guid then
+		local _, class = GetPlayerInfoByGUID(guid)
+		if class then
+			local color = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[class]
+			if color then
+				return color.r, color.g, color.b
+			end
 		end
 	end
+	return info.r, info.g, info.b
+end
 
-	if C.General.BubbleBackdrop == false then
-		frame:SetBackdrop(K.Backdrop)
-		frame:SetBackdropColor(unpack(C.Media.Backdrop_Color))
-		frame:SetBackdropBorderColor(unpack(C.Media.Border_Color))
-		frame:SetClampedToScreen(false)
-		frame:SetFrameStrata("BACKGROUND")
-		K.SkinFont(frame.text)
-		frame.text:SetFont(C.Media.Font, C.General.BubbleFontSize)
+local function layout(bubble, info)
+	local text, sender = bubble.text, bubble.sender
+	if not text then
+		return
+	end
+	local r, g, b = info.r, info.g, info.b
+
+	text:SetFont(C.Media.Font, C.General.BubbleFontSize or C.Media.Font_Size, C.Media.Font_Style)
+	text:SetTextColor(r, g, b)
+
+	local senderWidth, senderHeight = 0, 0
+	if C.Chat.BubbleShowSender and info.sender then
+		sender:SetFont(C.Media.Font, C.Media.Font_Size, C.Media.Font_Style)
+		sender:SetText(match(info.sender, "^[^%-]+"))
+		sender:SetTextColor(senderColor(info))
+		sender:Show()
+		senderWidth, senderHeight = sender:GetStringWidth(), sender:GetStringHeight() + SENDER_GAP
 	else
-		frame:SetBackdrop(nil)
-		K.SkinFont(frame.text)
-		frame.text:SetFont(C.Media.Font, C.General.BubbleFontSize)
-		frame:SetClampedToScreen(false)
-		frame:SetFrameStrata("BACKGROUND")
+		sender:Hide()
 	end
-	frame.isBubblePowered = true
 
-	tinsert(bubbles, frame)
+	text:SetWidth(0)
+	text:SetWidth(max(min(text:GetStringWidth(), C.Chat.BubbleMaxWidth or 300), senderWidth))
+
+	local inset = PADDING + BORDER_INSET
+	-- 3.3.5: the client sets the bubble's points only once and afterwards moves just the text
+	bubble:ClearAllPoints()
+	bubble:SetPoint("BOTTOMLEFT", text, -inset, -inset)
+	bubble:SetPoint("TOPRIGHT", text, inset, inset + senderHeight)
+
+	local backdropColor = C.Media.Backdrop_Color
+	bubble:SetBackdropColor(backdropColor[1], backdropColor[2], backdropColor[3], backdropColor[4])
+	if C.Chat.BubbleTypeBorder then
+		bubble:SetBackdropBorderColor(r, g, b)
+	else
+		local borderColor = C.Media.Border_Color
+		bubble:SetBackdropBorderColor(borderColor[1], borderColor[2], borderColor[3], borderColor[4])
+	end
 end
 
-local function ischatbubble(frame)
-	for i = 1, frame:GetNumRegions() do
-		local region = select(i, frame:GetRegions())
-		if (region.GetTexture and region:GetTexture() and type(region:GetTexture()) == "string" and strlower(region:GetTexture()) == [[interface\tooltips\chatbubble-background]]) then return true end
+local function onShown(bubble, info)
+	if not bubble.sender then
+		return
 	end
-	return false
+	-- NOTE: sender/guid matching (takePending) already happened in
+	-- BubbleLayer.onShow before this fires. Do NOT takePending again here:
+	-- the text may already be rewritten below and would no longer match.
+	local text = bubble.text
+	local message = text:GetText() or ""
+	if find(message, "{", 1, true) then
+		text:SetText((gsub(message, "%b{}", iconTagToTexture)))
+	end
+	dbg("onShown:", "sender =", tostring(info.sender), "text =", (text:GetText() or ""):sub(1, 40))
+	layout(bubble, info)
 end
 
-chatbubblehook:SetScript("OnUpdate", function(chatbubblehook, elapsed)
-	tslu = tslu + elapsed
+local function setupBubble(bubble, info)
+	local text = info.text
+	if not text then
+		dbg("setupBubble skipped: no FontString")
+		return
+	end
+	dbg("setupBubble, text =", (text:GetText() or ""):sub(1, 40))
+	if info.tail then
+		info.tail:SetTexture(nil)
+		info.tail:Hide()
+	end
+	-- 3.3.5: SetBackdrop destroys the client's backdrop regions; info.background and info.edges die
+	bubble:SetBackdrop(BACKDROP)
 
-	if tslu > .1 then
-		tslu = 0
+	text:SetShadowColor(0, 0, 0, 1)
+	text:SetShadowOffset(1, -1)
+	text:SetJustifyH("LEFT")
 
-		local newnumkids = WorldFrame:GetNumChildren()
-		if newnumkids ~= numkids then
-			for i = numkids + 1, newnumkids do
-				local frame = select(i, WorldFrame:GetChildren())
+	local sender = bubble:CreateFontString(nil, "OVERLAY")
+	sender:SetPoint("BOTTOMLEFT", text, "TOPLEFT", 0, SENDER_GAP)
+	sender:SetJustifyH("LEFT")
+	sender:SetWordWrap(false)
+	sender:Hide()
 
-				if ischatbubble(frame) then
-					skinbubble(frame)
-				end
-			end
-			numkids = newnumkids
+	bubble.text = text
+	bubble.sender = sender
+end
+
+local function relayout()
+	local bubbles = BubbleLayer.bubbles
+	for i = 1, #bubbles do
+		local bubble = bubbles[i]
+		local info = BubbleLayer.GetInfo(bubble)
+		if bubble.sender and info and info.shown then
+			layout(bubble, info)
 		end
+	end
+end
 
-		for i, frame in next, bubbles do
-			if frame:IsShown() and frame:GetBackdrop() then
-				local r, g, b = frame.text:GetTextColor()
-				if r ~= frame.lastR or g ~= frame.lastG or b ~= frame.lastB then
-					frame:SetBackdropBorderColor(r, g, b)
-					frame.lastR, frame.lastG, frame.lastB = r, g, b
-				end
-			end
-		end
+BubbleLayer.Register({ created = setupBubble, shown = onShown })
+
+local configWatch = CreateFrame("Frame")
+configWatch:RegisterEvent("CVAR_UPDATE")
+configWatch:SetScript("OnEvent", function(_, _, cvar)
+	if cvar == "chatBubbles" or cvar == "chatBubblesParty" then
+		relayout()
 	end
 end)

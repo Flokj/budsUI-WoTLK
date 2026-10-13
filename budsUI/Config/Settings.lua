@@ -85,7 +85,7 @@ C["Blizzard"] = {
 	["MoveAchievements"] = true,
 	["Reputations"] = true,
 	["SpellBook"] = true,
-	["SpellBookHidePassive"] = false,
+	["SpellBookHidePassive"] = true,
 	["SpellBookHideAuras"] = false,
 	["TalentFrame"] = true,
 }
@@ -118,6 +118,9 @@ C["Chat"] = {
 	["TimestampFormat"] = 4, -- 1 = disabled, 2 = 03:27 PM, 3 = 03:27:32 PM, 4 = 15:27, 5 = 15:27:32 (same as KkthnxUI)
 	["WhispSound"] = true,
 	["Width"] = 420,
+	["BubbleShowSender"] = true,
+	["BubbleTypeBorder"] = false,
+	["BubbleMaxWidth"] = 300,
 }
 -- Cooldown Options
 C["Cooldown"] = {
