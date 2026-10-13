@@ -171,7 +171,9 @@ function Stuffing:SlotUpdate(b)
 		b.name, b.rarity, b.qitem = nil, nil, nil
 	end
 
-	SetItemButtonTexture(b.frame, texture)
+	-- Glyph icon replacement (match FrostAtomUI: BagItems.lua)
+	local glyphTexture = clink and K.GlyphItemIcon(clink)
+	SetItemButtonTexture(b.frame, glyphTexture or texture)
 	SetItemButtonCount(b.frame, count)
 	SetItemButtonDesaturated(b.frame, locked)
 
