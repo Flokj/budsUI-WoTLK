@@ -4,12 +4,12 @@ File: Modules/Blizzard/SpellBook.lua
 Purpose:
 	Replacement spellbook window, ported from FrostAtomUI (Modules/Books/SpellBook.lua):
 	all spell tabs + pet book in one wide window, 4-column grid, search box,
-	hide-passive / hide-aura filters, secure buttons with cooldowns,
+	hide-passive / hide-auras (Paladin) / hide-totems (Shaman) filters, secure buttons with cooldowns,
 	drag-drop, autocast and microbutton hook.
 
 Notes:
 	- Gated by C.Blizzard.SpellBook (default true, needs /rl).
-	- Filter state lives in C.Blizzard.SpellBookHidePassive / SpellBookHideAuras.
+	- Filter state lives in C.Blizzard.SpellBookHidePassive / SpellBookHideAuras / SpellBookHideTotems.
 	- Secure snippets are copied 1:1 from the donor, except PlayerInCombat()
 	  (not present in 3.3.5) which is replaced by InCombatLockdown().
 	- budsUI has no K.WatchConfig, so no config watcher is registered;
@@ -42,6 +42,7 @@ local strfind, strtrim, strjoin, strsplit, floor = string.find, strtrim, strjoin
 local STR_SEARCH = L_SPELLBOOK_SEARCH or "Search"
 local STR_HIDE_PASSIVE = L_SPELLBOOK_HIDE_PASSIVE or "Hide passive abilities"
 local STR_HIDE_AURAS = L_SPELLBOOK_HIDE_AURAS or "Hide auras"
+local STR_HIDE_TOTEMS = L_SPELLBOOK_HIDE_TOTEMS or "Hide totems"
 local STR_SEARCH_COMBAT = L_SPELLBOOK_SEARCH_COMBAT or "Search applies after combat"
 local STR_EMPTY = L_SPELLBOOK_EMPTY or "Nothing found"
 
@@ -95,14 +96,14 @@ local SETUP_SNIPPET = [[
 
 local FILTER_SNIPPET = [[
 	local hidePassive = self:GetAttribute("hidepassive")
-	local hideAuras = self:GetAttribute("hideauras")
+	local hideClass = self:GetAttribute("hideauras") or self:GetAttribute("hidetotems")
 	wipe(LINE_HEIGHT)
 	wipe(LINE_SECTION)
 	wipe(LINE_ENTRIES)
 	local lines, section, column = 0, nil, %d
 	for i = 1, self:GetAttribute("entries") or 0 do
-		local entrySection, passive, aura = strsplit("	", self:GetAttribute("entry" .. i))
-		if (not hidePassive or passive ~= "1") and (not hideAuras or aura ~= "1") then
+		local entrySection, passive, classSpell = strsplit("	", self:GetAttribute("entry" .. i))
+		if (not hidePassive or passive ~= "1") and (not hideClass or classSpell ~= "1") then
 			if entrySection ~= section then
 				if lines > 0 then
 					LINE_HEIGHT[lines] = LINE_HEIGHT[lines] + %d
@@ -232,9 +233,39 @@ local PALADIN_AURAS = {
 	32223, -- Crusader Aura
 }
 
+local SHAMAN_TOTEMS = {
+	2062, -- Earth Elemental Totem
+	2484, -- Earthbind Totem
+	2894, -- Fire Elemental Totem
+	3599, -- Searing Totem
+	3738, -- Wrath of Air Totem
+	5394, -- Healing Stream Totem
+	5675, -- Mana Spring Totem
+	5730, -- Stoneclaw Totem
+	6495, -- Sentry Totem
+	8071, -- Stoneskin Totem
+	8075, -- Strength of Earth Totem
+	8143, -- Tremor Totem
+	8170, -- Cleansing Totem
+	8177, -- Grounding Totem
+	8181, -- Frost Resistance Totem
+	8184, -- Fire Resistance Totem
+	8190, -- Magma Totem
+	8227, -- Flametongue Totem
+	8512, -- Windfury Totem
+	10595, -- Nature Resistance Totem
+	16190, -- Mana Tide Totem
+	30706, -- Totem of Wrath
+	36936, -- Totemic Recall
+	66842, -- Call of the Elements
+	66843, -- Call of the Ancestors
+	66844, -- Call of the Spirits
+}
+
 local FILTERS = {
 	{ attribute = "hidepassive", option = "SpellBookHidePassive", label = STR_HIDE_PASSIVE },
-	{ attribute = "hideauras", option = "SpellBookHideAuras", label = STR_HIDE_AURAS, class = "PALADIN" },
+	{ attribute = "hideauras", option = "SpellBookHideAuras", label = STR_HIDE_AURAS, class = "PALADIN", spells = PALADIN_AURAS },
+	{ attribute = "hidetotems", option = "SpellBookHideTotems", label = STR_HIDE_TOTEMS, class = "SHAMAN", spells = SHAMAN_TOTEMS },
 }
 
 local frame, list, toggleButton, panel
@@ -251,7 +282,7 @@ local boundKeys = ""
 local displaced = false
 local muted = false
 local filterChecks = {}
-local auraNames
+local classSpellNames
 
 local function SetShown(region, shown)
 	if shown then
@@ -331,20 +362,25 @@ local function SkinSpellButton(button)
 	return button
 end
 
-local function isAura(name, book)
+local function isClassSpell(name, book)
 	if book ~= BOOKTYPE_SPELL then
 		return false
 	end
-	if not auraNames then
-		auraNames = {}
-		for _, id in ipairs(PALADIN_AURAS) do
-			local auraName = GetSpellInfo(id)
-			if auraName then
-				auraNames[auraName] = true
+	if not classSpellNames then
+		classSpellNames = {}
+		local _, class = UnitClass("player")
+		for _, filter in ipairs(FILTERS) do
+			if filter.spells and filter.class == class then
+				for _, id in ipairs(filter.spells) do
+					local spellName = GetSpellInfo(id)
+					if spellName then
+						classSpellNames[spellName] = true
+					end
+				end
 			end
 		end
 	end
-	return auraNames[name] == true
+	return classSpellNames[name] == true
 end
 
 local function collectSection(name, texture, book, first, last, highestRank)
@@ -362,7 +398,7 @@ local function collectSection(name, texture, book, first, last, highestRank)
 				name = spellName,
 				rank = rank or "",
 				passive = IsPassiveSpell(slot, book) and true or false,
-				aura = isAura(spellName, book),
+				classSpell = isClassSpell(spellName, book),
 				search = string.lower(spellName),
 			}
 		end
@@ -709,7 +745,7 @@ layout = function()
 					"\t",
 					entry.section.index,
 					entry.passive and 1 or 0,
-					entry.aura and 1 or 0,
+					entry.classSpell and 1 or 0,
 					type1,
 					spell,
 					type2,

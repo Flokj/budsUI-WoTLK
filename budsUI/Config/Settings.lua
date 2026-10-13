@@ -87,6 +87,7 @@ C["Blizzard"] = {
 	["SpellBook"] = true,
 	["SpellBookHidePassive"] = true,
 	["SpellBookHideAuras"] = false,
+	["SpellBookHideTotems"] = false,
 	["TalentFrame"] = true,
 }
 -- Buffs & Debuffs Options

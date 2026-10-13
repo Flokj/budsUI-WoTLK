@@ -58,6 +58,21 @@ ns.RegisterPage({
 			type = "toggle",
 			desc = "Replaces the spellbook: all tabs + pet book in one window, 4 columns, search, hide passive",
 		}),
+		T("SpellBookHidePassive", L_SPELLBOOK_HIDE_PASSIVE or "Hide passive abilities", {
+			type = "toggle",
+			desc = "Hide passive abilities in the replacement spellbook.",
+			enabledBy = "Blizzard.SpellBook",
+		}),
+		T("SpellBookHideAuras", L_SPELLBOOK_HIDE_AURAS or "Hide auras", {
+			type = "toggle",
+			desc = "Hide paladin auras in the replacement spellbook.",
+			enabledBy = "Blizzard.SpellBook",
+		}),
+		T("SpellBookHideTotems", L_SPELLBOOK_HIDE_TOTEMS or "Hide totems", {
+			type = "toggle",
+			desc = "Hide shaman totems in the replacement spellbook.",
+			enabledBy = "Blizzard.SpellBook",
+		}),
 		T("TalentFrame", L_GUI_BLIZZARD_TALENTFRAME or "Talent Frame", {
 			type = "toggle",
 			desc = "Replaces the talent window: all three trees side by side with glyphs, dual spec, pet talents, talent codes.",

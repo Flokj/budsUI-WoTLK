@@ -67,6 +67,7 @@ L_GUI_BLIZZARD_TALENTFRAME_DESC = "Replaces the talent window: all three trees s
 L_SPELLBOOK_SEARCH = "Search"
 L_SPELLBOOK_HIDE_PASSIVE = "Hide passive abilities"
 L_SPELLBOOK_HIDE_AURAS = "Hide auras"
+L_SPELLBOOK_HIDE_TOTEMS = "Hide totems"
 L_SPELLBOOK_SEARCH_COMBAT = "Search applies after combat"
 L_SPELLBOOK_EMPTY = "Nothing found"
 -- Buffs & Debuffs Localization
