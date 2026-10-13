@@ -41,11 +41,21 @@ local function iconTagToTexture(tag)
 	return index and ICON_LIST[index] and (ICON_LIST[index] .. "0|t") or tag
 end
 
+local byte = string.byte
+local GUID_PLAYER_BYTE = 0x04
+
+local function IsPlayerGUID(guid)
+	-- Player-type guilds have the type byte (GUID_PLAYER_BYTE = 4) at index 3.
+	-- For empty guid ("") byte returns nil → false. This is the FrostAtomUI
+	-- PlateLayer.IsPlayerGUID approach: never call GetPlayerInfoByGUID on a guid
+	-- that isn't a player (monster bubbles carry guid="", would error).
+	return guid ~= nil and byte(guid, 3) == GUID_PLAYER_BYTE
+end
+
 local function senderColor(info)
-	-- FrostAtomUI PlateLayer.IsPlayerGUID(guid) replaced with a simple
-	-- guid-truthy + GetPlayerInfoByGUID check (brief mapping).
+	-- Player-bubble sender name in class color; monsters/NPCs use bubble text color.
 	local guid = info.guid
-	if guid then
+	if guid and IsPlayerGUID(guid) then
 		local _, class = GetPlayerInfoByGUID(guid)
 		if class then
 			local color = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[class]

@@ -119,7 +119,7 @@ C["Chat"] = {
 	["WhispSound"] = true,
 	["Width"] = 420,
 	["BubbleShowSender"] = true,
-	["BubbleTypeBorder"] = false,
+	["BubbleTypeBorder"] = true,
 	["BubbleMaxWidth"] = 300,
 }
 -- Cooldown Options
