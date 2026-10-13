@@ -42,13 +42,14 @@ local function iconTagToTexture(tag)
 end
 
 local byte = string.byte
-local GUID_PLAYER_BYTE = 0x04
+local GUID_PLAYER_BYTE = 48 -- ASCII '0'; exact donor value (FrostAtomUI PlateLayer.lua:16)
 
 local function IsPlayerGUID(guid)
-	-- Player-type guilds have the type byte (GUID_PLAYER_BYTE = 4) at index 3.
-	-- For empty guid ("") byte returns nil → false. This is the FrostAtomUI
-	-- PlateLayer.IsPlayerGUID approach: never call GetPlayerInfoByGUID on a guid
-	-- that isn't a player (monster bubbles carry guid="", would error).
+	-- Player-type guilds have the type byte '0' (ASCII 48) at index 3 in the
+	-- "Player-..." string form. For empty guid ("") byte returns nil → false.
+	-- This is the FrostAtomUI PlateLayer.IsPlayerGUID approach: never call
+	-- GetPlayerInfoByGUID on a guid that isn't a player (monster bubbles carry
+	-- guid="", would error).
 	return guid ~= nil and byte(guid, 3) == GUID_PLAYER_BYTE
 end
 
