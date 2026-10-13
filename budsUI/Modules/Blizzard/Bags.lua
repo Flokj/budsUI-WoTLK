@@ -177,7 +177,18 @@ function Stuffing:SlotUpdate(b)
 	SetItemButtonCount(b.frame, count)
 	SetItemButtonDesaturated(b.frame, locked)
 
-	if b.rarity then
+	if glyphTexture then
+		-- Glyph items get a static class-color border so they stand out
+		-- from normal white items (glyphs are rarity 1).
+		local c = K.Color or (CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[K.Class]) or (RAID_CLASS_COLORS and RAID_CLASS_COLORS[K.Class])
+		if c and c.r and c.g and c.b then
+			b.frame:SetBackdropBorderColor(c.r, c.g, c.b)
+		elseif c and c[1] and c[2] and c[3] then
+			b.frame:SetBackdropBorderColor(c[1], c[2], c[3])
+		else
+			b.frame:SetBackdropBorderColor(1, 0.82, 0)
+		end
+	elseif b.rarity then
 		if b.rarity > 1 then
 			b.frame:SetBackdropBorderColor(GetItemQualityColor(b.rarity))
 		elseif b.qitem then
