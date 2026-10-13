@@ -249,6 +249,12 @@ local function createWindow(name, options)
 		close:SetPoint("TOPRIGHT", -3, -3)
 		close:SetScript("OnClick", HideParentPanel)
 		window.close = close
+		-- FrostAtomUI: add dialog corner texture on close button
+		local corner = window:CreateTexture(nil, "OVERLAY")
+		corner:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Corner")
+		corner:SetSize(32, 32)
+		corner:SetPoint("TOPRIGHT", -6, -7)
+		window.corner = corner
 	end
 	return window
 end

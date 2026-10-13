@@ -275,7 +275,11 @@ do
 			if MerchantFrame.selectedTab == 1 then
 				for i = 1, MERCHANT_ITEMS_PER_PAGE do
 					local index = (((MerchantFrame.page - 1) * MERCHANT_ITEMS_PER_PAGE) + i)
-					SetBorder(_G["MerchantItem" .. i .. "ItemButton"], GetMerchantItemLink(index))
+					local name, texture, price, quantity, numAvailable, isUsable, extendedCost = GetMerchantItemInfo(index)
+					local link = GetMerchantItemLink(index)
+					local glyphTexture = K.GlyphItemIcon(link)
+					SetBorder(_G["MerchantItem" .. i .. "ItemButton"], link)
+					_G["MerchantItem" .. i .. "ItemButtonIconTexture"]:SetTexture(glyphTexture or texture)
 				end
 				SetBorder(MerchantBuyBackItemItemButton, GetBuybackItemLink(GetNumBuybackItems()))
 			else
