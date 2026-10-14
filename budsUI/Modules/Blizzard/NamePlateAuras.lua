@@ -965,7 +965,10 @@ function updatePlate(plate)
 		local entry = set[i]
 		local expires = entry.expires
 		if (expires == 0 or expires > now) and kindShown(entry.kind) then
-			if entry.kind == KIND_OWN_CC or entry.kind == KIND_CC then
+			-- Big icons: everything from the whitelist (own CC / enemy CC /
+			-- defensive buffs like Deterrence), matching the pre-rewrite
+			-- behaviour where isHighlight covered all whitelist auras.
+			if entry.kind == KIND_OWN_CC or entry.kind == KIND_CC or entry.kind == KIND_DEFENSIVE then
 				countHighlight = countHighlight + 1
 			else
 				countNormal = countNormal + 1
@@ -989,7 +992,7 @@ function updatePlate(plate)
 				auraIcons[shown] = icon
 			end
 
-			local isH = (entry.kind == KIND_OWN_CC or entry.kind == KIND_CC) and true or false
+			local isH = (entry.kind == KIND_OWN_CC or entry.kind == KIND_CC or entry.kind == KIND_DEFENSIVE) and true or false
 			local sz = isH and SIZE_HIGHLIGHT or SIZE
 			local px, py
 			if isH then
