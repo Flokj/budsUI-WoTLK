@@ -1,0 +1,185 @@
+--[[-----------------------------------------------------------------------------
+Addon: budsUI
+File: Core/Scheduler.lua
+Purpose:
+	Shared single-frame scheduler ported 1:1 from FrostAtomUI Core/Scheduler.lua.
+	One hidden ticker frame multiplexes tickers, timed callbacks and deferred
+	(next-frame) callbacks so independent callers never clobber each other's
+	OnUpdate scripts. Exposed as K.Scheduler plus K.Defer / K.After shortcuts.
+-----------------------------------------------------------------------------]]
+
+local K, C, L, _ = select(2, ...):unpack()
+
+local GetTime = GetTime
+local tremove = table.remove
+
+local Scheduler = {}
+K.Scheduler = Scheduler
+
+-- Local pcall wrapper mirroring donor ns.SafeCall: one bad callback must not
+-- kill the shared ticker; report only in DeveloperMode like K.SafeOnUpdate.
+local function SafeCall(func, ...)
+	if type(func) ~= "function" then return end
+	local ok, err = pcall(func, ...)
+	if not ok and C and C.General and C.General.DeveloperMode then
+		K.Print("Scheduler error:", tostring(err))
+	end
+end
+
+local frame = CreateFrame("Frame")
+frame:Hide()
+
+local tickers, tickerCount = {}, 0
+local tickerIndex = {}
+
+local timers, timerCount = {}, 0
+local timerPool = {}
+local keyedTimers = {}
+
+local deferred, deferredCount = {}, 0
+local deferredIndex = {}
+
+local function wake()
+	frame:Show()
+end
+
+function Scheduler.AddTicker(key, callback, interval)
+	local entry = tickerIndex[key]
+	if not entry then
+		tickerCount = tickerCount + 1
+		entry = { key = key }
+		tickers[tickerCount] = entry
+		tickerIndex[key] = entry
+	end
+	entry.callback = callback
+	entry.interval = interval
+	entry.nextTick = 0
+	wake()
+end
+
+function Scheduler.RemoveTicker(key)
+	local entry = tickerIndex[key]
+	if entry then
+		entry.removed = true
+		tickerIndex[key] = nil
+	end
+end
+
+function Scheduler.After(delay, callback, arg)
+	local timer = tremove(timerPool) or {}
+	timer.at = GetTime() + delay
+	timer.callback = callback
+	timer.arg = arg
+	timerCount = timerCount + 1
+	timers[timerCount] = timer
+	wake()
+end
+
+function Scheduler.At(key, at, callback)
+	local timer = keyedTimers[key]
+	if timer then
+		if at < timer.at then
+			timer.at = at
+		end
+		timer.callback = callback
+		return
+	end
+	timer = tremove(timerPool) or {}
+	timer.at = at
+	timer.callback = callback
+	timer.arg = key
+	timer.key = key
+	keyedTimers[key] = timer
+	timerCount = timerCount + 1
+	timers[timerCount] = timer
+	wake()
+end
+
+function Scheduler.Defer(key, callback)
+	if deferredIndex[key] then
+		return
+	end
+	deferredCount = deferredCount + 1
+	deferred[deferredCount] = key
+	deferredIndex[key] = callback
+	wake()
+end
+
+local function runTickers(now)
+	local i = 1
+	while i <= tickerCount do
+		local entry = tickers[i]
+		if entry.removed then
+			tickers[i] = tickers[tickerCount]
+			tickers[tickerCount] = nil
+			tickerCount = tickerCount - 1
+		else
+			if now >= entry.nextTick then
+				entry.nextTick = now + entry.interval
+				SafeCall(entry.callback, entry.key, now)
+			end
+			i = i + 1
+		end
+	end
+end
+
+local function runTimers(now)
+	local i = 1
+	while i <= timerCount do
+		local timer = timers[i]
+		if now >= timer.at then
+			timers[i] = timers[timerCount]
+			timers[timerCount] = nil
+			timerCount = timerCount - 1
+			local callback, arg = timer.callback, timer.arg
+			if timer.key ~= nil then
+				keyedTimers[timer.key] = nil
+				timer.key = nil
+			end
+			timer.callback, timer.arg = nil, nil
+			timerPool[#timerPool + 1] = timer
+			SafeCall(callback, arg)
+		else
+			i = i + 1
+		end
+	end
+end
+
+local running = {}
+
+local function runDeferred()
+	local queue, count = deferred, deferredCount
+	deferred, deferredCount = running, 0
+	running = queue
+	for i = 1, count do
+		local key = queue[i]
+		queue[i] = nil
+		local callback = deferredIndex[key]
+		if callback then
+			deferredIndex[key] = nil
+			SafeCall(callback, key)
+		end
+	end
+end
+
+-- Wrapped in K.SafeOnUpdate so an error in the dispatch bookkeeping itself
+-- stops (rather than spams) the ticker; per-callback errors are already
+-- contained by SafeCall above.
+frame:SetScript("OnUpdate", K.SafeOnUpdate(function(self)
+	local now = GetTime()
+	if deferredCount > 0 then
+		runDeferred()
+	end
+	if timerCount > 0 then
+		runTimers(now)
+	end
+	if tickerCount > 0 then
+		runTickers(now)
+	end
+	if deferredCount == 0 and timerCount == 0 and tickerCount == 0 then
+		self:Hide()
+	end
+end, "Scheduler"))
+
+K.Defer = Scheduler.Defer
+K.After = Scheduler.After

@@ -14,6 +14,8 @@ local UnitAura = UnitAura
 local CancelUnitBuff = CancelUnitBuff
 local GetWeaponEnchantInfo = GetWeaponEnchantInfo
 local GetInventoryItemTexture = GetInventoryItemTexture
+local GetInventoryItemID = GetInventoryItemID
+local GetSpellInfo = GetSpellInfo
 local CancelItemTempEnchantment = CancelItemTempEnchantment
 local GetTime = GetTime
 local UnitHasVehicleUI = UnitHasVehicleUI
@@ -35,6 +37,98 @@ BuffsAnchor:SetSize((IN_ROW * SIZE) + ((IN_ROW - 1) * SPACING_X), (SIZE * 2) + S
 local debuffColors = {}
 for debuffType, tbl in pairs(DebuffTypeColor) do
 	debuffColors[debuffType] = { tbl.r, tbl.g, tbl.b }
+end
+
+-- Temporary-enchant spell-icon resolver (ported from donor
+-- FrostAtomUI Modules/TemporaryEnchant.lua: buildSpellNames/enchantSpellIcon).
+-- The client has no API for the temp-enchant id; an "item:<id>:<enchant>" link
+-- shows the enchant name the same way the weapon tooltip does, so names come
+-- from the client (locale-neutral) and Data/TempEnchantSpells.lua maps
+-- enchant id -> spell id for display. Returns the SPELL icon (poison, shaman
+-- imbue, oil...) or nil when it cannot be resolved.
+local scanTip, scanLeft
+local spellByName
+local slotLines = {}
+
+local function scanLines(setter, a, b, into)
+	scanTip:SetOwner(UIParent, "ANCHOR_NONE")
+	setter(scanTip, a, b)
+	local count = 0
+	for i = 1, scanTip:NumLines() do
+		local text = _G[scanLeft .. i]:GetText()
+		if text then
+			count = count + 1
+			into[count] = text
+		end
+	end
+	scanTip:Hide()
+	for i = count + 1, #into do
+		into[i] = nil
+	end
+	return into
+end
+
+local function buildSpellNames(itemId)
+	if type(K.TempEnchantSpells) ~= "table" then return end
+	scanTip = scanTip or CreateFrame("GameTooltip", "budsUITempEnchantScanTooltip", nil, "GameTooltipTemplate")
+	scanLeft = scanTip:GetName() .. "TextLeft"
+	local base = {}
+	for _, text in ipairs(scanLines(scanTip.SetHyperlink, "item:" .. itemId, nil, {})) do
+		base[text] = true
+	end
+	if not next(base) then
+		return
+	end
+	spellByName = {}
+	local lines = {}
+	for enchantId, spellId in pairs(K.TempEnchantSpells) do
+		scanLines(scanTip.SetHyperlink, "item:" .. itemId .. ":" .. enchantId, nil, lines)
+		for i = 1, #lines do
+			if not base[lines[i]] then
+				spellByName[lines[i]] = spellId
+				break
+			end
+		end
+	end
+end
+
+local function enchantSpellIcon(slot)
+	if not spellByName then
+		local itemId = GetInventoryItemID("player", slot)
+		if not itemId then
+			return nil
+		end
+		buildSpellNames(itemId)
+		if not spellByName then
+			return nil
+		end
+	end
+	scanLines(scanTip.SetInventoryItem, "player", slot, slotLines)
+	for i = 1, #slotLines do
+		local text = slotLines[i]
+		local spellId = spellByName[text]
+		local from = 1
+		while not spellId do
+			local cut = text:find(" (", from, true)
+			if not cut then
+				break
+			end
+			spellId = spellByName[text:sub(1, cut - 1)]
+			from = cut + 1
+		end
+		if spellId then
+			return (select(3, GetSpellInfo(spellId)))
+		end
+	end
+end
+
+-- Spell icon for the weapon slot's temp enchant, or nil. pcall-guarded so a
+-- tooltip scan hiccup never breaks the aura update.
+local function GetTempEnchantSpellIcon(slot)
+	if type(slot) ~= "number" then return nil end
+	local ok, icon = pcall(enchantSpellIcon, slot)
+	if ok then return icon end
+	return nil
 end
 
 -- Aura Prototype
@@ -168,7 +262,7 @@ function groupPrototype:UpdateAuras()
 			button.slotID = enchant.slotID
 			button.filter = filter
 
-			local texture = GetInventoryItemTexture("player", enchant.slot) or "Interface\\Icons\\Inv_misc_questionmark"
+			local texture = GetTempEnchantSpellIcon(enchant.slot) or GetInventoryItemTexture("player", enchant.slot) or "Interface\\Icons\\Inv_misc_questionmark"
 			button.icon:SetTexture(texture)
 
 			if C.Aura.ClassColorBorder == true and button.panel then

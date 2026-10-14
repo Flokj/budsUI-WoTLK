@@ -29,6 +29,7 @@
 
 	<Script file="Core\API.lua"/>
 	<Script file="Core\Functions.lua"/>
+	<Script file="Core\Scheduler.lua"/>
 	<Script file="Core\Animation.lua"/>
 	<Script file="Core\Install.lua"/>
 	<Script file="Core\Disable.lua"/>
@@ -115,6 +116,7 @@
 	<Script file="Modules\Blizzard\RepReward.lua"/>
 	<Script file="Modules\Blizzard\SpellBook.lua"/>
 	<Script file="Data\GlyphIcons.lua"/>
+	<Script file="Data\TempEnchantSpells.lua"/>
 	<Script file="Modules\Blizzard\TalentFrame.lua"/>
 
 	<Script file="Modules\Buffs\AuraSource.lua"/>

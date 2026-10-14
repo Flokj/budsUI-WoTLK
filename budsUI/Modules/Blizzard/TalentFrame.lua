@@ -12,7 +12,8 @@ Notes:
 	- budsUI adaptations (donor ns.* helpers are inlined):
 	  WINDOW_INSET -> { left=16, right=16, top=16, bottom=16 } (top/bottom unused by layout),
 	  SkinIconButton -> StripTextures + CreateBackdrop + TexCoord + highlight texture,
-	  SetShown -> Show/Hide, Defer -> one-shot OnUpdate (queueRefresh only; glyphs update synchronously),
+	  SetShown -> Show/Hide, Defer -> K.Defer("TalentFrame", refresh) on the shared
+	  Core/Scheduler ticker (all GLYPH_*/talent events dedupe into one next-frame refresh),
 	  CreateInset -> "panel" keeps spec/parchment art bright (no dark Transparent bg),
 	  CreateLabel -> CreateFontString, CreateButton -> UIPanelButtonTemplate,
 	  FitButton -> SetWidth, CreateSideTab -> SpellBookSkillLineTabTemplate,
@@ -149,17 +150,6 @@ local view = { pet = false, group = 1 }
 -- budsUI replacements for the donor ns.* skin helpers.
 local function setShown(region, shown)
 	if shown then region:Show() else region:Hide() end
-end
-
-local function deferCall(target, fn)
-	target:SetScript("OnUpdate", function(self, e)
-		self.t = (self.t or 0) + e
-		if self.t > 0 then
-			self:SetScript("OnUpdate", nil)
-			self.t = 0
-			fn(self)
-		end
-	end)
 end
 
 local function skinIconButton(btn)
@@ -970,7 +960,7 @@ end
 
 local function queueRefresh()
 	if frame and frame:IsShown() then
-		deferCall(frame, refresh)
+		K.Defer("TalentFrame", refresh)
 	end
 end
 
@@ -1448,6 +1438,8 @@ local function Initialize()
 
 	local events = CreateFrame("Frame")
 	events:RegisterEvent("CONFIRM_TALENT_WIPE")
+	events:RegisterEvent("PLAYER_LOGIN")
+	events:RegisterEvent("PLAYER_ENTERING_WORLD")
 	events:RegisterEvent("PLAYER_TALENT_UPDATE")
 	events:RegisterEvent("PET_TALENT_UPDATE")
 	events:RegisterEvent("PREVIEW_TALENT_POINTS_CHANGED")

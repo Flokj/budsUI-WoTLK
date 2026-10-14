@@ -26,7 +26,9 @@ if C.Chat.Enable ~= true then return end
 local _G = _G
 local type, pairs, ipairs = type, pairs, ipairs
 local tinsert, tremove = table.insert, table.remove
-local find = string.find
+local find, gsub = string.find, string.gsub
+local format = string.format
+local floor = math.floor
 local max, min = math.max, math.min
 local hooksecurefunc = hooksecurefunc
 local CreateFrame = CreateFrame
@@ -169,6 +171,19 @@ local function SaveHistory()
 	slot.commands = savedCmds
 end
 
+-- Dim inline |cAARRGGBB colors by the same factor (FrostAtom 4f1a22e):
+-- after /reload only the line r,g,b were faded, leaving links/names bright.
+-- Alpha is kept so the text does not turn transparent. Undimmed text stays
+-- in memory via PushLine above; only the displayed copy is dimmed.
+local function DimInlineColors(text)
+	return (gsub(text, "|c(%x%x)(%x%x)(%x%x)(%x%x)", function(a, r, g, b)
+		local function dim(hex)
+			return format("%02x", floor(tonumber(hex, 16) * RESTORED_DIM + 0.5))
+		end
+		return "|c" .. a .. dim(r) .. dim(g) .. dim(b)
+	end))
+end
+
 local function RestoreFrame(frame, saved)
 	local name = frame.GetName and frame:GetName()
 	local orig = origs[frame]
@@ -187,7 +202,7 @@ local function RestoreFrame(frame, saved)
 			local r, g, b = line[2], line[3], line[4]
 			PushLine(name, line[1], r, g, b)
 			if type(r) == "number" and type(g) == "number" and type(b) == "number" then
-				orig(frame, line[1], r * RESTORED_DIM, g * RESTORED_DIM, b * RESTORED_DIM)
+				orig(frame, DimInlineColors(line[1]), r * RESTORED_DIM, g * RESTORED_DIM, b * RESTORED_DIM)
 			else
 				orig(frame, line[1], r, g, b)
 			end
