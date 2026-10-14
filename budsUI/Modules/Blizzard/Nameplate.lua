@@ -97,20 +97,180 @@ end
 
 -- Aura icons are provided by the NamePlateAuras engine (Modules/Blizzard/NamePlateAuras.lua)
 
-local function CastTextUpdate(frame, curValue)
-	local _, maxValue = frame:GetMinMaxValues()
-	local last = frame.last and frame.last or 0
-	local finish = (curValue > last) and (maxValue - curValue) or curValue
-
-	frame.time:SetFormattedText("%.1f ", finish)
-	frame.last = curValue
-
-	if frame.shield:IsShown() then
-		frame:SetStatusBarColor(217/255, 69/255, 69/255)
-		frame.bg:SetTexture(217/255, 69/255, 69/255, 0.2)
-	else
-		frame.bg:SetTexture(217/255, 196/255, 92/255, 0.2)
+-- Read the live spell for the EXISTING Blizzard castbar. No second castbar,
+-- combat-log duration guesses or independent progress driver are introduced.
+local CAST_UNITS = { "target", "focus", "mouseover" }
+for i = 1, 4 do CAST_UNITS[#CAST_UNITS + 1] = "boss" .. i end
+for i = 1, 5 do CAST_UNITS[#CAST_UNITS + 1] = "arena" .. i end
+-- Match FrostAtomUI CastShared target rules (spell names are localized from IDs).
+local CAST_KINDS = {
+	control = {
+		118, -- Polymorph
+		5782, -- Fear
+		6358, -- Seduction
+		33786, -- Cyclone
+		51514, -- Hex
+		605, -- Mind Control
+		2637, -- Hibernate
+		339, -- Entangling Roots
+		1513, -- Scare Beast
+		10326, -- Turn Evil
+	},
+	help = {
+		2060, -- Greater Heal
+		2061, -- Flash Heal
+		2054, -- Heal
+		2050, -- Lesser Heal
+		32546, -- Binding Heal
+		596, -- Prayer of Healing
+		635, -- Holy Light
+		19750, -- Flash of Light
+		5185, -- Healing Touch
+		8936, -- Regrowth
+		50464, -- Nourish
+		331, -- Healing Wave
+		8004, -- Lesser Healing Wave
+		1064, -- Chain Heal
+		2006, -- Resurrection
+		7328, -- Redemption
+		2008, -- Ancestral Spirit
+		50769, -- Revive
+		20484, -- Rebirth
+	},
+	none = {
+		5484, -- Howl of Terror
+		64843, -- Divine Hymn
+		64901, -- Hymn of Hope
+		740, -- Tranquility
+		12051, -- Evocation
+		1949, -- Hellfire
+		5740, -- Rain of Fire
+		10, -- Blizzard
+		16914, -- Hurricane
+		1510, -- Volley
+	},
+	any = {
+		47540, -- Penance
+	},
+}
+local castKinds = {}
+for kind, ids in pairs(CAST_KINDS) do
+	for i = 1, #ids do
+		local name = GetSpellInfo(ids[i])
+		if name then
+			castKinds[name] = kind
+		end
 	end
+end
+
+-- FrostAtomUI nameplate palette (not the unit-frame cast/channel palette).
+local CASTBAR_TEXTURE = [=[Interface\Buttons\WHITE8x8]=]
+local CASTBAR_COLOR = { 0.75, 0.4, 0 }
+local CASTBAR_LOCKED_COLOR = { 0.4, 0.4, 0.4 }
+local CASTBAR_BORDER_COLOR = { 1, 1, 1 }
+
+local function UpdateCastTarget(bar, unit, spell)
+	local text = bar.target
+	if not text then return end
+	local targetUnit = unit and unit .. "target"
+	local name = targetUnit and spell and UnitName(targetUnit)
+	local kind = castKinds[spell]
+	local shown = name and kind ~= "none" and not UnitIsUnit(targetUnit, unit)
+	if shown then
+		if kind == "help" then
+			shown = UnitIsFriend(unit, targetUnit)
+		elseif kind ~= "any" then
+			shown = UnitCanAttack(unit, targetUnit)
+		end
+	end
+	if not shown then
+		text:SetText("")
+		text:SetAlpha(1)
+		return
+	end
+	local uncertain = kind == "control" and select(2, IsInInstance()) == "arena"
+	local targetName = uncertain and name .. "?" or name
+	if text:GetText() ~= targetName then text:SetText(targetName) end
+	text:SetAlpha(uncertain and 0.5 or 1)
+	local _, class = UnitClass(targetUnit)
+	local color = UnitIsPlayer(targetUnit) and class
+		and ((CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[class]) or RAID_CLASS_COLORS[class])
+	if color then
+		text:SetTextColor(color.r, color.g, color.b)
+	else
+		text:SetTextColor(1, 1, 1)
+	end
+end
+
+local function CastUnitMatches(plate, unit, name)
+	if not unit or not name or not UnitExists(unit) or UnitName(unit) ~= name then
+		return false
+	end
+	return not plate.guid or UnitGUID(unit) == plate.guid
+end
+
+local function UpdateCastSpell(bar)
+	local plate = bar:GetParent()
+	if not plate or not plate.hp then return end
+	local name = plate.hp.oldname and plate.hp.oldname:GetText()
+	local unit = plate.unit
+	if not CastUnitMatches(plate, unit, name) then
+		unit = nil
+		for _, token in ipairs(CAST_UNITS) do
+			if CastUnitMatches(plate, token, name) then
+				unit = token
+				break
+			end
+		end
+	end
+
+	local spell, texture, locked, startTime, endTime
+	bar.isChannel = nil
+	if unit then
+		local castName, _, _, castTexture, castStart, castEnd, _, _, notInterruptible = UnitCastingInfo(unit)
+		spell, texture, locked, startTime, endTime = castName, castTexture, notInterruptible, castStart, castEnd
+		if not spell then
+			local channelName, _, _, channelTexture, channelStart, channelEnd, _, channelLocked = UnitChannelInfo(unit)
+			spell, texture, locked, startTime, endTime = channelName, channelTexture, channelLocked, channelStart, channelEnd
+			bar.isChannel = spell and true or nil
+		elseif spell then
+			bar.isChannel = false
+		end
+	end
+	bar.castLocked = locked
+	if bar.icon and texture then bar.icon:SetTexture(texture) end
+	local text = C.Nameplate.CastBarName == true and spell or ""
+	if bar.name and bar.name:GetText() ~= (text or "") then
+		bar.name:SetText(text or "")
+	end
+	bar.castUnit = unit
+	UpdateCastTarget(bar, unit, spell)
+	if K.NamePlateCastEnhancements
+		and K.NamePlateCastEnhancements.Update(bar, unit, spell, texture, startTime, endTime) == false then
+		return
+	end
+	local locked = bar.castLocked
+	if locked == nil then locked = bar.shield:IsShown() end
+	-- FrostAtomUI nameplates use the same orange for casts and channels.
+	local color = locked and CASTBAR_LOCKED_COLOR or CASTBAR_COLOR
+	bar:SetStatusBarColor(color[1], color[2], color[3])
+end
+
+local function ClearCastSpell(bar)
+	if K.NamePlateCastEnhancements then K.NamePlateCastEnhancements.Hide(bar) end
+	bar.last = nil
+	bar.isChannel = nil
+	bar.castLocked = nil
+	bar.castUnit = nil
+	if bar.name then bar.name:SetText("") end
+	if bar.target then bar.target:SetText(""); bar.target:SetAlpha(1) end
+	if bar.time then bar.time:SetText("") end
+end
+
+local function CastTextUpdate(frame, curValue)
+	UpdateCastSpell(frame)
+	-- The right side is the cast target, not a countdown (FrostAtomUI layout).
+	frame.time:SetText("")
 end
 
 local function HealthBar_ValueChanged(frame)
@@ -119,6 +279,63 @@ local function HealthBar_ValueChanged(frame)
 	frame.hp:SetMinMaxValues(frame.healthOriginal:GetMinMaxValues())
 	frame.hp:SetValue(frame.healthOriginal:GetValue())
 end
+
+-- Enemy BG healers: the same scoreboard rule as FrostAtomUI, without the
+-- temporary show-on-every-plate preview. Arena talent detection is not enabled.
+local healerNames = {}
+local inBattleground = false
+local healerPollElapsed = 0
+local HEALER_CLASSES = { PRIEST = true, PALADIN = true, SHAMAN = true, DRUID = true }
+local HEALER_ICON_SIZE = 28
+local HEALER_ICON_OFFSET_X = -6
+local HEALER_ICON_OFFSET_Y = 0
+local HEALER_ICON_TEXTURE = [=[Interface\LFGFrame\UI-LFG-ICON-ROLES]=]
+
+local function UpdateHealerIcon(frame)
+	if not frame or not frame.hp then return end
+	local icon = frame.healerIcon
+	local name = frame.hp.oldname and frame.hp.oldname:GetText()
+	local base = name and (match(name, "^[^%-]+") or name)
+	if not inBattleground or not healerNames[base] or frame.hide or not frame:IsShown() then
+		if icon then icon:Hide() end
+		return
+	end
+	if not icon then
+		icon = frame:CreateTexture(nil, "OVERLAY")
+		icon:SetTexture(HEALER_ICON_TEXTURE)
+		if GetTexCoordsForRole then
+			icon:SetTexCoord(GetTexCoordsForRole("HEALER"))
+		else
+			icon:SetTexCoord(0.26171875, 0.5234375, 0, 0.26171875)
+		end
+		icon:SetSize(HEALER_ICON_SIZE, HEALER_ICON_SIZE)
+		icon:SetPoint("RIGHT", frame.hp, "LEFT", HEALER_ICON_OFFSET_X, HEALER_ICON_OFFSET_Y)
+		frame.healerIcon = icon
+	end
+	if not icon:IsShown() then icon:Show() end
+end
+
+local function UpdateHealers()
+	wipe(healerNames)
+	if inBattleground then
+		local ownFaction = UnitFactionGroup("player") == "Horde" and 0 or 1
+		for i = 1, GetNumBattlefieldScores() do
+			local name, _, _, _, _, faction, _, _, _, class, damage, healing = GetBattlefieldScore(i)
+			if name and faction ~= ownFaction and HEALER_CLASSES[class]
+				and type(damage) == "number" and type(healing) == "number" and healing > damage * 2 then
+				healerNames[match(name, "^[^%-]+") or name] = true
+			end
+		end
+	end
+	for frame in pairs(frames) do
+		UpdateHealerIcon(frame)
+	end
+end
+
+function NamePlates:UPDATE_BATTLEFIELD_SCORE()
+	UpdateHealers()
+end
+NamePlates:RegisterEvent("UPDATE_BATTLEFIELD_SCORE")
 
 -- Blacklist concealment helpers (FrostAtom "hiddenByName" intent, 3.3.5-style).
 -- A blacklisted plate must be BOTH invisible AND non-interactive: hiding the
@@ -143,6 +360,8 @@ local function ApplyBlacklistHide(frame)
 	end
 	frame:SetScript("OnUpdate", function() end)
 	frame.hp:SetAlpha(0)
+	if frame.cb and K.NamePlateCastEnhancements then K.NamePlateCastEnhancements.Reset(frame.cb) end
+	if frame.healerIcon then frame.healerIcon:Hide() end
 	if frame.cb then frame.cb:Hide() end
 	if frame.overlay then frame.overlay:Hide() end
 	if frame.raidicon then frame.raidicon:Hide() end
@@ -219,6 +438,7 @@ local function OnPlateShow(frame)
 	if (name and K.PlateBlacklist[name]) or frame.hide then
 		pcall(ApplyBlacklistHide, frame)
 	end
+	UpdateHealerIcon(frame)
 end
 
 -- We need to reset everything when a nameplate it hidden
@@ -235,6 +455,7 @@ local function OnHide(frame)
 	end
 
 	-- Visual cleanup
+	if frame.healerIcon then frame.healerIcon:Hide() end
 	frame.hp:SetStatusBarColor(frame.hp.rcolor, frame.hp.gcolor, frame.hp.bcolor)
 	frame.hp:SetScale(1)
 	frame.overlay:Hide()
@@ -420,6 +641,7 @@ local function SkinObjects(frame, nameFrame)
 
 	hp:HookScript("OnShow", UpdateObjects)
 	frame.hp = hp
+	UpdateHealerIcon(frame)
 
 	if not frame.threat then
 		frame.threat = threat
@@ -429,12 +651,17 @@ local function SkinObjects(frame, nameFrame)
 	cb:ClearAllPoints()
 	cb:SetPoint("TOPRIGHT", hp, "BOTTOMRIGHT", 0, -8)
 	cb:SetPoint("BOTTOMLEFT", hp, "BOTTOMLEFT", 0, -8-(C.Nameplate.Height * K.NoScaleMult))
-	cb:SetStatusBarTexture(C.Media.Texture)
+	cb:SetStatusBarTexture(CASTBAR_TEXTURE)
 	CreateVirtualFrame(cb)
+	cb.castHolder = cb.backdrop -- preserve the bar holder before the icon creates its backdrop
+	cb.castHolder:SetBackdropColor(0, 0, 0, 0.6)
+	cb.castHolder:SetBackdropBorderColor(CASTBAR_BORDER_COLOR[1], CASTBAR_BORDER_COLOR[2], CASTBAR_BORDER_COLOR[3], 1)
 
 	cb.bg = cb:CreateTexture(nil, "BORDER")
 	cb.bg:SetAllPoints(cb)
-	cb.bg:SetTexture(217/255, 196/255, 92/255, 0.2)
+	cb.bg:SetTexture(CASTBAR_TEXTURE)
+	cb.bg:SetVertexColor(0, 0, 0, 0)
+	cb.bg:Hide()
 
 	-- Create Cast Time Text
 	cb.time = cb:CreateFontString(nil, "ARTWORK")
@@ -442,15 +669,26 @@ local function SkinObjects(frame, nameFrame)
 	cb.time:SetFont(C.Media.Font, C.Media.Font_Size * K.NoScaleMult, C.Media.Font_Style)
 	cb.time:SetShadowOffset((0), -(0))
 	cb.time:SetTextColor(255/255, 255/255, 255/255)
+	cb.time:Hide()
+
+	-- FrostAtomUI layout: target on the right; spell takes the remaining left area.
+	cb.target = cb:CreateFontString(nil, "OVERLAY")
+	cb.target:SetPoint("RIGHT", cb, "RIGHT", -3, 0)
+	cb.target:SetJustifyH("RIGHT")
+	cb.target:SetWordWrap(false)
+	cb.target:SetFont(C.Media.Font, C.Media.Font_Size * K.NoScaleMult, C.Media.Font_Style)
+	cb.target:SetShadowOffset(0, 0)
+	cb.target:SetTextColor(1, 1, 1)
 
 	-- Create Cast Name Text
-	cb.name = cb:CreateFontString(nil, "ARTWORK")
-	if C.Nameplate.CastBarName == true then
-		cb.name:SetPoint("LEFT", cb, "LEFT", 3, 0)
-		cb.name:SetFont(C.Media.Font, C.Media.Font_Size * K.NoScaleMult, C.Media.Font_Style)
-		cb.name:SetShadowOffset((0), -(0))
-		cb.name:SetTextColor(255/255, 255/255, 255/255)
-	end
+	cb.name = cb:CreateFontString(nil, "OVERLAY")
+	cb.name:SetPoint("LEFT", cb, "LEFT", 3, 0)
+	cb.name:SetPoint("RIGHT", cb.target, "LEFT", -3, 0)
+	cb.name:SetJustifyH("LEFT")
+	cb.name:SetWordWrap(false)
+	cb.name:SetFont(C.Media.Font, C.Media.Font_Size * K.NoScaleMult, C.Media.Font_Style)
+	cb.name:SetShadowOffset((0), -(0))
+	cb.name:SetTextColor(255/255, 255/255, 255/255)
 
 	-- Create Class Icon
 	if C.Nameplate.ClassIcons == true then
@@ -488,8 +726,15 @@ local function SkinObjects(frame, nameFrame)
 	CreateVirtualFrame(cb, cb.icon)
 
 	cb.shield = cbshield
+	if K.NamePlateCastEnhancements then K.NamePlateCastEnhancements.Setup(cb) end
 	cb:HookScript("OnValueChanged", CastTextUpdate)
+	cb:HookScript("OnShow", function(bar)
+		bar.last = nil
+		UpdateCastSpell(bar)
+	end)
+	cb:HookScript("OnHide", ClearCastSpell)
 	frame.cb = cb
+	if cb:IsShown() then UpdateCastSpell(cb) end
 
 	-- Aura icons are owned by the NamePlateAuras engine and bound once per
 	-- update pass by ResolvePlateAuras (one plate per guid).
@@ -1058,6 +1303,14 @@ local UPDATE_INTERVAL = 0.2
 
 -- Core right here, scan for any possible nameplate frames that are Children of the WorldFrame
 NamePlates:SetScript("OnUpdate", K.SafeOnUpdate(function(self, elapsed)
+	-- FrostAtomUI polls the BG scoreboard every ten seconds for healer marks.
+	if inBattleground then
+		healerPollElapsed = healerPollElapsed + elapsed
+		if healerPollElapsed >= 10 then
+			healerPollElapsed = 0
+			RequestBattlefieldScoreData()
+		end
+	end
 	-- Scan for new nameplates (faster check, 0.1s interval)
 	scanThrottle = scanThrottle + elapsed
 	if scanThrottle > 0.1 then
@@ -1091,6 +1344,11 @@ NamePlates:SetScript("OnUpdate", K.SafeOnUpdate(function(self, elapsed)
 				UpdateThreat(frame, updateThrottle)
 			end
 			
+			-- Refresh spell text independently of mouseover and of the aura option.
+			if not frame.hide and frame.cb:IsShown() then
+				UpdateCastSpell(frame.cb)
+			end
+
 			-- Health update
 			ShowHealth(frame)
 			
@@ -1109,11 +1367,42 @@ NamePlates:SetScript("OnUpdate", K.SafeOnUpdate(function(self, elapsed)
 				-- highlight and click zone; keep them neutralized.
 				pcall(ApplyBlacklistHide, frame)
 			end
+			UpdateHealerIcon(frame)
 		end
 		
 		updateThrottle = 0
 	end
 end, "NamePlates"))
+
+-- A caster changing targets refreshes the right-hand text immediately. The
+-- regular pass still refreshes all live bars, so mouseover is never required.
+local function RefreshCastTargets()
+	for frame in pairs(frames) do
+		if frame:IsShown() and not frame.hide and frame.cb and frame.cb:IsShown() then
+			UpdateCastSpell(frame.cb)
+		end
+	end
+end
+function NamePlates:UNIT_AURA(unit)
+	if not unit then return end
+	for frame in pairs(frames) do
+		local bar = frame.cb
+		if frame:IsShown() and not frame.hide and bar and bar:IsShown() and bar.castUnit
+			and (bar.castUnit == unit or UnitIsUnit(bar.castUnit, unit)) then
+			bar.immunityNextScan = nil
+			UpdateCastSpell(bar)
+		end
+	end
+end
+NamePlates:RegisterEvent("UNIT_AURA")
+function NamePlates:UNIT_TARGET()
+	RefreshCastTargets()
+end
+function NamePlates:PLAYER_TARGET_CHANGED()
+	RefreshCastTargets()
+end
+NamePlates:RegisterEvent("UNIT_TARGET")
+NamePlates:RegisterEvent("PLAYER_TARGET_CHANGED")
 
 -- Only show nameplates when in combat
 -- WoW 3.3.5 Compatibility: CVar "nameplateShowEnemies" doesn't exist in 3.3.5
@@ -1134,6 +1423,10 @@ end
 NamePlates:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 NamePlates:RegisterEvent("PLAYER_ENTERING_WORLD")
 function NamePlates:PLAYER_ENTERING_WORLD()
+	inBattleground = select(2, IsInInstance()) == "pvp"
+	healerPollElapsed = 0
+	UpdateHealers()
+	if inBattleground then RequestBattlefieldScoreData() end
 	wipe(enemyGuidByName)
 	wipe(plateByGuid)
 	wipe(nameIndex)
