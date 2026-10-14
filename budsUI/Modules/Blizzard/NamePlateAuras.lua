@@ -1,18 +1,23 @@
 local K, C, L, _ = select(2, ...):unpack()
 if C.Nameplate.Enable ~= true then return end
 
--- Port of the standalone "NamePlateAuras" addon (see _hermes_refs/NamePlateAuras/).
--- Adapted to the budsUI namespace: no setfenv/namespace magic, everything is
--- local here except the two entry points exposed on K for Nameplate.lua:
---   K.NamePlateAuras_Update(plate, unitID) -- full aura refresh for one plate
---   K.NamePlateAuras_Hide(plate)           -- release all aura icons of a plate
--- WoW 3.3.5 quirk: UnitAura returns only 10 values (no 11th spellID), so
--- spellID-dependent filtering is guarded and degrades gracefully (nil spellID).
+-- FrostAtomUI donor architecture (see _hermes_refs/FrostAtomUI/Modules/NamePlates/Auras.lua):
+-- shared guid-keyed aura cache + pools, event-driven (CLEU + UNIT_AURA) with
+-- markDirty + deferred single-frame flush, a 0.1s ticker that only refreshes
+-- timer text, and dirty-checked drawing. No scheduled per-guid UnitAura scans.
+--
+-- Public API (kept for Nameplate.lua, which must call only these two):
+--   K.NamePlateAuras_Update(plate, unitOrGuid) -- bind plate, scan if needed, redraw via flush
+--   K.NamePlateAuras_Hide(plate)               -- release bind + icons
+-- WoW 3.3.5 quirk: UnitAura returns only 10 values (no 11th spellID), so all
+-- cache matching is by spellId when known with a spell-name fallback.
 
 local next, type, unpack = next, type, unpack
 local floor = math.floor
 local MathMin = math.min
 local MathCeil = math.ceil
+local tremove = table.remove
+local sort = table.sort
 local wipe = wipe
 local GetTime = GetTime
 local GetSpellInfo = GetSpellInfo
@@ -24,29 +29,6 @@ local UnitCreatureType = UnitCreatureType
 local CreateFrame = CreateFrame
 local match = string.match
 
--- Table pool (donor table.lua) — declared at the VERY TOP of the file, before
--- ANY function that could call TableNew/TableDel. Lua locals are only visible
--- AFTER their declaration, so a pool declared lower would leave earlier
--- functions resolving TableNew/TableDel to a nil global
--- ("attempt to call global 'TableNew'").
-local tableCache = setmetatable({}, {__mode = "k"})
-local function TableNew()
-	local n = #tableCache
-	if n == 0 then
-		return {}
-	end
-	local t = tableCache[n]
-	tableCache[n] = nil
-	return t
-end
-local function TableDel(tbl)
-	if tbl then
-		wipe(tbl)
-		tableCache[#tableCache + 1] = tbl
-	end
-	return nil
-end
-
 -- Config (geometry sourced from build config C.Nameplate, donor defaults as fallback)
 local USE_MODERN_BORDER = false
 local SPACE = 0
@@ -56,6 +38,23 @@ local OFFSET_Y = C.Nameplate.AuraOffsetY or 22
 local SIZE_HIGHLIGHT = C.Nameplate.AuraSizeHighlight or 28
 local IN_ROW_HIGHLIGHT = 4
 local OFFSET_Y_HIGHLIGHT = 2
+
+local TIMER_INTERVAL = 0.1
+local SWEEP_INTERVAL = 10
+
+-- Units with a UNIT_AURA event feed (donor EVENT_UNITS: target/focus/arenaX/bossX).
+-- Plates bound to these tokens are refreshed purely by UNIT_AURA; every other
+-- token is scanned on bind / on the update pass (donor onUnitAdded/onPass).
+-- Native Frame:RegisterUnitEvent does NOT exist in 3.3.5 (added in Patch
+-- 5.0.4), so this is a plain RegisterEvent("UNIT_AURA") with the handler
+-- filtering to EVENT_UNITS. This matches the donor (their RegisterUnitEvent
+-- is an EventMixin wrapper over plain RegisterEvent) and ElvUI-7 (30300).
+local EVENT_UNITS = {
+	target = true,
+	focus = true,
+	boss1 = true, boss2 = true, boss3 = true, boss4 = true,
+	arena1 = true, arena2 = true, arena3 = true, arena4 = true, arena5 = true,
+}
 
 -- Spell lists (verbatim IDs from donor spells.lua, keyed by spellID here and
 -- converted to spell names with GetSpellInfo at load, like the donor does)
@@ -281,9 +280,6 @@ local SPELLS_BLACKLIST_BY_ID = {
 local function ConvertSpellTable(t)
 	local r = {}
 	for k, v in next, t do
-		if type(v) == "table" and v.spellId then
-			v.spellId = k
-		end
 		local name = GetSpellInfo(k)
 		if name then
 			r[name] = v
@@ -297,11 +293,12 @@ local SPELLS_BLACKLIST = ConvertSpellTable(SPELLS_BLACKLIST_BY_ID)
 SPELLS_WHITELIST_BY_ID = nil
 SPELLS_BLACKLIST_BY_ID = nil
 
--- Duration defaults for combat-log auras (seconds by spellID; copied from
+-- Duration defaults for combat-log auras (seconds by spellID; ported from
 -- FrostAtomUI AuraData.lua CC_DURATIONS + DEFENSIVE_DURATIONS). The combat
 -- log carries no duration/expiry, so applied auras fall back to these tables
--- (by spellID, then by spell name); truly unknown spells fall back to
--- FALLBACK_AURA_DURATION so they still render with a timer.
+-- (by spellID, then by spell name) or to learned real durations below.
+-- Unknown spells are SKIPPED on the CLEU path (donor semantics: no timer, no
+-- icon) and picked up by the exact UnitAura scan when a token exists.
 local DURATION_DEFAULTS_BY_ID = {
 	-- CC
 	[118] = 10, [6770] = 10, [1776] = 4, [2094] = 10, [1833] = 4,
@@ -330,11 +327,9 @@ local DURATION_DEFAULTS_BY_ID = {
 	[871] = 12, [23920] = 5, [12975] = 20, [18499] = 10, [55694] = 10,
 	[20230] = 12, [19263] = 5, [34471] = 10, [54216] = 4, [33206] = 8,
 	[47788] = 10, [47585] = 6, [22812] = 12, [61336] = 20, [30823] = 15,
-	[54748] = 20, [31884] = 20, [61025] = 10, [33786] = 6, [16166] = 12,
-	[17116] = 12, [53271] = 4, [1044] = 6, [10278] = 10, [20066] = 6,
+	[54748] = 20, [31884] = 20, [61025] = 10, [16166] = 12,
+	[17116] = 12, [53271] = 4, [10278] = 10,
 }
-
-local FALLBACK_AURA_DURATION = 8
 
 local durationsByName = {}
 for _id, _dur in next, DURATION_DEFAULTS_BY_ID do
@@ -344,84 +339,262 @@ for _id, _dur in next, DURATION_DEFAULTS_BY_ID do
 	end
 end
 
-local function DurationFor(spellId, spellName)
-	return DURATION_DEFAULTS_BY_ID[spellId] or durationsByName[spellName] or FALLBACK_AURA_DURATION
-end
-
--- Learned real durations (FrostAtom Auras.lua `learned` spirit, keyed by NAME
--- for 3.3.5 where UnitAura has no spellID). Exact scans feed real `duration`
--- values here (max wins); combat-log auras prefer them over static defaults.
-local learnedDurations = {}
-local function LearnDuration(spellName, seconds)
-	if type(spellName) ~= "string" then return end
-	if type(seconds) ~= "number" or seconds <= 0 then return end
-	if (learnedDurations[spellName] or 0) < seconds then
-		learnedDurations[spellName] = seconds
+-- Learned real durations (donor `learned` table): exact scans feed real
+-- `duration` values here (max wins, keyed by spellId and by name for 3.3.5
+-- where UnitAura has no spellID); combat-log auras prefer them over static
+-- defaults. This is donor Data.Duration(spellId, name, learned).
+local learned = {}
+local function learn(spellId, spellName, duration)
+	if type(duration) ~= "number" or duration <= 0 then return end
+	if spellId and (learned[spellId] or 0) < duration then
+		learned[spellId] = duration
+	end
+	if type(spellName) == "string" and (learned[spellName] or 0) < duration then
+		learned[spellName] = duration
 	end
 end
 
--- GUID-keyed aura cache (FrostAtomUI Auras.lua model).
--- auraCache[guid] = map of spellName -> entry
--- entry = { spellId, name, texture, count, duration, expires, isHighlight, debuffType }
--- Fed by two sources:
---   1. COMBAT_LOG_EVENT_UNFILTERED (backbone; covers token-less enemy plates)
---   2. ExactScanIntoCache via UnitAura whenever a unit token exists (exact refresh)
-local auraCache = {}
+local function Duration(spellId, spellName)
+	return (spellId and learned[spellId]) or learned[spellName]
+		or (spellId and DURATION_DEFAULTS_BY_ID[spellId]) or durationsByName[spellName]
+end
+
+-- Aura classification (donor AuraData.ClassifyDebuff/ClassifyBuff, adapted to
+-- the 3.3.5 whitelist/blacklist filter model since donor SpellDB/DRData/
+-- LoseControlData do not exist here). Filtering happens here at insert time;
+-- everything cached is shown (see kindShown).
+local KIND_OWN_CC, KIND_CC, KIND_DEFENSIVE = 1, 2, 3
+local KIND_OWN, KIND_PURGE, KIND_OTHER = 4, 5, 6
+
+local function ClassifyDebuff(spellId, name, own)
+	if SPELLS_WHITELIST[name] then
+		return own and KIND_OWN_CC or KIND_CC
+	elseif own and not SPELLS_BLACKLIST[name] then
+		return KIND_OWN
+	end
+end
+
+local function ClassifyBuff(spellId, name)
+	if SPELLS_WHITELIST[name] then
+		return KIND_DEFENSIVE
+	end
+end
+
+local function kindShown(kind)
+	if kind == KIND_OWN_CC or kind == KIND_CC then
+		return true
+	elseif kind == KIND_DEFENSIVE or kind == KIND_PURGE then
+		return true
+	elseif kind == KIND_OWN then
+		return true
+	elseif kind == KIND_OTHER then
+		return true
+	end
+	return false
+end
+
+-- Shared aura cache (donor model): cache[guid] is an ORDERED list of entries
+-- {spellId, name, icon, count, duration, expires, kind, debuffType} with
+-- set/entry pool reuse. guidPlates[guid] is the single plate bound to a guid.
+local cache = {}
+local setPool, entryPool = {}, {}
+local dirty = {}
+local pendingScans = {}
 local guidPlates = {}
 local playerGUID, petGUID = nil, nil
 
-local function IsGuidString(s)
-	return type(s) == "string" and s:sub(1, 2) == "0x"
-end
-
-local function GetCacheSet(guid, create)
-	-- Defensive: auraCache must only ever be keyed by dstGUID strings
-	-- ("0x..."). A numeric key (spellId/amount/flags) would corrupt the map.
-	if type(guid) ~= "string" then return nil end
-	local set = auraCache[guid]
-	if not set and create then
-		set = {}
-		auraCache[guid] = set
+local function getSet(guid)
+	local set = cache[guid]
+	if not set then
+		local count = #setPool
+		set = setPool[count] or {}
+		setPool[count] = nil
+		cache[guid] = set
 	end
 	return set
 end
 
-local function ReleaseCacheSet(guid)
-	if type(guid) ~= "string" then
-		-- Drop numeric/leftover keys outright (release pooled entries too).
-		local bad = auraCache[guid]
-		if bad and type(bad) == "table" then
-			for k, entry in next, bad do
-				TableDel(entry)
-				bad[k] = nil
-			end
-		end
-		auraCache[guid] = nil
-		return
-	end
-	local set = auraCache[guid]
-	if set then
-		for k, entry in next, set do
-			TableDel(entry)
-			set[k] = nil
-		end
-		auraCache[guid] = nil
+local function clearSet(set)
+	for i = #set, 1, -1 do
+		entryPool[#entryPool + 1] = set[i]
+		set[i] = nil
 	end
 end
 
--- Forward: defined after the renderer (needs UpdateIcons); assigned below.
-local RedrawGuidPlate
-
--- Donor filter semantics for a combat-log aura.
--- Returns "highlight" (whitelisted), "normal" (own, not blacklisted), or nil (skip).
-local function ClassifyLogAura(spellName, isMineCaster)
-	if not spellName then return nil end
-	if isMineCaster and not SPELLS_BLACKLIST[spellName] then
-		if SPELLS_WHITELIST[spellName] then return "highlight" end
-		return "normal"
+local function releaseSet(guid)
+	local set = cache[guid]
+	if set then
+		clearSet(set)
+		cache[guid] = nil
+		setPool[#setPool + 1] = set
 	end
-	if SPELLS_WHITELIST[spellName] then return "highlight" end
-	return nil
+end
+
+local function addEntry(set)
+	local count = #entryPool
+	local entry = entryPool[count] or {}
+	entryPool[count] = nil
+	set[#set + 1] = entry
+	return entry
+end
+
+-- 3.3.5: entries scanned from UnitAura have no spellId, so match by spellId
+-- when both sides know it, otherwise fall back to the spell name.
+local function findEntry(set, spellId, name)
+	for i = 1, #set do
+		local entry = set[i]
+		if spellId and entry.spellId and entry.spellId == spellId then
+			return entry, i
+		elseif entry.name == name then
+			return entry, i
+		end
+	end
+end
+
+local function removeEntry(set, index)
+	entryPool[#entryPool + 1] = tremove(set, index)
+end
+
+local function auraOrder(a, b)
+	if a.kind ~= b.kind then
+		return a.kind < b.kind
+	end
+	local aExpires, bExpires = a.expires, b.expires
+	return (aExpires > 0 and aExpires or math.huge) < (bExpires > 0 and bExpires or math.huge)
+end
+
+local function fill(entry, spellId, name, icon, count, duration, expires, kind, debuffType)
+	entry.spellId = spellId
+	entry.name = name
+	entry.icon = icon
+	entry.count = count or 0
+	entry.duration = duration or 0
+	entry.expires = expires or 0
+	entry.kind = kind
+	entry.debuffType = debuffType
+end
+
+local function addAura(set, spellId, name, icon, count, duration, expires, kind, debuffType)
+	fill(addEntry(set), spellId, name, icon, count, duration, expires, kind, debuffType)
+	learn(spellId, name, duration)
+end
+
+-- Forward: updatePlate is defined with the renderer below; flush only runs
+-- deferred (after the whole file is loaded), so the upvalue is set by then.
+local updatePlate
+
+local function flush()
+	for guid in pairs(dirty) do
+		dirty[guid] = nil
+		local plate = guidPlates[guid]
+		if plate then
+			updatePlate(plate)
+		end
+	end
+end
+
+-- Donor ns.Defer(dirty, flush) equivalent via the prebuilt Core/Scheduler:
+-- all changes within one frame collapse into a single flush that redraws ONLY
+-- dirty plates. Synchronous fallback if the Scheduler is unavailable.
+local function deferFlush()
+	if K.Defer then
+		K.Defer(dirty, flush)
+	else
+		flush()
+	end
+end
+
+local function markDirty(guid)
+	if type(guid) ~= "string" then return end
+	dirty[guid] = true
+	deferFlush()
+end
+
+local function isOwn(caster)
+	return caster == "player" or caster == "pet" or caster == "vehicle"
+end
+
+-- Authoritative exact scan (donor exactScan): replaces the guid's set wholesale
+-- from UnitAura while a token exists, keeping the whitelist/blacklist/isMine
+-- filter semantics and the real duration/expirationTime (0 = timeless).
+local SCAN_FILTERS = { "HELPFUL", "HARMFUL" }
+local function exactScan(unit, guid)
+	if type(guid) ~= "string" or type(unit) ~= "string" then return end
+	if not UnitExists(unit) then return end
+	local set = getSet(guid)
+	clearSet(set)
+
+	local spellName, texture, count, debuffType, duration, expirationTime, caster
+	for f = 1, 2 do
+		local filter = SCAN_FILTERS[f]
+		local index = 0
+		while true do
+			index = index + 1
+			if index > 40 then break end
+			-- 3.3.5: UnitAura returns only 10 values, spellID is always nil here
+			spellName, _, texture, count, debuffType, duration, expirationTime, caster = UnitAura(unit, index, filter)
+			if not spellName then break end
+			local kind
+			if filter == "HARMFUL" then
+				kind = ClassifyDebuff(nil, spellName, isOwn(caster))
+			else
+				kind = ClassifyBuff(nil, spellName)
+			end
+			if kind then
+				addAura(set, nil, spellName, texture, count, duration, expirationTime, kind,
+					filter == "HARMFUL" and (debuffType or "none") or nil)
+			end
+		end
+	end
+
+	sort(set, auraOrder)
+	markDirty(guid)
+end
+
+local function flushScans()
+	for guid in pairs(pendingScans) do
+		pendingScans[guid] = nil
+		local plate = guidPlates[guid]
+		local unit = plate and plate.__auraUnit
+		if unit and UnitExists(unit) then
+			exactScan(unit, guid)
+		end
+	end
+end
+
+-- Donor syncLive: a plate bound to a live unit token owns exact data, so CLEU
+-- estimates for that guid are skipped (UNIT_AURA / deferred scan carries the
+-- truth instead). Non-EVENT_UNITS tokens get a deferred exact scan.
+local function syncLive(guid)
+	local plate = guidPlates[guid]
+	local unit = plate and plate.__auraUnit
+	if not unit or not UnitExists(unit) then
+		return false
+	end
+	if not EVENT_UNITS[unit] then
+		pendingScans[guid] = true
+		if K.Defer then
+			K.Defer(pendingScans, flushScans)
+		else
+			flushScans()
+		end
+	end
+	return true
+end
+
+local function pruneUntimed(guid)
+	local set = cache[guid]
+	if not set then return end
+	for i = #set, 1, -1 do
+		if set[i].expires == 0 then
+			removeEntry(set, i)
+		end
+	end
+	if not set[1] and not guidPlates[guid] then
+		releaseSet(guid)
+	else
+		markDirty(guid)
+	end
 end
 
 local function TextureFor(spellId, spellName)
@@ -431,180 +604,64 @@ local function TextureFor(spellId, spellName)
 	return iconByName
 end
 
-local function TrackLogAura(guid, spellId, spellName, auraType, isMineCaster)
-	-- CLEU order: dstGUID(string), spellId(number), spellName(string).
-	-- Reject any misordered/numeric call so a numeric cache key is impossible.
-	if type(guid) ~= "string" then return end
-	if type(spellName) ~= "string" then return end
-	if type(spellId) ~= "number" then return end
-	local class = ClassifyLogAura(spellName, isMineCaster)
-	if not class then return end
-	local set = GetCacheSet(guid, true)
-	if not set then return end
-	local entry = set[spellName]
-	local now = GetTime()
-	local duration = learnedDurations[spellName] or DurationFor(spellId, spellName)
-	if not entry then
-		entry = TableNew()
-		set[spellName] = entry
-	end
-	entry.spellId = spellId
-	entry.name = spellName
-	entry.texture = TextureFor(spellId, spellName)
-	entry.count = entry.count or 0
-	entry.duration = duration
-	entry.expires = now + duration
-	entry.isHighlight = (class == "highlight")
+local function onAuraApplied(srcGUID, dstGUID, spellId, spellName, auraType)
+	if type(dstGUID) ~= "string" or type(spellName) ~= "string" then return end
+	if syncLive(dstGUID) then return end
+	local kind
 	if auraType == "BUFF" then
-		entry.debuffType = nil
+		kind = ClassifyBuff(spellId, spellName)
 	else
-		entry.debuffType = "none"
+		local mine = type(srcGUID) == "string" and (srcGUID == playerGUID or srcGUID == petGUID)
+		kind = ClassifyDebuff(spellId, spellName, mine)
 	end
-	if RedrawGuidPlate then RedrawGuidPlate(guid) end
+	if not kind then return end
+	local duration = Duration(spellId, spellName)
+	if not duration or duration <= 0 then return end
+	local now = GetTime()
+	local set = getSet(dstGUID)
+	local entry = findEntry(set, spellId, spellName)
+	if not entry then
+		entry = addEntry(set)
+		fill(entry, spellId, spellName, TextureFor(spellId, spellName), 0, duration, now + duration, kind,
+			auraType == "BUFF" and nil or "none")
+	else
+		entry.duration = duration
+		entry.expires = now + duration
+		entry.kind = kind
+	end
+	learn(spellId, spellName, duration)
+	sort(set, auraOrder)
+	markDirty(dstGUID)
 end
 
-local function DoseLogAura(guid, spellName, amount)
-	if type(guid) ~= "string" then return end
-	if type(spellName) ~= "string" then return end
-	if type(amount) ~= "number" then return end
-	local set = auraCache[guid]
-	if not set then return end
-	local entry = set[spellName]
-	if entry then
+local function onAuraDose(dstGUID, spellId, spellName, amount)
+	if type(dstGUID) ~= "string" or type(spellName) ~= "string" then return end
+	local set = cache[dstGUID]
+	if not set or syncLive(dstGUID) then return end
+	local entry = findEntry(set, spellId, spellName)
+	if entry and type(amount) == "number" then
 		entry.count = amount
-		if RedrawGuidPlate then RedrawGuidPlate(guid) end
+		markDirty(dstGUID)
 	end
 end
 
-local function RemoveLogAura(guid, spellName)
-	if type(guid) ~= "string" then return end
-	if type(spellName) ~= "string" then return end
-	local set = auraCache[guid]
-	if not set then return end
-	local entry = set[spellName]
-	if entry then
-		TableDel(entry)
-		set[spellName] = nil
-		if RedrawGuidPlate then RedrawGuidPlate(guid) end
+local function onAuraRemoved(dstGUID, spellId, spellName)
+	if type(dstGUID) ~= "string" or type(spellName) ~= "string" then return end
+	local set = cache[dstGUID]
+	if not set or syncLive(dstGUID) then return end
+	local _, index = findEntry(set, spellId, spellName)
+	if index then
+		removeEntry(set, index)
+		markDirty(dstGUID)
 	end
 end
 
-local function DiedLogAura(guid)
-	if type(guid) ~= "string" then return end
-	if auraCache[guid] then
-		ReleaseCacheSet(guid)
-		if RedrawGuidPlate then RedrawGuidPlate(guid) end
+local function onUnitDied(dstGUID)
+	if type(dstGUID) ~= "string" then return end
+	if cache[dstGUID] then
+		releaseSet(dstGUID)
+		markDirty(dstGUID)
 	end
-end
-
-local lastSweep = 0
-local function SweepCaches(now)
-	if now - lastSweep < 10 then return end
-	lastSweep = now
-	for guid, set in next, auraCache do
-		if type(guid) ~= "string" or type(set) ~= "table" then
-			ReleaseCacheSet(guid)
-		else
-			for name, entry in next, set do
-				if type(entry) ~= "table" or (entry.expires and entry.expires > 0 and entry.expires <= now) then
-					TableDel(entry)
-					set[name] = nil
-				end
-			end
-			if not next(set) and not guidPlates[guid] then
-				ReleaseCacheSet(guid)
-			end
-		end
-	end
-end
-
--- Exact UnitAura scan into the guid's cache (FrostAtomUI exactScan spirit).
--- Authoritative while a token exists: replaces the set wholesale, keeping the
--- donor whitelist/blacklist/isMine filter semantics and the real
--- duration/expirationTime (including 0 = timeless, no timer).
-local function ExactScanIntoCache(unit, guid)
-	if type(guid) ~= "string" then return end
-	if type(unit) ~= "string" then return end
-	local set = GetCacheSet(guid, true)
-	if not set then return end
-	for k, entry in next, set do
-		TableDel(entry)
-		set[k] = nil
-	end
-
-	local index, filter = 0, nil
-	local spellName, texture, count, debuffType, duration, expirationTime, caster, spellID
-	local value
-	while true do
-		index = index + 1
-		-- 3.3.5: UnitAura returns only 10 values, spellID (11th) is always nil here
-		spellName, _, texture, count, debuffType, duration, expirationTime, caster, _, _, spellID = UnitAura(unit, index, filter)
-		if spellName then
-			value = SPELLS_WHITELIST[spellName]
-			if ((caster == "player" or caster == "pet" or caster == "vehicle") and not SPELLS_BLACKLIST[spellName]) or
-				(value and (type(value) ~= "table" or ((not value.spellId or value.spellId == spellID) and not value.isMine))) then
-
-				local entry = TableNew()
-				entry.spellId = spellID
-				entry.name = spellName
-				entry.texture = texture
-				entry.count = count
-				entry.duration = duration
-				entry.expires = expirationTime
-				entry.isHighlight = not not value
-				if filter == "HARMFUL" then
-					entry.debuffType = debuffType or "none"
-				else
-					entry.debuffType = nil
-				end
-				local old = set[spellName]
-				if old then TableDel(old) end
-				set[spellName] = entry
-				if type(duration) == "number" and duration > 0 then
-					LearnDuration(spellName, duration)
-				end
-			end
-		else
-			if not filter then
-				filter, index = "HARMFUL", 0
-			else
-				break
-			end
-		end
-	end
-end
-
--- Build the donor-renderer aura list from cache[guid], pruning expired
--- entries. Returned list (and its entries) are pool copies that UpdateIcons
--- releases as before; cache entries stay owned by the cache.
-local function BuildAuraInfoFromCache(guid, now)
-	local auraInfo = TableNew()
-	if type(guid) ~= "string" then return auraInfo end
-	local set = auraCache[guid]
-	if type(set) ~= "table" then return auraInfo end
-	if set then
-		for name, entry in next, set do
-			if type(entry) ~= "table" then
-				set[name] = nil
-			elseif entry.expires and entry.expires > 0 and entry.expires <= now then
-				TableDel(entry)
-				set[name] = nil
-			else
-				local t = TableNew()
-				t.texture = entry.texture
-				t.count = entry.count
-				t.expirationTime = entry.expires
-				t.isHighlight = entry.isHighlight
-				t.spellID = entry.spellId
-				t.debuffType = entry.debuffType
-				auraInfo[#auraInfo + 1] = t
-			end
-		end
-		if not next(set) and not guidPlates[guid] then
-			ReleaseCacheSet(guid)
-		end
-	end
-	return auraInfo
 end
 
 -- Combat-log listener: backbone feed for token-less enemy plates.
@@ -614,71 +671,92 @@ end
 -- runs inside pcall so one malformed event can never break the addon.
 local function HandleCombatLogEvent(timestamp, subEvent, srcGUID, srcName, srcFlags, dstGUID, dstName, dstFlags, a1, a2, a3, a4, a5)
 	if subEvent == "SPELL_AURA_APPLIED" or subEvent == "SPELL_AURA_REFRESH" then
-		-- a1=spellId(number), a2=spellName(string), a4=auraType; guid=dstGUID(string)
-		if type(dstGUID) == "string" and type(a1) == "number" and type(a2) == "string" then
-			local mine = (type(srcGUID) == "string" and (srcGUID == playerGUID or srcGUID == petGUID))
-			TrackLogAura(dstGUID, a1, a2, a4, mine)
+		-- a1=spellId(number), a2=spellName(string), a4=auraType
+		if type(a1) == "number" and type(a2) == "string" then
+			onAuraApplied(srcGUID, dstGUID, a1, a2, a4)
 		end
 	elseif subEvent == "SPELL_AURA_APPLIED_DOSE" or subEvent == "SPELL_AURA_REMOVED_DOSE" then
 		-- a2=spellName(string), a5=new stack count(number); never use a5 as a key
-		if type(dstGUID) == "string" and type(a2) == "string" and type(a5) == "number" then
-			DoseLogAura(dstGUID, a2, a5)
+		if type(a2) == "string" and type(a5) == "number" then
+			onAuraDose(dstGUID, a1, a2, a5)
 		end
 	elseif subEvent == "SPELL_AURA_REMOVED" or subEvent == "SPELL_AURA_BROKEN" or subEvent == "SPELL_AURA_BROKEN_SPELL" then
-		if type(dstGUID) == "string" and type(a2) == "string" then
-			RemoveLogAura(dstGUID, a2)
+		if type(a2) == "string" then
+			onAuraRemoved(dstGUID, a1, a2)
 		end
 	elseif subEvent == "UNIT_DIED" or subEvent == "UNIT_DESTROYED" or subEvent == "UNIT_DISSIPATES" then
-		if type(dstGUID) == "string" then
-			DiedLogAura(dstGUID)
+		onUnitDied(dstGUID)
+	end
+end
+
+local function sweep(now)
+	for guid, set in next, cache do
+		if type(guid) ~= "string" or type(set) ~= "table" then
+			releaseSet(guid)
+		else
+			local removed = false
+			for i = #set, 1, -1 do
+				local expires = set[i].expires
+				if expires and expires > 0 and expires <= now then
+					removeEntry(set, i)
+					removed = true
+				end
+			end
+			if removed then
+				markDirty(guid)
+			end
+			if not set[1] and not guidPlates[guid] then
+				releaseSet(guid)
+			end
 		end
 	end
+end
+
+local function sweepTick(_, now)
+	sweep(now or GetTime())
 end
 
 local function WipeAuraCache()
 	-- next() traversal while deleting can skip keys; drain via first-key loop.
-	local guid = next(auraCache)
+	local guid = next(cache)
 	while guid do
-		ReleaseCacheSet(guid)
-		guid = next(auraCache)
+		releaseSet(guid)
+		guid = next(cache)
 	end
-	for guid2 in next, guidPlates do
-		guidPlates[guid2] = nil
+	for guidPlate in next, guidPlates do
+		guidPlates[guidPlate] = nil
+	end
+	for dirtyGuid in next, dirty do
+		dirty[dirtyGuid] = nil
+	end
+	for pendingGuid in next, pendingScans do
+		pendingScans[pendingGuid] = nil
 	end
 end
 
-local auraLog = CreateFrame("Frame")
-auraLog:SetScript("OnEvent", function(self, event, ...)
-	if C.Nameplate.Auras ~= true then return end
-	if event == "COMBAT_LOG_EVENT_UNFILTERED" then
-		local ok, err = pcall(HandleCombatLogEvent, ...)
-		if not ok and C.General and C.General.DeveloperMode then
-			K.Print("NamePlateAuras CLEU error:", err)
-		end
-		local ok2, err2 = pcall(SweepCaches, GetTime())
-		if not ok2 and C.General and C.General.DeveloperMode then
-			K.Print("NamePlateAuras sweep error:", err2)
-		end
-	elseif event == "PLAYER_ENTERING_WORLD" then
-		playerGUID = UnitGUID("player")
-		petGUID = UnitGUID("pet")
-		local ok, err = pcall(WipeAuraCache)
-		if not ok and C.General and C.General.DeveloperMode then
-			K.Print("NamePlateAuras wipe error:", err)
-		end
-	elseif event == "UNIT_PET" then
-		local unit = ...
-		if unit == "player" then
-			petGUID = UnitGUID("pet")
-		end
-	end
-end)
-if C.Nameplate.Auras == true then
-	auraLog:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-	auraLog:RegisterEvent("PLAYER_ENTERING_WORLD")
-	auraLog:RegisterEvent("UNIT_PET")
-	playerGUID = UnitGUID("player")
-	petGUID = UnitGUID("pet")
+local function IsGuidString(s)
+	return type(s) == "string" and s:sub(1, 2) == "0x"
+end
+
+local function StripBaseName(name)
+	if not name then return nil end
+	return match(name, "^[^%-]+") or name
+end
+
+-- Plate-name skips for the guid (token-less) path. The engine still applies
+-- the UnitCreatureType/name skips on the token path; this mirrors them where
+-- no token exists to query (totems have no token, so match by suffix).
+local PLATE_AURA_SKIPS = {
+	["Viper"] = true,
+	["Venomous Snake"] = true,
+	["Army of the Dead Ghoul"] = true,
+}
+
+local function PlateNameSkipped(base)
+	if not base then return true end
+	if PLATE_AURA_SKIPS[base] then return true end
+	if base:sub(-5) == "Totem" then return true end
+	return false
 end
 
 -- Time formatting (FrostAtom CooldownTimer ceil semantics: display never below reality)
@@ -739,78 +817,50 @@ end
 -- Debuff-type border colors
 -- NOTE: 3.3.5 DebuffTypeColor has only Magic/Curse/Disease/Poison -- there is
 -- deliberately NO "none" entry. The combat-log path stores debuffType = "none"
--- (unknown type), so the renderer MUST guard this lookup (see UpdateIcons);
+-- (unknown type), so the renderer MUST guard this lookup (see updatePlate);
 -- an unguarded unpack(debuffType2colors["none"]) throws and aborts the pass.
 local debuffType2colors = {}
 for k, v in next, DebuffTypeColor do
 	debuffType2colors[k] = {v.r, v.g, v.b}
 end
 
--- Icon pool (donor icon.lua)
+-- Icon pool (donor icon.lua visuals on the budsUI plate layout)
 local unusedIcons = {}
 
-local function Icon_OnUpdate(self, elapsed)
-	if self.texturePath then
-		self.texture:SetTexture(self.texturePath)
-		self.texturePath = nil
-	end
-
-	local remain = self.remain
-	if not remain then return end
-	remain = remain - elapsed
-	if remain < 0 then
-		self.timer:SetText(nil)
-		self.remain = nil
-		self.nextUpdate = nil
-	else
-		self.remain = remain
-		if not self.nextUpdate or self.nextUpdate == 0 or remain <= self.nextUpdate then
-			self.timer:SetText(ShortTime(remain, true))
-			self.nextUpdate = remain - TimerUntilChange(remain)
-		end
-	end
-end
-
-local function CreateIcon()
-	local icon = CreateFrame("Frame")
-	icon:SetScript("OnUpdate", Icon_OnUpdate)
-
-	local texture = icon:CreateTexture(nil, "BORDER")
-	if USE_MODERN_BORDER then
-		texture:SetPoint("TOPRIGHT", -2, -2)
-		texture:SetPoint("BOTTOMLEFT", 2, 2)
-		texture:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-	else
-		texture:SetAllPoints()
-
-		local border = icon:CreateTexture(nil, "OVERLAY")
-		border:SetTexture("Interface\\Buttons\\UI-Debuff-Overlays")
-		border:SetTexCoord(0.296875, 0.5703125, 0, 0.515625)
-		border:SetAllPoints()
-
-		icon.border = border
-	end
-	icon.texture = texture
-
-	local count = icon:CreateFontString(nil, "ARTWORK")
-	count:SetFont("Fonts\\ARIALN.TTF", 12, "OUTLINE")
-	count:SetJustifyH("LEFT")
-	count:SetPoint("BOTTOMRIGHT")
-	icon.count = count
-
-	local timer = icon:CreateFontString(nil, "OVERLAY")
-	timer:SetFont("Fonts\\ARIALN.TTF", 12, "OUTLINE")
-	timer:SetPoint("CENTER")
-	icon.timer = timer
-
-	return icon
-end
-
 local function GetFreeIcon(parent)
-	local frame = table.remove(unusedIcons) or CreateIcon()
+	local frame = tremove(unusedIcons) or nil
+	if not frame then
+		frame = CreateFrame("Frame")
+		local texture = frame:CreateTexture(nil, "BORDER")
+		if USE_MODERN_BORDER then
+			texture:SetPoint("TOPRIGHT", -2, -2)
+			texture:SetPoint("BOTTOMLEFT", 2, 2)
+			texture:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+		else
+			texture:SetAllPoints()
+			local border = frame:CreateTexture(nil, "OVERLAY")
+			border:SetTexture("Interface\\Buttons\\UI-Debuff-Overlays")
+			border:SetTexCoord(0.296875, 0.5703125, 0, 0.515625)
+			border:SetAllPoints()
+			frame.border = border
+		end
+		frame.texture = texture
+
+		local count = frame:CreateFontString(nil, "ARTWORK")
+		count:SetFont("Fonts\\ARIALN.TTF", 12, "OUTLINE")
+		count:SetJustifyH("LEFT")
+		count:SetPoint("BOTTOMRIGHT")
+		frame.count = count
+
+		local timer = frame:CreateFontString(nil, "OVERLAY")
+		timer:SetFont("Fonts\\ARIALN.TTF", 12, "OUTLINE")
+		timer:SetPoint("CENTER")
+		frame.timer = timer
+	end
 	frame.__pooled = nil
 	frame:SetParent(parent)
 	frame:SetFrameStrata("HIGH")
+	frame._strata = "HIGH"
 	frame:Show()
 	return frame
 end
@@ -823,9 +873,21 @@ local function ReleaseIcon(icon)
 	-- plates and look flaky/missing).
 	if icon.__pooled then return nil end
 	icon.__pooled = true
+	icon.duration = nil
+	icon.endTime = nil
 	icon.remain = nil
 	icon.nextUpdate = nil
-	icon.texturePath = nil
+	-- Dirty-check state (see updatePlate): cleared so a pooled frame reused
+	-- on another plate can never skip its first layout/texture/border paint.
+	icon._ahl = nil
+	icon._asize = nil
+	icon._apointX = nil
+	icon._apointY = nil
+	icon._tex = nil
+	icon._countVal = nil
+	icon._expires = nil
+	icon._borderKey = nil
+	icon._strata = nil
 	if icon.border then
 		icon.border:Hide()
 		icon.border:SetVertexColor(1, 1, 1)
@@ -839,7 +901,7 @@ local function ReleaseIcon(icon)
 	return nil
 end
 
--- Engine (donor main.lua)
+-- Engine (donor main.lua layout on the budsUI plate)
 local function GetPointsByIndex(index, offsetY, size, inRow, count)
 	local column = index % inRow
 	local row = floor(index / inRow)
@@ -854,42 +916,37 @@ local function AuraIcons_OnHide(self)
 	end
 end
 
-local function IsMine(caster)
-	return caster == "player" or caster == "pet" or caster == "vehicle"
+local function hideAll(plate)
+	local auraIcons = plate.__auraIcons
+	if auraIcons then
+		for i = #auraIcons, 1, -1 do
+			auraIcons[i] = ReleaseIcon(auraIcons[i])
+		end
+		auraIcons:Hide()
+	end
 end
 
--- NOTE: the old token-only CollectInfo(unitID) collector was replaced by
--- ExactScanIntoCache (UnitAura -> GUID cache) + BuildAuraInfoFromCache
--- (GUID cache -> UpdateIcons list). UpdateIcons below is the untouched donor
--- renderer; do not retune its visual values.
-
-local function UpdateIcons(plate, auraInfo)
-	local auraInfoN = #auraInfo
-	local auraIcons = plate.__auraIcons
-
-	if auraInfoN == 0 then
-		if auraIcons then
-			for i = #auraIcons, 1, -1 do
-				auraIcons[i] = ReleaseIcon(auraIcons[i])
-			end
-		end
-		TableDel(auraInfo)
+-- Drawing (donor updatePlate-style, dirty-checked): SetSize only when the size
+-- changes, no ClearAllPoints per icon unless the slot/size/position moved,
+-- texture/border/count only on change. Timer text is NEVER touched here beyond
+-- arming (duration/endTime); the 0.1s ticker owns all countdown text.
+function updatePlate(plate)
+	local guid = plate.__auraGuid
+	local set = guid and cache[guid]
+	if not (C.Nameplate.Auras == true and set and set[1] and plate:IsShown()) then
+		hideAll(plate)
 		return
 	end
 
 	-- Icons float above the health bar (budsUI plate layout), like the donor
 	-- floats them above the nameplate frame. The container is HIGH strata so
-	-- icons render above the plate even when plate levels shift; icons are
-	-- re-anchored every refresh (ClearAllPoints) because pool reuse would
-	-- otherwise stack stale anchors from a previous plate.
+	-- icons render above the plate even when plate levels shift.
 	local anchor = plate.hp or plate
 	if not anchor then
-		for i = 1, auraInfoN do
-			TableDel(auraInfo[i])
-		end
-		TableDel(auraInfo)
+		hideAll(plate)
 		return
 	end
+	local auraIcons = plate.__auraIcons
 	if not auraIcons then
 		auraIcons = CreateFrame("Frame", nil, anchor)
 		auraIcons:SetFrameStrata("HIGH")
@@ -897,118 +954,165 @@ local function UpdateIcons(plate, auraInfo)
 		plate.__auraIcons = auraIcons
 	end
 	auraIcons:SetParent(anchor)
-	auraIcons:SetFrameStrata("HIGH")
 	if not auraIcons:IsShown() then
 		auraIcons:Show()
 	end
 
+	local now = GetTime()
+	-- First pass: count visible rows so highlight/normal grids can center.
 	local countNormal, countHighlight = 0, 0
-	for i = 1, auraInfoN do
-		if auraInfo[i].isHighlight then
-			countHighlight = countHighlight + 1
-		else
-			countNormal = countNormal + 1
+	for i = 1, #set do
+		local entry = set[i]
+		local expires = entry.expires
+		if (expires == 0 or expires > now) and kindShown(entry.kind) then
+			if entry.kind == KIND_OWN_CC or entry.kind == KIND_CC then
+				countHighlight = countHighlight + 1
+			else
+				countNormal = countNormal + 1
+			end
 		end
 	end
 
 	local normalRows = MathCeil(countNormal / IN_ROW)
 	local offsetHighlight = normalRows == 0 and OFFSET_Y or OFFSET_Y + normalRows * (SIZE + SPACE) + OFFSET_Y_HIGHLIGHT
-	local curTime = GetTime()
 
 	local indexNormal, indexHighlight = 0, 0
-	local icon, info
-	for i = 1, auraInfoN do
-		icon, info = auraIcons[i], auraInfo[i]
-		if not icon then
-			icon = GetFreeIcon(auraIcons)
-			auraIcons[i] = icon
-		end
-
-		icon:SetFrameStrata("HIGH")
-		icon:ClearAllPoints()
-		if info.isHighlight then
-			icon:SetPoint("BOTTOM", anchor, "TOP", GetPointsByIndex(indexHighlight, offsetHighlight, SIZE_HIGHLIGHT, IN_ROW_HIGHLIGHT, countHighlight))
-			icon:SetSize(SIZE_HIGHLIGHT, SIZE_HIGHLIGHT)
-			indexHighlight = indexHighlight + 1
-		else
-			icon:SetPoint("BOTTOM", anchor, "TOP", GetPointsByIndex(indexNormal, OFFSET_Y, SIZE, IN_ROW, countNormal))
-			icon:SetSize(SIZE, SIZE)
-			indexNormal = indexNormal + 1
-		end
-
-		if info.expirationTime == 0 then
-			icon.remain = nil
-			icon.nextUpdate = nil
-			icon.timer:SetText(nil)
-		else
-			icon.remain = info.expirationTime - curTime
-			icon.nextUpdate = 0
-		end
-
-		-- Guarded color lookup: the combat-log path stores debuffType = "none"
-		-- (unknown type) and 3.3.5 DebuffTypeColor has no "none" key, so an
-		-- unguarded unpack(debuffType2colors["none"]) throws and aborts this
-		-- whole UpdateIcons pass (swallowed by the CLEU pcall), leaving the
-		-- icon frame shown with no texture and no border until a later
-		-- redraw -- that aborted pass is the border delay. Unknown/"none"
-		-- renders the icon with NO colored border (matches FrostAtom: no
-		-- debuff-type outline for generic debuffs); the exact scan re-colors
-		-- it the moment a real UnitAura debuffType is known.
-		local borderColor = info.debuffType and debuffType2colors[info.debuffType]
-		if borderColor then
-			if USE_MODERN_BORDER then
-				icon:SetBackdropBorderColor(unpack(borderColor))
-			else
-				icon.border:SetVertexColor(unpack(borderColor))
-				icon.border:Show()
+	local shown = 0
+	for i = 1, #set do
+		local entry = set[i]
+		local expires = entry.expires
+		if (expires == 0 or expires > now) and kindShown(entry.kind) then
+			shown = shown + 1
+			local icon = auraIcons[shown]
+			if not icon then
+				icon = GetFreeIcon(auraIcons)
+				auraIcons[shown] = icon
 			end
-		else
-			if USE_MODERN_BORDER then
-				icon:SetBackdropBorderColor(0, 0, 0)
+
+			local isH = (entry.kind == KIND_OWN_CC or entry.kind == KIND_CC) and true or false
+			local sz = isH and SIZE_HIGHLIGHT or SIZE
+			local px, py
+			if isH then
+				px, py = GetPointsByIndex(indexHighlight, offsetHighlight, SIZE_HIGHLIGHT, IN_ROW_HIGHLIGHT, countHighlight)
+				indexHighlight = indexHighlight + 1
 			else
-				icon.border:Hide()
+				px, py = GetPointsByIndex(indexNormal, OFFSET_Y, SIZE, IN_ROW, countNormal)
+				indexNormal = indexNormal + 1
+			end
+			-- Dirty-checked layout: pool reuse is the only reason anchors go
+			-- stale, so ClearAllPoints/SetPoint/SetSize run only when the
+			-- slot, size, or computed x/y actually moved.
+			if icon._strata ~= "HIGH" then
+				icon:SetFrameStrata("HIGH")
+				icon._strata = "HIGH"
+			end
+			if icon._ahl ~= isH or icon._asize ~= sz or icon._apointX ~= px or icon._apointY ~= py then
+				icon:ClearAllPoints()
+				icon:SetPoint("BOTTOM", anchor, "TOP", px, py)
+				if icon._asize ~= sz then
+					icon:SetSize(sz, sz)
+				end
+				icon._ahl, icon._asize, icon._apointX, icon._apointY = isH, sz, px, py
+			end
+
+			-- Arm/disarm the countdown; the ticker owns the text itself.
+			local exp = expires
+			if icon._expires ~= exp then
+				icon._expires = exp
+				if exp == 0 then
+					icon.duration, icon.endTime = nil, nil
+					icon.remain, icon.nextUpdate = nil, nil
+					icon.timer:SetText(nil)
+				else
+					icon.duration, icon.endTime = entry.duration, exp
+					icon.remain = exp - now
+					icon.nextUpdate = 0
+				end
+			end
+
+			-- Guarded color lookup: the combat-log path stores debuffType =
+			-- "none" (unknown type) and 3.3.5 DebuffTypeColor has no "none"
+			-- key. Unknown/"none" renders with NO colored border; the exact
+			-- scan re-colors it once a real UnitAura debuffType is known.
+			local borderColor = entry.debuffType and debuffType2colors[entry.debuffType]
+			local borderKey = entry.debuffType or false
+			if icon._borderKey ~= borderKey then
+				icon._borderKey = borderKey
+				if borderColor then
+					if USE_MODERN_BORDER then
+						icon:SetBackdropBorderColor(unpack(borderColor))
+					else
+						icon.border:SetVertexColor(unpack(borderColor))
+						icon.border:Show()
+					end
+				else
+					if USE_MODERN_BORDER then
+						icon:SetBackdropBorderColor(0, 0, 0)
+					else
+						icon.border:Hide()
+					end
+				end
+			end
+
+			if icon._tex ~= entry.icon then
+				icon._tex = entry.icon
+				if entry.icon then
+					icon.texture:SetTexture(entry.icon)
+				end
+			end
+			local cnt = (entry.count or 0) > 1 and entry.count or nil
+			if icon._countVal ~= cnt then
+				icon._countVal = cnt
+				icon.count:SetText(cnt)
 			end
 		end
-
-		-- Same-frame icon+border: apply the texture synchronously in this pass
-		-- instead of waiting a full OnUpdate tick via texturePath, so the
-		-- border Show above and the icon pixels land together. texturePath is
-		-- still assigned first so Icon_OnUpdate applies anything not set here.
-		icon.texturePath = info.texture
-		if info.texture then
-			icon.texture:SetTexture(info.texture)
-			icon.texturePath = nil
-		end
-		icon.count:SetText((info.count or 0) > 1 and info.count or nil)
-
-		auraInfo[i] = nil
-		TableDel(info)
 	end
 
-	for i = #auraIcons, auraInfoN + 1, -1 do
+	for i = #auraIcons, shown + 1, -1 do
 		auraIcons[i] = ReleaseIcon(auraIcons[i])
 	end
 
-	TableDel(auraInfo)
-end
-
--- Draw one plate purely from cache[guid] (used for token AND guid paths).
-local function DrawCachedPlate(plate, guid)
-	UpdateIcons(plate, BuildAuraInfoFromCache(guid, GetTime()))
-end
-
--- Immediate combat-log driven redraw for the plate showing this guid.
-RedrawGuidPlate = function(guid)
-	if type(guid) ~= "string" then return end
-	local plate = guidPlates[guid]
-	if plate and plate.IsShown and plate:IsShown() then
-		DrawCachedPlate(plate, guid)
+	if shown == 0 then
+		auraIcons:Hide()
 	end
 end
 
--- GUID-or-token entry point (FrostAtomUI model):
---   * unit token -> exact UnitAura scan refreshes that guid's cache, then draw merged cache
---   * bare guid   -> draw purely from the combat-log cache (token-less enemy plates)
+-- Timer ticker (donor updateTimers): 0.1s, ONLY timer text. Never touches
+-- icon layout. Expired entries mark their guid dirty so the flush drops them.
+local function updateAllTimers(_, now)
+	now = now or GetTime()
+	for guid, plate in next, guidPlates do
+		local auraIcons = plate.__auraIcons
+		if auraIcons and plate:IsShown() then
+			for i = 1, #auraIcons do
+				local icon = auraIcons[i]
+				if icon and icon.endTime then
+					local remain = icon.endTime - now
+					if remain > 0 then
+						icon.remain = remain
+						if not icon.nextUpdate or icon.nextUpdate == 0 or remain <= icon.nextUpdate then
+							icon.timer:SetText(ShortTime(remain, true))
+							icon.nextUpdate = remain - TimerUntilChange(remain)
+						end
+					else
+						icon.endTime = nil
+						icon.remain = nil
+						icon.nextUpdate = nil
+						markDirty(guid)
+					end
+				end
+			end
+		end
+	end
+end
+
+-- GUID-or-token entry point (donor UnitAdded/Pass model):
+--   * fresh bind with a unit token -> exact UnitAura scan once (covers
+--     EVENT_UNITS target-switches where no UNIT_AURA fires), then markDirty
+--   * fresh bind with a bare guid  -> paint the combat-log cache via markDirty
+--   * steady bind, token NOT in EVENT_UNITS -> exactScan now (donor onUnitAdded/
+--     onPass for the rest); steady EVENT_UNITS / steady guid -> nothing, the
+--     UNIT_AURA / CLEU / timer ticker drive all future redraws via markDirty.
 -- The old "return if not unitID" guard is gone so the cache path works.
 function K.NamePlateAuras_Update(plate, unitOrGuid)
 	if C.Nameplate.Auras ~= true then return end
@@ -1016,39 +1120,51 @@ function K.NamePlateAuras_Update(plate, unitOrGuid)
 		K.NamePlateAuras_Hide(plate)
 		return
 	end
-	local guid = nil
+	local guid, unit = nil, nil
 	if IsGuidString(unitOrGuid) then
 		guid = unitOrGuid
-	elseif UnitExists(unitOrGuid) then
-		local unit = unitOrGuid
+	elseif type(unitOrGuid) == "string" and UnitExists(unitOrGuid) then
+		unit = unitOrGuid
 		guid = UnitGUID(unit)
 		if type(guid) ~= "string" then
 			K.NamePlateAuras_Hide(plate)
 			return
 		end
-		local name = UnitName(unit)
 		if UnitCreatureType(unit) == "Totem" then return end
-		if name == "Viper" then return end
-		if name == "Venomous Snake" then return end
-		if name == "Army of the Dead Ghoul" then return end
-		ExactScanIntoCache(unit, guid)
+		local uname = UnitName(unit)
+		if uname == "Viper" or uname == "Venomous Snake" or uname == "Army of the Dead Ghoul" then return end
 	else
-		-- Unknown key (stale token, number, or guid without 0x prefix):
+		-- Unknown key (stale token or guid without 0x prefix):
 		-- never create numeric cache keys; only accept real guid strings.
-		if not IsGuidString(unitOrGuid) then
+		K.NamePlateAuras_Hide(plate)
+		return
+	end
+	-- Guid-path name skips (no token to query for creature type).
+	if not unit then
+		local hp = plate.hp
+		local oldname = hp and hp.oldname and hp.oldname:GetText()
+		if PlateNameSkipped(StripBaseName(oldname)) then
 			K.NamePlateAuras_Hide(plate)
 			return
 		end
-		guid = unitOrGuid
 	end
-	-- Register plate for combat-log driven redraws; drop stale binding
+	-- Register plate for event-driven redraws; drop stale binding.
 	local prev = plate.__auraGuid
 	if prev and prev ~= guid and guidPlates[prev] == plate then
 		guidPlates[prev] = nil
 	end
 	plate.__auraGuid = guid
+	plate.__auraUnit = unit
 	guidPlates[guid] = plate
-	DrawCachedPlate(plate, guid)
+	if prev ~= guid then
+		if unit then
+			exactScan(unit, guid)
+		else
+			markDirty(guid)
+		end
+	elseif unit and not EVENT_UNITS[unit] then
+		exactScan(unit, guid)
+	end
 end
 
 function K.NamePlateAuras_Hide(plate)
@@ -1059,17 +1175,96 @@ function K.NamePlateAuras_Hide(plate)
 			guidPlates[auraGuid] = nil
 		end
 		plate.__auraGuid = nil
+		plate.__auraUnit = nil
+		pruneUntimed(auraGuid)
 	end
-	local auraIcons = plate.__auraIcons
-	if auraIcons then
-		for i = #auraIcons, 1, -1 do
-			auraIcons[i] = ReleaseIcon(auraIcons[i])
-		end
-	end
+	hideAll(plate)
 	-- Also cover the legacy container field if an old-skinned plate has one
-	if plate.icons and plate.icons ~= auraIcons and type(plate.icons) == "table" then
-		for _, icon in ipairs(plate.icons) do
-			if icon.Hide then icon:Hide() end
+	if plate.icons and plate.icons ~= plate.__auraIcons and type(plate.icons) == "table" then
+		for _, icon in next, plate.icons do
+			if type(icon) == "table" and icon.Hide then icon:Hide() end
 		end
+	end
+end
+
+-- Event contour (donor plugin Log + UNIT_AURA + world/pet hooks), plain
+-- budsUI-style frames, every dispatch guarded + pcall.
+-- 3.3.5 has no native Frame:RegisterUnitEvent (it was added in Patch 5.0.4),
+-- so UNIT_AURA is registered via plain RegisterEvent and the handler filters
+-- to EVENT_UNITS — this matches both the donor (whose EventMixin:RegisterUnitEvent
+-- is its own bus over a plain RegisterEvent) and ElvUI-7 (30300 reference,
+-- which uses header:RegisterEvent('UNIT_AURA') + unit filter).
+local function onUnitAura(unit)
+	if not EVENT_UNITS[unit] then return end
+	local guid = UnitGUID(unit)
+	if guid and guidPlates[guid] then
+		exactScan(unit, guid)
+	end
+end
+
+local cleuFrame = CreateFrame("Frame")
+cleuFrame:SetScript("OnEvent", function(self, event, ...)
+	if C.Nameplate.Auras ~= true then return end
+	if event == "COMBAT_LOG_EVENT_UNFILTERED" then
+		local ok, err = pcall(HandleCombatLogEvent, ...)
+		if not ok and C.General and C.General.DeveloperMode then
+			K.Print("NamePlateAuras CLEU error:", err)
+		end
+	elseif event == "PLAYER_ENTERING_WORLD" then
+		playerGUID = UnitGUID("player")
+		petGUID = UnitGUID("pet")
+		local ok, err = pcall(WipeAuraCache)
+		if not ok and C.General and C.General.DeveloperMode then
+			K.Print("NamePlateAuras wipe error:", err)
+		end
+	elseif event == "UNIT_PET" then
+		local unit = ...
+		if unit == "player" then
+			petGUID = UnitGUID("pet")
+		end
+	end
+end)
+
+local unitFrame = CreateFrame("Frame")
+unitFrame:SetScript("OnEvent", function(self, event, unit)
+	if C.Nameplate.Auras ~= true then return end
+	if event == "UNIT_AURA" then
+		local ok, err = pcall(onUnitAura, unit)
+		if not ok and C.General and C.General.DeveloperMode then
+			K.Print("NamePlateAuras UNIT_AURA error:", err)
+		end
+	end
+end)
+
+if C.Nameplate.Auras == true then
+	cleuFrame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+	cleuFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+	cleuFrame:RegisterEvent("UNIT_PET")
+	unitFrame:RegisterEvent("UNIT_AURA")
+	playerGUID = UnitGUID("player")
+	petGUID = UnitGUID("pet")
+
+	-- Donor timers: one 0.1s ticker for countdown text, one 10s sweep.
+	-- Multiplexed on the prebuilt Core/Scheduler (donor ns tickers equivalent).
+	if K.Scheduler and K.Scheduler.AddTicker then
+		K.Scheduler.AddTicker("NamePlateAurasTimers", updateAllTimers, TIMER_INTERVAL)
+		K.Scheduler.AddTicker("NamePlateAurasSweep", sweepTick, SWEEP_INTERVAL)
+	else
+		local fallback = CreateFrame("Frame")
+		local timerAccum, sweepAccum = 0, 0
+		fallback:SetScript("OnUpdate", K.SafeOnUpdate(function(self, elapsed)
+			if C.Nameplate.Auras ~= true then return end
+			timerAccum = timerAccum + elapsed
+			sweepAccum = sweepAccum + elapsed
+			if timerAccum >= TIMER_INTERVAL then
+				timerAccum = 0
+				updateAllTimers(nil, GetTime())
+			end
+			if sweepAccum >= SWEEP_INTERVAL then
+				sweepAccum = 0
+				sweep(GetTime())
+			end
+		end, "NamePlateAurasFallback"))
+		fallback:Show()
 	end
 end
