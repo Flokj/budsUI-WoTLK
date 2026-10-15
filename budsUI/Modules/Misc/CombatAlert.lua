@@ -9,8 +9,8 @@ local K, C, L, _ = select(2, ...):unpack()
 
 local CreateFrame = CreateFrame
 
-local HOLD_TIME = 2
-local FADE_TIME = 1
+local HOLD_TIME = 3
+local FADE_TIME = 1.5
 
 local combatAlert = CreateFrame("Frame", "budsUICombatAlert", UIParent)
 combatAlert:SetSize(200, 30)
