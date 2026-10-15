@@ -296,31 +296,135 @@ easyDelFrame:SetScript("OnEvent", function()
 end)
 
 --------------------------------------------------
--- Bags/Micro menu: bottom right corner
+-- Bags/Micro menu: bottom right corner (FrostAtomUI-style movable + fade)
 for i = 0, NUM_BAG_SLOTS - 1 do
 	(_G["CharacterBag" .. i .. "Slot"]):Kill()
 end
 
-for _, button in ipairs({
-	CharacterMicroButton,
-	SpellbookMicroButton,
-	TalentMicroButton,
-	AchievementMicroButton,
-	QuestLogMicroButton,
-	SocialsMicroButton,
-	PVPMicroButton,
-	LFDMicroButton,
-	MainMenuMicroButton,
-	HelpMicroButton,
-}) do
-	button:SetParent(UIParent)
+local MICRO_BUTTONS = {
+	"CharacterMicroButton",
+	"SpellbookMicroButton",
+	"TalentMicroButton",
+	"AchievementMicroButton",
+	"QuestLogMicroButton",
+	"SocialsMicroButton",
+	"PVPMicroButton",
+	"LFDMicroButton",
+	"MainMenuMicroButton",
+	"HelpMicroButton",
+}
+
+local microMenu = CreateFrame("Frame", "budsUIMicroMenu", UIParent)
+local microButtons = {}
+for _, name in ipairs(MICRO_BUTTONS) do
+	local button = _G[name]
+	if button then
+		button:SetParent(microMenu)
+		button:Show()
+		microButtons[#microButtons + 1] = button
+	end
 end
 
-CharacterMicroButton:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMRIGHT", -254, 2)
+local MICRO_SPACING = 0
+
+local function layoutMicroMenu()
+	local width, height = 0, 0
+	for index, button in ipairs(microButtons) do
+		button:ClearAllPoints()
+		button:SetPoint("BOTTOMLEFT", microMenu, "BOTTOMLEFT", width, 0)
+		width = width + (button:GetWidth() or 28) + MICRO_SPACING
+		height = math.max(height, button:GetHeight() or 58)
+	end
+	microMenu:SetSize(width, height)
+end
+layoutMicroMenu()
+hooksecurefunc("UpdateMicroButtons", function()
+	if InCombatLockdown() then
+		return
+	end
+	local needs = false
+	for _, button in ipairs(microButtons) do
+		if button:GetParent() ~= microMenu then
+			needs = true
+			break
+		end
+	end
+	if needs then
+		layoutMicroMenu()
+	end
+end)
 
 local BACKPACK_SIZE = 32
 MainMenuBarBackpackButton:SetParent(UIParent)
 MainMenuBarBackpackButton:SetSize(BACKPACK_SIZE, BACKPACK_SIZE)
-MainMenuBarBackpackButton:ClearAllPoints()
-MainMenuBarBackpackButton:SetPoint("BOTTOMRIGHT", CharacterMicroButton, "BOTTOMLEFT", -2, 3)
 MainMenuBarBackpackButtonNormalTexture:SetSize(BACKPACK_SIZE * 64 / 36, BACKPACK_SIZE * 64 / 36)
+
+-- Mouseover fade (FrostAtomUI-style), applied to the whole strip + bag button.
+local fadeFrames = { MainMenuBarBackpackButton }
+for _, button in ipairs(microButtons) do
+	fadeFrames[#fadeFrames + 1] = button
+end
+
+local fadeState = {}
+local fadeDriver = CreateFrame("Frame")
+fadeDriver:SetScript("OnUpdate", function(_, elapsed)
+	local any = false
+	for frame, target in pairs(fadeState) do
+		any = true
+		local alpha = frame:GetAlpha()
+		local next = alpha + (target - alpha) * math.min(elapsed * 8, 1)
+		if math.abs(target - next) < 0.01 then
+			frame:SetAlpha(target)
+			fadeState[frame] = nil
+		else
+			frame:SetAlpha(next)
+		end
+	end
+	if not any then
+		fadeState = {}
+	end
+end)
+
+local function fadeGroup(target)
+	for _, frame in ipairs(fadeFrames) do
+		fadeState[frame] = target
+	end
+end
+
+local function applyMicroFade(instant)
+	local target = C.Misc.MicroMenuFade == true and 0.1 or 1
+	if instant then
+		for _, frame in ipairs(fadeFrames) do
+			frame:SetAlpha(target)
+		end
+	else
+		fadeGroup(target)
+	end
+end
+applyMicroFade(true)
+
+for _, frame in ipairs(fadeFrames) do
+	frame:HookScript("OnEnter", function()
+		fadeGroup(1)
+	end)
+	frame:HookScript("OnLeave", function()
+		if C.Misc.MicroMenuFade ~= true then
+			return
+		end
+		fadeGroup(0.1)
+	end)
+end
+
+-- Movers (deferred: Core/Movers.lua loads after the modules).
+local moverWait = CreateFrame("Frame")
+moverWait:SetScript("OnUpdate", function(self)
+	if K.CreateMover then
+		self:SetScript("OnUpdate", nil)
+		K.CreateMover(microMenu, "MicroMenu", "Micro menu",
+			{ "BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -2, 2 },
+			microMenu:GetWidth(), microMenu:GetHeight())
+		K.CreateMover(MainMenuBarBackpackButton, "BagButton", "Bag button",
+			{ "BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -288, 5 },
+			BACKPACK_SIZE, BACKPACK_SIZE)
+	end
+end)

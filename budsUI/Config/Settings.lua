@@ -197,6 +197,12 @@ C["Misc"] = {
 	["ItemLevel"] = true,
 	["PvPTimer"] = true,
 	["SpeedyLoad"] = false,
+	["CombatAlert"] = true,
+	["CombatAlertEnterText"] = "+ combat",
+	["CombatAlertLeaveText"] = "- combat",
+	["CombatAlertEnterColor"] = { 1, 0.3, 0.3 },
+	["CombatAlertLeaveColor"] = { 0.3, 1, 0.3 },
+	["MicroMenuFade"] = false,
 }
 -- Nameplate Options
 C["Nameplate"] = {

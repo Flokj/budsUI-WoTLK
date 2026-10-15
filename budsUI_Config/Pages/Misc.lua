@@ -62,5 +62,36 @@ ns.RegisterPage({
 			type = "toggle", advanced = true, reload = true,
 			desc = "Disable certain events during loading screens to drastically improve loading times.",
 		}),
+		{ header = L_GUI_MISC_COMBAT_ALERT or "Combat alert" },
+		T("CombatAlert", L_GUI_MISC_COMBAT_ALERT or "Combat alert", {
+			type = "toggle",
+			desc = "Flash a message when entering or leaving combat.",
+		}),
+		T("CombatAlertEnterText", L_GUI_MISC_COMBAT_ALERT_ENTER_TEXT or "Enter combat text", {
+			type = "string", width = 120, maxLetters = 40, enabledBy = "Misc.CombatAlert",
+		}),
+		T("CombatAlertLeaveText", L_GUI_MISC_COMBAT_ALERT_LEAVE_TEXT or "Leave combat text", {
+			type = "string", width = 120, maxLetters = 40, enabledBy = "Misc.CombatAlert",
+		}),
+		T("CombatAlertEnterColor", L_GUI_MISC_COMBAT_ALERT_ENTER_COLOR or "Enter combat color", {
+			type = "color", enabledBy = "Misc.CombatAlert",
+		}),
+		T("CombatAlertLeaveColor", L_GUI_MISC_COMBAT_ALERT_LEAVE_COLOR or "Leave combat color", {
+			type = "color", enabledBy = "Misc.CombatAlert",
+		}),
+		T("CombatAlertTest", L_GUI_MISC_COMBAT_ALERT_TEST or "Test combat alert", {
+			type = "execute", text = "Show", noReset = true, enabledBy = "Misc.CombatAlert",
+			desc = "Show the enter combat message once.",
+			func = function()
+				if _G["budsUICombatAlertTest"] then
+					_G["budsUICombatAlertTest"]()
+				end
+			end,
+		}),
+		{ header = L_GUI_MISC_FADE or "Fading" },
+		T("MicroMenuFade", L_GUI_MISC_MICRO_FADE or "Micro menu / bag fade", {
+			type = "toggle",
+			desc = "Fade the micro menu and bag button out on mouseover (FrostAtomUI-style).",
+		}),
 	},
 })
