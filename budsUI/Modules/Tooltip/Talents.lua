@@ -29,12 +29,15 @@ ttt.current = current
 if C.Tooltip.Talents == true then
 	local gtt = GameTooltip
 
-	-- GatherTalents
+	-- GatherTalents — parses talent data into `current`, refreshes the open
+	-- tooltip and caches the entry. No "Loading" placeholder is printed: the
+	-- line appears as soon as the inspect data lands, and cached entries are
+	-- shown instantly (FrostAtomUI behaviour — no stuck "Loading").
 	local function GatherTalents(isInspect)
 		-- Inspect functions will always use the active spec when not inspecting
 		local group = GetActiveTalentGroup(isInspect)
 		-- Get points per tree, and set "maxTree" to the tree with most points
-		local maxTree, _ = 1
+		local maxTree = 1
 		for i = 1, 3 do
 			_, _, current[i] = GetTalentTabInfo(i,isInspect,nil,group)
 			if (current[i] > current[maxTree]) then
@@ -53,26 +56,35 @@ if C.Tooltip.Talents == true then
 		elseif (talentFormat == 3) then
 			current.format = current[1].."/"..current[2].."/"..current[3]
 		end
-		-- Set the tips line output, for inspect, only update if the tip is still showing a unit!
+		-- Set the tips line output; for inspect, only touch the tooltip while it
+		-- still shows the very unit whose data just arrived.
+		local tipUnit = gtt:GetUnit()
 		if (not isInspect) then
 			gtt:AddLine(TALENTS_PREFIX..current.format)
-		elseif (gtt:GetUnit()) then
+		elseif (tipUnit and current.guid and UnitGUID(tipUnit) == current.guid) then
+			local replaced = false
 			for i = 2, gtt:NumLines() do
-				if ((_G["GameTooltipTextLeft"..i]:GetText() or ""):match("^"..TALENTS_PREFIX)) then
-					_G["GameTooltipTextLeft"..i]:SetFormattedText("%s%s",TALENTS_PREFIX,current.format)
-					-- Do not call Show() if the tip is fading out, this only works with TipTac, if TipTacTalents are used alone, it might still bug the fadeout
-					if (not gtt.fadeOut) then
-						gtt:Show()
-					end
+				local line = _G["GameTooltipTextLeft"..i]
+				local text = line and line:GetText() or ""
+				if (text:match("^"..TALENTS_PREFIX)) then
+					line:SetFormattedText("%s%s",TALENTS_PREFIX,current.format)
+					replaced = true
 					break
 				end
 			end
+			if (not replaced) then
+				gtt:AddLine(TALENTS_PREFIX..current.format)
+			end
+			-- Do not call Show() if the tip is fading out, this only works with TipTac
+			if (not gtt.fadeOut) then
+				gtt:Show()
+			end
 		end
-		-- Organise Cache
+		-- Organise Cache (GUID-first, name fallback)
 		local cacheSize = (TipTac_Config and TipTac_Config.talentCacheSize or CACHE_SIZE)
 		for i = #cache, 1, -1 do
 			if (current.guid and cache[i].guid and current.guid == cache[i].guid)
-			or (not current.guid and current.name == cache[i].name) then
+			or (not current.guid and current.name and cache[i].name == current.name) then
 				tremove(cache,i)
 				break
 			end
@@ -86,14 +98,27 @@ if C.Tooltip.Talents == true then
 		end
 	end
 
-	-- OnEvent
+	-- OnEvent: the inspect for the LAST requested unit landed. Update the open
+	-- tooltip if it still shows that unit; otherwise just cache the data — the
+	-- next hover shows it from the cache instead of a new "Loading" round.
 	ttt:SetScript("OnEvent",function(self,event)
 		self:UnregisterEvent("INSPECT_TALENT_READY")
-		local tipUnit = gtt:GetUnit()
-		if (tipUnit and current.guid and UnitGUID(tipUnit) == current.guid) then
+		local requestGuid = self.requestGuid
+		local requestName = self.requestName
+		self.requestGuid = nil
+		self.requestName = nil
+		if (not requestGuid) then
+			return
+		end
+		if (current.guid == requestGuid) then
 			GatherTalents(1)
-		elseif (not tipUnit) then
-			-- tooltip closed meanwhile: don't force it open, cache was still updated on next show via inspect
+		else
+			-- The tooltip switched to another unit: parse into a copy keyed by
+			-- the requested unit and cache it, leaving `current` untouched.
+			local cached = current
+			current = { guid = requestGuid, name = requestName }
+			GatherTalents(1)
+			current = cached
 		end
 	end)
 
@@ -119,23 +144,25 @@ if C.Tooltip.Talents == true then
 				-- Others
 			else
 				local allowInspect = (not InspectFrame or not InspectFrame:IsShown()) and (not Examiner or not Examiner:IsShown())
+				for _, entry in ipairs(cache) do
+					if (current.guid and entry.guid and current.guid == entry.guid)
+					or (not current.guid and current.name and entry.name == current.name) then
+						self:AddLine(TALENTS_PREFIX..entry.format)
+						current.tree = entry.tree
+						current.format = entry.format
+						current[1], current[2], current[3] = entry[1], entry[2], entry[3]
+						current.guid = entry.guid
+						return
+					end
+				end
 				if (allowInspect) then
+					-- No cache entry: request the inspect and remember WHO we
+					-- asked for, so the data is cached even if the tooltip moves
+					-- on before INSPECT_TALENT_READY fires.
+					ttt.requestGuid = current.guid
+					ttt.requestName = current.name
 					ttt:RegisterEvent("INSPECT_TALENT_READY")
 					NotifyInspect(unit)
-				end
-			for _, entry in ipairs(cache) do
-				if (current.guid and entry.guid and current.guid == entry.guid)
-				or (not current.guid and current.name == entry.name) then
-					self:AddLine(TALENTS_PREFIX..entry.format)
-					current.tree = entry.tree
-					current.format = entry.format
-					current[1], current[2], current[3] = entry[1], entry[2], entry[3]
-					current.guid = entry.guid
-					return
-				end
-			end
-				if (allowInspect) then
-					self:AddLine(TALENTS_PREFIX..L_TOOLTIP_LOADING)
 				end
 			end
 		end
