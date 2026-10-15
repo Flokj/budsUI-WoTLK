@@ -319,15 +319,12 @@ local function HealthBar_ValueChanged(frame)
 	frame.hp:SetValue(frame.healthOriginal:GetValue())
 end
 
--- Enemy BG healers (scoreboard rule, stamp-compatible). The 3.3.5 client
--- layouts GetBattlefieldScore differently: the stock signature has
--- damage@10 / healing@11, while the working `stamp` addon on this client
--- reads damage@11 / healing@12. Accept whichever pair is numeric, and do not
--- gate on the class column (its slot/format differs too — stamp ignores it
--- and marks by the same healing > 2x damage rule).
+-- Enemy BG healers: the same scoreboard rule as FrostAtomUI, without the
+-- temporary show-on-every-plate preview. Arena talent detection is not enabled.
 local healerNames = {}
-local inBattleground = false
+local inBattleground = true
 local healerPollElapsed = 0
+local HEALER_CLASSES = { PRIEST = true, PALADIN = true, SHAMAN = true, DRUID = true }
 local HEALER_ICON_SIZE = 24
 local HEALER_ICON_OFFSET_X = -2
 local HEALER_ICON_OFFSET_Y = 0
@@ -362,14 +359,9 @@ local function UpdateHealers()
 	if inBattleground then
 		local ownFaction = UnitFactionGroup("player") == "Horde" and 0 or 1
 		for i = 1, GetNumBattlefieldScores() do
-			local name, _, _, _, _, faction, _, _, _, n10, n11, n12 = GetBattlefieldScore(i)
-			local damage, healing = n11, n12
-			if type(healing) ~= "number" or type(damage) ~= "number" then
-				-- stock 11-field layout: damage@10 / healing@11
-				damage, healing = n10, n11
-			end
-			if name and faction ~= ownFaction and type(damage) == "number"
-				and type(healing) == "number" and healing > damage * 2 then
+			local name, _, _, _, _, faction, _, _, _, class, damage, healing = GetBattlefieldScore(i)
+			if name and faction ~= ownFaction and HEALER_CLASSES[class]
+				and type(damage) == "number" and type(healing) == "number" and healing > damage * 2 then
 				healerNames[match(name, "^[^%-]+") or name] = true
 			end
 		end
