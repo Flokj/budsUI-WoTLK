@@ -70,7 +70,19 @@ local function HideObjects(frame)
 	end
 end
 
--- Create a fake backdrop frame using textures
+-- FrostAtomUI-style holder: crisp UI-Tooltip-Border frame (Media.border in
+-- Frost) in Frost's colors instead of the black glow halo (C.Media.Glow,
+-- black border). Note budsUI's own Border_Default.tga (C.Media.Blizz) is a
+-- black-based texture and would still render as a black outline, so it must
+-- not be used here. Sizes are FIXED pixels: Frost does not scale the plate
+-- frame, while multiplying by K.NoScaleMult (= 768/screenHeight, ~0.71 on
+-- 1080p) shrinks the border to a barely visible hairline.
+local BORDER_EDGE_SIZE = 10
+local BORDER_INSET = 3
+local BORDER_EDGE = "Interface\\Tooltips\\UI-Tooltip-Border"
+-- Frost theme borderColor (default { 0.35, 0.35, 0.35 }).
+local BORDER_COLOR = { 0.35, 0.35, 0.35 }
+
 local function CreateVirtualFrame(parent, point)
 	if point == nil then point = parent end
 
@@ -79,14 +91,14 @@ local function CreateVirtualFrame(parent, point)
 	parent.backdrop:SetAllPoints()
 	parent.backdrop:SetBackdrop({
 		bgFile = C.Media.Blank,
-		edgeFile = C.Media.Glow,
-		edgeSize = 3 * K.NoScaleMult,
-		insets = {top = 3 * K.NoScaleMult, left = 3 * K.NoScaleMult, bottom = 3 * K.NoScaleMult, right = 3 * K.NoScaleMult}
+		edgeFile = BORDER_EDGE,
+		edgeSize = BORDER_EDGE_SIZE,
+		insets = {top = BORDER_INSET, left = BORDER_INSET, bottom = BORDER_INSET, right = BORDER_INSET}
 	})
-	parent.backdrop:SetPoint("TOPLEFT", point, -3 * K.NoScaleMult, 3 * K.NoScaleMult)
-	parent.backdrop:SetPoint("BOTTOMRIGHT", point, 3 * K.NoScaleMult, -3 * K.NoScaleMult)
-	parent.backdrop:SetBackdropColor(.05, .05, .05, .9)
-	parent.backdrop:SetBackdropBorderColor(0, 0, 0, 1)
+	parent.backdrop:SetPoint("TOPLEFT", point, -BORDER_INSET, BORDER_INSET)
+	parent.backdrop:SetPoint("BOTTOMRIGHT", point, BORDER_INSET, -BORDER_INSET)
+	parent.backdrop:SetBackdropColor(C.Media.Backdrop_Color[1], C.Media.Backdrop_Color[2], C.Media.Backdrop_Color[3], C.Media.Backdrop_Color[4] or 1)
+	parent.backdrop:SetBackdropBorderColor(BORDER_COLOR[1], BORDER_COLOR[2], BORDER_COLOR[3], 1)
 
 	if parent:GetFrameLevel() - 1 > 0 then
 		parent.backdrop:SetFrameLevel(parent:GetFrameLevel() - 1)
@@ -173,7 +185,23 @@ end
 local CASTBAR_TEXTURE = [=[Interface\Buttons\WHITE8x8]=]
 local CASTBAR_COLOR = { 0.75, 0.4, 0 }
 local CASTBAR_LOCKED_COLOR = { 0.4, 0.4, 0.4 }
-local CASTBAR_BORDER_COLOR = { 1, 1, 1 }
+-- FrostAtomUI castbar icon: castbarIconSize = 18, fixed (not scaled by plate
+-- size or K.NoScaleMult), anchored to the LEFT of the castbar holder with a
+-- 2px gap (ICON_GAP). CASTBAR_ICON_Y raises it (the donor centers it at 0).
+local CASTBAR_ICON_SIZE = 18
+local CASTBAR_ICON_GAP = 2
+local CASTBAR_ICON_Y = 0
+
+-- Position/size the castbar icon (stock cbicon moved like FrostAtomUI: LEFT
+-- of the castbar holder, raised CASTBAR_ICON_Y px). Called ONCE at plate skin
+-- time only — re-running it from loops/hooks makes the icon jerk when
+-- Blizzard re-lays it out.
+local function LayoutCastIcon(cb)
+	if not cb or not cb.castHolder or not cb.icon then return end
+	cb.icon:ClearAllPoints()
+	cb.icon:SetPoint("RIGHT", cb.castHolder, "LEFT", -CASTBAR_ICON_GAP, CASTBAR_ICON_Y)
+	cb.icon:SetSize(CASTBAR_ICON_SIZE, CASTBAR_ICON_SIZE)
+end
 
 local function UpdateCastTarget(bar, unit, spell)
 	local text = bar.target
@@ -607,6 +635,9 @@ local function UpdateObjects(frame)
 	frame.overlay:ClearAllPoints()
 	frame.overlay:SetAllPoints(frame.hp)
 
+	-- Keep the cast icon at its FrostAtomUI position after plate re-layouts.
+	if frame.cb then LayoutCastIcon(frame.cb) end
+
 	HideObjects(frame)
 end
 
@@ -665,8 +696,8 @@ local function SkinObjects(frame, nameFrame)
 	cb:SetStatusBarTexture(CASTBAR_TEXTURE)
 	CreateVirtualFrame(cb)
 	cb.castHolder = cb.backdrop -- preserve the bar holder before the icon creates its backdrop
-	cb.castHolder:SetBackdropColor(0, 0, 0, 0.6)
-	cb.castHolder:SetBackdropBorderColor(CASTBAR_BORDER_COLOR[1], CASTBAR_BORDER_COLOR[2], CASTBAR_BORDER_COLOR[3], 1)
+	cb.castHolder:SetBackdropColor(C.Media.Backdrop_Color[1], C.Media.Backdrop_Color[2], C.Media.Backdrop_Color[3], 0.6)
+	cb.castHolder:SetBackdropBorderColor(BORDER_COLOR[1], BORDER_COLOR[2], BORDER_COLOR[3], 1)
 
 	cb.bg = cb:CreateTexture(nil, "BORDER")
 	cb.bg:SetAllPoints(cb)
@@ -712,35 +743,39 @@ local function SkinObjects(frame, nameFrame)
 		frame.class.Glow = CreateFrame("Frame", nil, frame)
 		frame.class.Glow:SetBackdrop({
 			bgFile = C.Media.Blank,
-			edgeFile = C.Media.Glow,
-			edgeSize = 3 * K.NoScaleMult,
+			edgeFile = BORDER_EDGE,
+			edgeSize = BORDER_EDGE_SIZE,
 			insets = {
-				top = 3 * K.NoScaleMult, left = 3 * K.NoScaleMult, bottom = 3 * K.NoScaleMult, right = 3 * K.NoScaleMult
+				top = BORDER_INSET, left = BORDER_INSET, bottom = BORDER_INSET, right = BORDER_INSET
 			}
 		})
-		frame.class.Glow:SetPoint("TOPLEFT", frame.class, -3 * K.NoScaleMult, 3 * K.NoScaleMult)
-		frame.class.Glow:SetPoint("BOTTOMRIGHT", frame.class, 3 * K.NoScaleMult, -3 * K.NoScaleMult)
-		frame.class.Glow:SetBackdropColor(.05, .05, .05, .9)
-		frame.class.Glow:SetBackdropBorderColor(0, 0, 0, 1)
+		frame.class.Glow:SetPoint("TOPLEFT", frame.class, -BORDER_INSET, BORDER_INSET)
+		frame.class.Glow:SetPoint("BOTTOMRIGHT", frame.class, BORDER_INSET, -BORDER_INSET)
+		frame.class.Glow:SetBackdropColor(C.Media.Backdrop_Color[1], C.Media.Backdrop_Color[2], C.Media.Backdrop_Color[3], C.Media.Backdrop_Color[4] or 1)
+		frame.class.Glow:SetBackdropBorderColor(BORDER_COLOR[1], BORDER_COLOR[2], BORDER_COLOR[3], 1)
 		frame.class.Glow:SetScale(K.NoScaleMult)
 		frame.class.Glow:SetFrameLevel(hp:GetFrameLevel() -1 > 0 and hp:GetFrameLevel() -1 or 0)
 		frame.class.Glow:Hide()
 	end
 
-	-- Create CastBar Icon
-	cbicon:ClearAllPoints()
-	cbicon:SetPoint("TOPRIGHT", hp, "TOPLEFT", -6, 0)
-	cbicon:SetSize((C.Nameplate.Height * 2 * K.NoScaleMult) + 8, (C.Nameplate.Height * 2 * K.NoScaleMult) + 8)
+	-- CastBar Icon (stock cbicon moved like FrostAtomUI: LEFT of the castbar
+	-- holder, raised CASTBAR_ICON_Y px). Blizzard may re-lay it out on casts —
+	-- accepted.
+	cb.icon = cbicon
+	LayoutCastIcon(cb)
 	cbicon:SetTexCoord(unpack(K.TexCoords))
 	cbicon:SetDrawLayer("OVERLAY")
-	cb.icon = cbicon
 	CreateVirtualFrame(cb, cb.icon)
+	-- FrostAtomUI frames the cast icon with a subtle border only (buttonNormal
+	-- frame, transparent center) — no dark square behind the icon.
+	cb.backdrop:SetBackdropColor(0, 0, 0, 0)
 
 	cb.shield = cbshield
 	if K.NamePlateCastEnhancements then K.NamePlateCastEnhancements.Setup(cb) end
 	cb:HookScript("OnValueChanged", CastTextUpdate)
 	cb:HookScript("OnShow", function(bar)
 		bar.last = nil
+		LayoutCastIcon(bar)
 		UpdateCastSpell(bar)
 	end)
 	cb:HookScript("OnHide", ClearCastSpell)
@@ -866,11 +901,9 @@ local function ShowHealth(frame, ...)
 	if targetName and frame.hp.name:GetText() == targetName and frame:GetParent():GetAlpha() == 1 then
 		frame.hp:SetSize((C.Nameplate.Width + C.Nameplate.AdditionalWidth) * K.NoScaleMult, (C.Nameplate.Height + C.Nameplate.AdditionalHeight) * K.NoScaleMult)
 		frame.cb:SetPoint("BOTTOMLEFT", frame.hp, "BOTTOMLEFT", 0, -8-((C.Nameplate.Height + C.Nameplate.AdditionalHeight) * K.NoScaleMult))
-		frame.cb.icon:SetSize(((C.Nameplate.Height + C.Nameplate.AdditionalHeight) * 2 * K.NoScaleMult) + 8, ((C.Nameplate.Height + C.Nameplate.AdditionalHeight) * 2 * K.NoScaleMult) + 8)
 	else
 		frame.hp:SetSize(C.Nameplate.Width * K.NoScaleMult, C.Nameplate.Height * K.NoScaleMult)
 		frame.cb:SetPoint("BOTTOMLEFT", frame.hp, "BOTTOMLEFT", 0, -8-(C.Nameplate.Height * K.NoScaleMult))
-		frame.cb.icon:SetSize((C.Nameplate.Height * 2 * K.NoScaleMult) + 8, (C.Nameplate.Height * 2 * K.NoScaleMult) + 8)
 	end
 end
 

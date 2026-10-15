@@ -5,7 +5,13 @@ local Feedback = {}
 K.NamePlateCastEnhancements = Feedback
 local PULSE_PERIOD = 2
 local CASTBAR_TEXTURE = [=[Interface\Buttons\WHITE8x8]=]
-local CASTBAR_BORDER_COLOR = { 1, 1, 1 }
+-- FrostAtomUI: the castbar holder border follows Frost's theme border
+-- (default { 0.35, 0.35, 0.35 }), and turns red while the caster targets you.
+local CASTBAR_BORDER_RED = { 1, 0.2, 0.1 }
+local CASTBAR_BORDER_DEFAULT = { 0.35, 0.35, 0.35 }
+local function ThemeBorder()
+	return CASTBAR_BORDER_DEFAULT[1], CASTBAR_BORDER_DEFAULT[2], CASTBAR_BORDER_DEFAULT[3], 1
+end
 local GLOW_CORNER = [=[Interface\AddOns\]=] .. K.Directory .. [=[\Media\Textures\CastGlowCorner.tga]=]
 local IMPORTANT_COLOR = { 1, 0.85, 0.3 }
 local IMPORTANT_CASTS = {
@@ -180,10 +186,10 @@ local function CreateResult(bar)
 	result:SetFrameLevel(bar:GetFrameLevel() + 2)
 	result:SetPoint("TOPLEFT", bar, "TOPLEFT", -3, 3)
 	result:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 3, -3)
-	result:SetBackdrop({ bgFile = C.Media.Blank, edgeFile = C.Media.Glow,
-		edgeSize = 3 * K.NoScaleMult, insets = { left = 3, right = 3, top = 3, bottom = 3 } })
+	result:SetBackdrop({ bgFile = C.Media.Blank, edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+		edgeSize = 8 * K.NoScaleMult, insets = { left = 2, right = 2, top = 2, bottom = 2 } })
 	result:SetBackdropColor(0, 0, 0, 0.6)
-	result:SetBackdropBorderColor(CASTBAR_BORDER_COLOR[1], CASTBAR_BORDER_COLOR[2], CASTBAR_BORDER_COLOR[3], 1)
+	result:SetBackdropBorderColor(ThemeBorder())
 	local fill = result:CreateTexture(nil, "BORDER")
 	fill:SetAllPoints(bar)
 	fill:SetTexture(CASTBAR_TEXTURE)
@@ -235,7 +241,7 @@ local function ShowInterrupted(bar, record, text)
 	bar.activeCast = nil
 	if bar.importantGlow then bar.importantGlow:Hide() end
 	bar.targetingYou = nil
-	if bar.castHolder then bar.castHolder:SetBackdropBorderColor(CASTBAR_BORDER_COLOR[1], CASTBAR_BORDER_COLOR[2], CASTBAR_BORDER_COLOR[3], 1) end
+	if bar.castHolder then bar.castHolder:SetBackdropBorderColor(ThemeBorder()) end
 end
 
 local function Candidate(bar, guid, now)
@@ -334,8 +340,8 @@ function Feedback.Update(bar, unit, spell, texture, startTime, endTime)
 		bar.targetingYou = targetingYou
 		local holder = bar.castHolder
 		if holder then
-			if targetingYou then holder:SetBackdropBorderColor(1, 0.2, 0.1, 1)
-			else holder:SetBackdropBorderColor(CASTBAR_BORDER_COLOR[1], CASTBAR_BORDER_COLOR[2], CASTBAR_BORDER_COLOR[3], 1) end
+			if targetingYou then holder:SetBackdropBorderColor(CASTBAR_BORDER_RED[1], CASTBAR_BORDER_RED[2], CASTBAR_BORDER_RED[3], 1)
+			else holder:SetBackdropBorderColor(ThemeBorder()) end
 		end
 	end
 	local important = spell and importantCasts[spell]
@@ -358,7 +364,7 @@ function Feedback.Hide(bar)
 	end
 	bar.immunityGUID, bar.immunityNextScan, bar.castImmune = nil, nil, nil
 	bar.targetingYou = nil
-	if bar.castHolder then bar.castHolder:SetBackdropBorderColor(CASTBAR_BORDER_COLOR[1], CASTBAR_BORDER_COLOR[2], CASTBAR_BORDER_COLOR[3], 1) end
+	if bar.castHolder then bar.castHolder:SetBackdropBorderColor(ThemeBorder()) end
 	if bar.importantGlow then bar.importantGlow:Hide() end
 end
 
