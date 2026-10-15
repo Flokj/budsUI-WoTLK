@@ -75,6 +75,7 @@ ns.RegisterPage({
 		}),
 		T("TalentFrame", L_GUI_BLIZZARD_TALENTFRAME or "Talent Frame", {
 			type = "toggle",
+			reload = true,
 			desc = "Replaces the talent window: all three trees side by side with glyphs, dual spec, pet talents, talent codes.",
 		}),
 	},

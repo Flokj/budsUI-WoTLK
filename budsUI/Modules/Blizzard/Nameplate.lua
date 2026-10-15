@@ -100,8 +100,14 @@ end
 -- Read the live spell for the EXISTING Blizzard castbar. No second castbar,
 -- combat-log duration guesses or independent progress driver are introduced.
 local CAST_UNITS = { "target", "focus", "mouseover" }
+-- FrostAtomUI Identity.EVENT_UNITS: other tokens expose unreliable lock flags.
+local CAST_LOCK_UNITS = { target = true, focus = true }
 for i = 1, 4 do CAST_UNITS[#CAST_UNITS + 1] = "boss" .. i end
-for i = 1, 5 do CAST_UNITS[#CAST_UNITS + 1] = "arena" .. i end
+for i = 1, 5 do
+	CAST_UNITS[#CAST_UNITS + 1] = "arena" .. i
+	CAST_LOCK_UNITS["arena" .. i] = true
+	CAST_LOCK_UNITS["arenapet" .. i] = true
+end
 -- Match FrostAtomUI CastShared target rules (spell names are localized from IDs).
 local CAST_KINDS = {
 	control = {
@@ -237,6 +243,9 @@ local function UpdateCastSpell(bar)
 			bar.isChannel = false
 		end
 	end
+	-- Match FrostAtomUI Casts.recordUnitCast: only event-capable tokens have
+	-- a trustworthy notInterruptible flag. Aura immunity is checked separately.
+	if not CAST_LOCK_UNITS[unit] then locked = nil end
 	bar.castLocked = locked
 	if bar.icon and texture then bar.icon:SetTexture(texture) end
 	local text = C.Nameplate.CastBarName == true and spell or ""
@@ -250,7 +259,9 @@ local function UpdateCastSpell(bar)
 		return
 	end
 	local locked = bar.castLocked
-	if locked == nil then locked = bar.shield:IsShown() end
+	-- The stock shield is not a reliable lock source for non-target plates:
+	-- its texture is cleared by HideObjects, but IsShown() can stay true.
+	-- An unresolved caster must not be classified as immune from that widget.
 	-- FrostAtomUI nameplates use the same orange for casts and channels.
 	local color = locked and CASTBAR_LOCKED_COLOR or CASTBAR_COLOR
 	bar:SetStatusBarColor(color[1], color[2], color[3])

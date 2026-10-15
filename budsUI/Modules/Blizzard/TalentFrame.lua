@@ -11,10 +11,10 @@ Notes:
 	- Gated by C.Blizzard.TalentFrame (default true, needs /rl).
 	- budsUI adaptations (donor ns.* helpers are inlined):
 	  WINDOW_INSET -> { left=16, right=16, top=16, bottom=16 } (top/bottom unused by layout),
-	  SkinIconButton -> StripTextures + CreateBackdrop + TexCoord + highlight texture,
+	  SkinIconButton -> donor slot art + normal/pushed/highlight/checked textures,
 	  SetShown -> Show/Hide, Defer -> K.Defer("TalentFrame", refresh) on the shared
 	  Core/Scheduler ticker (all GLYPH_*/talent events dedupe into one next-frame refresh),
-	  CreateInset -> "panel" keeps spec/parchment art bright (no dark Transparent bg),
+	  CreateInset -> donor border-only "panel", preserving spec/parchment art,
 	  CreateLabel -> CreateFontString, CreateButton -> UIPanelButtonTemplate,
 	  FitButton -> SetWidth, CreateSideTab -> SpellBookSkillLineTabTemplate,
 	  CreateWindow -> custom frame + SetUIPanelLayout attributes,
@@ -152,26 +152,68 @@ local function setShown(region, shown)
 	if shown then region:Show() else region:Hide() end
 end
 
-local function skinIconButton(btn)
-	btn:StripTextures()
-	btn:CreateBackdrop()
-	if not btn.icon then
-		local icon = btn:CreateTexture(nil, "BORDER")
-		icon:SetAllPoints()
-		btn.icon = icon
+local SLOT_BACKGROUNDS = {
+	empty = { "Interface\\Buttons\\UI-EmptySlot-Disabled", 45 / 36, 0, -1, 0.140625, 0.84375, 0.140625, 0.84375 },
+	slot = { "Interface\\Buttons\\UI-EmptySlot", 64 / 37, 0, 0 },
+	spell = { "Interface\\Spellbook\\UI-Spellbook-SpellBackground", 64 / 37, 29 / 37, -29 / 37 },
+}
+
+local function skinIconButton(button, background)
+	local size = button:GetWidth()
+	local scale = size / 37
+
+	if background ~= false then
+		local config = SLOT_BACKGROUNDS[background or "empty"]
+		local bg = button.slotBackground or button:CreateTexture(nil, "BACKGROUND")
+		bg:SetTexture(config[1])
+		if config[5] then
+			bg:SetTexCoord(config[5], config[6], config[7], config[8])
+		else
+			bg:SetTexCoord(0, 1, 0, 1)
+		end
+		local bgSize = size * config[2]
+		bg:SetSize(bgSize, bgSize)
+		bg:ClearAllPoints()
+		if background == "spell" then
+			bg:SetPoint("TOPLEFT", -3 * scale, 3 * scale)
+		else
+			bg:SetPoint("CENTER", config[3] * scale, config[4] * scale)
+		end
+		button.slotBackground = bg
 	end
-	btn.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-	
-	-- Highlight texture for glyph pulsing (FrostAtomUI parity)
-	btn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square")
-	btn:GetHighlightTexture():SetBlendMode("ADD")
+
+	local icon = button.icon
+	if not icon then
+		icon = button:CreateTexture(nil, "BORDER")
+		icon:SetAllPoints()
+		button.icon = icon
+	end
+
+	button:SetNormalTexture("Interface\\Buttons\\UI-Quickslot2")
+	local normal = button:GetNormalTexture()
+	normal:SetSize(64 * scale, 64 * scale)
+	normal:ClearAllPoints()
+	normal:SetPoint("CENTER", 0, -scale)
+	button:SetPushedTexture("Interface\\Buttons\\UI-Quickslot-Depress")
+	button:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square")
+	button:GetHighlightTexture():SetBlendMode("ADD")
+	if button.SetCheckedTexture then
+		button:SetCheckedTexture("Interface\\Buttons\\CheckButtonHilight")
+		button:GetCheckedTexture():SetBlendMode("ADD")
+	end
+	return button
 end
 
 local function createInset(parent, style)
 	local inset = CreateFrame("Frame", nil, parent)
 	if style == "panel" then
-		-- Talent panes: no backdrop, background comes from spec-specific art textures
-		inset:SetBackdrop(nil)
+		-- Border only: preserve the bright talent/parchment artwork underneath.
+		inset:SetBackdrop({
+			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+			tile = true, tileSize = 16, edgeSize = 16,
+			insets = { left = 5, right = 5, top = 5, bottom = 5 },
+		})
+		inset:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
 	else
 		inset:SetTemplate("Transparent")
 	end
@@ -450,7 +492,7 @@ local function createTalentButton(pane, index)
 	button:SetFrameLevel(pane.body:GetFrameLevel() + 1)
 	button:SetSize(BUTTON_SIZE, BUTTON_SIZE)
 	button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-	skinIconButton(button)
+	skinIconButton(button, false)
 
 	local slot = button:CreateTexture(nil, "BACKGROUND")
 	slot:SetTexture("Interface\\Buttons\\UI-EmptySlot-White")
@@ -773,7 +815,7 @@ local function createGlyphRow(panel, socket, glyphType)
 	slot:SetSize(size, size)
 	slot:SetPoint("LEFT")
 	slot:EnableMouse(false)
-	skinIconButton(slot)
+	skinIconButton(slot, "empty")
 	button.slot = slot
 
 	local lock = slot:CreateTexture(nil, "OVERLAY")
