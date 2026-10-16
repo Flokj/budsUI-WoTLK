@@ -176,6 +176,7 @@
 	<Script file="Modules\Tooltip\PvPRating.lua"/>
 	<Script file="Modules\Tooltip\RuFix.lua"/>
 	<Script file="Modules\Tooltip\SpellID.lua"/>
+	<Script file="Modules\Tooltip\Inspect.lua"/>
 	<Script file="Modules\Tooltip\Talents.lua"/>
 	<Script file="Modules\Tooltip\Tooltip.lua"/>
 

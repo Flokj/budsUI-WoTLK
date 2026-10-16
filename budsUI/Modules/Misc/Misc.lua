@@ -325,17 +325,20 @@ for _, name in ipairs(MICRO_BUTTONS) do
 	end
 end
 
-local MICRO_SPACING = 0
+local MICRO_BUTTON_WIDTH = 28
+local MICRO_BUTTON_HEIGHT = 58
+local MICRO_SPACING = -3
+local MICRO_MENU_HEIGHT = 40
 
 local function layoutMicroMenu()
-	local width, height = 0, 0
+	local width = 0
 	for index, button in ipairs(microButtons) do
 		button:ClearAllPoints()
 		button:SetPoint("BOTTOMLEFT", microMenu, "BOTTOMLEFT", width, 0)
-		width = width + (button:GetWidth() or 28) + MICRO_SPACING
-		height = math.max(height, button:GetHeight() or 58)
+		width = width + MICRO_BUTTON_WIDTH + MICRO_SPACING
 	end
-	microMenu:SetSize(width, height)
+	-- FrostAtomUI crops the menu frame to 40px; buttons overflow it upward.
+	microMenu:SetSize(math.max(width - MICRO_SPACING, 0), MICRO_MENU_HEIGHT)
 end
 layoutMicroMenu()
 hooksecurefunc("UpdateMicroButtons", function()
@@ -424,7 +427,7 @@ moverWait:SetScript("OnUpdate", function(self)
 			{ "BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -2, 2 },
 			microMenu:GetWidth(), microMenu:GetHeight())
 		K.CreateMover(MainMenuBarBackpackButton, "BagButton", "Bag button",
-			{ "BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -288, 5 },
+			{ "BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -256, 5 },
 			BACKPACK_SIZE, BACKPACK_SIZE)
 	end
 end)

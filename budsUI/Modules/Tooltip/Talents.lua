@@ -1,170 +1,107 @@
-local K, C, L, _ = select(2, ...):unpack()
+local K, C = select(2, ...):unpack()
 if C.Tooltip.Enable ~= true or C.Tooltip.Talents ~= true then return end
 
--- Target Talents(TipTacTalents by Aezay)
--- Locals
-local _G = _G
-local ipairs = ipairs
-local CreateFrame = CreateFrame
-local GetTalentTabInfo = GetTalentTabInfo
-local isInspect = isInspect
-local GetText, GetMouseFocus, GetUnit = GetText, GetMouseFocus, GetUnit
-local UnitIsPlayer, UnitLevel, UnitIsPlayer, UnitName, UnitIsUnit, UnitGUID = UnitIsPlayer, UnitLevel, UnitIsPlayer, UnitName, UnitIsUnit, UnitGUID
-local CanInspect = CanInspect
-local GatherTalents = GatherTalents
-local InspectFrame = InspectFrame
-
-local ttt = CreateFrame("Frame", "TipTacTalents")
-local cache = {}
-local current = {}
+-- Target talent display originally based on TipTacTalents by Aezay.
+-- Talent data and tooltip presentation are separate from the inspect queue,
+-- as in FrostAtomUI. Keep budsUI's existing text format and TipTac cache API.
+local Inspect = K.Inspect
+local tooltip = GameTooltip
+local talents = CreateFrame("Frame", "TipTacTalents")
+local cache, current = {}, {}
+local CACHE_SIZE, CACHE_TIME = 25, 900
 local TALENTS_PREFIX = TALENTS..":|cffffffff "
-local CACHE_SIZE = 25	-- Change cache size here (Default 25)
+talents.cache, talents.current = cache, current
 
--- Allow these to be accessed through other addons
-ttt.cache = cache
-ttt.current = current
+local function tooltipUnit()
+	local name, unit = tooltip:GetUnit()
+	if unit then return unit end
+	local focus = GetMouseFocus()
+	unit = focus and (focus.unit or focus.GetAttribute and focus:GetAttribute("unit"))
+	if unit then return unit end
+	if name and UnitName("mouseover") == name then return "mouseover" end
+end
 
--- Gather Talents
--- Target Talents(TipTacTalents by Aezay)
-if C.Tooltip.Talents == true then
-	local gtt = GameTooltip
+local function readTalents(inspect, guid, unit, name)
+	local group = GetActiveTalentGroup(inspect)
+	local data = { guid = guid, unit = unit, name = name, time = GetTime() }
+	local best = 1
+	for tab = 1, 3 do
+		local _, _, points = GetTalentTabInfo(tab, inspect, nil, group)
+		if points == nil then return end
+		data[tab] = points
+		if points > data[best] then best = tab end
+	end
+	data.tree = GetTalentTabInfo(best, inspect, nil, group)
+	local format = TipTac_Config and TipTac_Config.talentFormat or 1
+	if data[best] == 0 then
+		data.format = L_TOOLTIP_NO_TALENT
+	elseif format == 2 then
+		data.format = data.tree
+	elseif format == 3 then
+		data.format = data[1].."/"..data[2].."/"..data[3]
+	else
+		if not data.tree then return end
+		data.format = data.tree.." ("..data[1].."/"..data[2].."/"..data[3]..")"
+	end
+	return data
+end
 
-	-- GatherTalents — parses talent data into `current`, refreshes the open
-	-- tooltip and caches the entry. No "Loading" placeholder is printed: the
-	-- line appears as soon as the inspect data lands, and cached entries are
-	-- shown instantly (FrostAtomUI behaviour — no stuck "Loading").
-	local function GatherTalents(isInspect)
-		-- Inspect functions will always use the active spec when not inspecting
-		local group = GetActiveTalentGroup(isInspect)
-		-- Get points per tree, and set "maxTree" to the tree with most points
-		local maxTree = 1
-		for i = 1, 3 do
-			_, _, current[i] = GetTalentTabInfo(i,isInspect,nil,group)
-			if (current[i] > current[maxTree]) then
-				maxTree = i
-			end
-		end
-		current.tree = GetTalentTabInfo(maxTree,isInspect,nil,group)
-		-- Customise output. Use TipTac setting if it exists, otherwise just use formatting style one.
-		local talentFormat = (TipTac_Config and TipTac_Config.talentFormat or 1)
-		if (current[maxTree] == 0) then
-			current.format = L_TOOLTIP_NO_TALENT
-		elseif (talentFormat == 1) then
-			current.format = current.tree.." ("..current[1].."/"..current[2].."/"..current[3]..")"
-		elseif (talentFormat == 2) then
-			current.format = current.tree
-		elseif (talentFormat == 3) then
-			current.format = current[1].."/"..current[2].."/"..current[3]
-		end
-		-- Set the tips line output; for inspect, only touch the tooltip while it
-		-- still shows the very unit whose data just arrived.
-		local tipUnit = gtt:GetUnit()
-		if (not isInspect) then
-			gtt:AddLine(TALENTS_PREFIX..current.format)
-		elseif (tipUnit and current.guid and UnitGUID(tipUnit) == current.guid) then
-			local replaced = false
-			for i = 2, gtt:NumLines() do
-				local line = _G["GameTooltipTextLeft"..i]
-				local text = line and line:GetText() or ""
-				if (text:match("^"..TALENTS_PREFIX)) then
-					line:SetFormattedText("%s%s",TALENTS_PREFIX,current.format)
-					replaced = true
-					break
-				end
-			end
-			if (not replaced) then
-				gtt:AddLine(TALENTS_PREFIX..current.format)
-			end
-			-- Do not call Show() if the tip is fading out, this only works with TipTac
-			if (not gtt.fadeOut) then
-				gtt:Show()
-			end
-		end
-		-- Organise Cache (GUID-first, name fallback)
-		local cacheSize = (TipTac_Config and TipTac_Config.talentCacheSize or CACHE_SIZE)
-		for i = #cache, 1, -1 do
-			if (current.guid and cache[i].guid and current.guid == cache[i].guid)
-			or (not current.guid and current.name and cache[i].name == current.name) then
-				tremove(cache,i)
-				break
-			end
-		end
-		if (#cache > cacheSize) then
-			tremove(cache,1)
-		end
-		-- Cache the new entry
-		if (cacheSize > 0) then
-			cache[#cache + 1] = CopyTable(current)
+local function findEntry(guid)
+	if not guid then return end
+	for i = 1, #cache do
+		if cache[i].guid == guid then return cache[i] end
+	end
+end
+
+local function store(data)
+	local size = TipTac_Config and TipTac_Config.talentCacheSize or CACHE_SIZE
+	size = math.max(0, math.floor(tonumber(size) or CACHE_SIZE))
+	for i = #cache, 1, -1 do
+		if cache[i].guid == data.guid then table.remove(cache, i) end
+	end
+	while #cache > 0 and #cache >= size do table.remove(cache, 1) end
+	if size > 0 then cache[#cache + 1] = data end
+end
+
+local freshData
+Inspect:RegisterTalentCallback(function(guid, unit, name)
+	local data = readTalents(true, guid, unit, name)
+	if not data then return end
+	store(data)
+	-- Rebuild only the visible tooltip for this GUID; never reopen a hidden
+	-- or fading tooltip. Cache replies even if the unit token disappeared.
+	if not tooltip:IsShown() or tooltip.fadeOut then return end
+	local tipUnit = tooltipUnit()
+	if tipUnit and UnitGUID(tipUnit) == guid then
+		freshData = data
+		tooltip:SetUnit(tipUnit)
+		freshData = nil
+	end
+end)
+
+tooltip:HookScript("OnTooltipSetUnit", function(self)
+	local unit = tooltipUnit()
+	wipe(current)
+	if not unit or not UnitIsPlayer(unit) then return end
+	local guid = UnitGUID(unit)
+	if not guid then return end
+	local level = UnitLevel(unit)
+	if level < 10 and level ~= -1 then return end
+	local data
+	if UnitIsUnit(unit, "player") then
+		data = readTalents(false, guid, unit, UnitName(unit))
+	else
+		data = freshData and freshData.guid == guid and freshData or findEntry(guid)
+		-- Cached data is usable out of range and in combat. The manager
+		-- waits for a safe send and refreshes stale data after 15 minutes.
+		if not data or not data.time or GetTime() - data.time >= CACHE_TIME then
+			Inspect:Request(unit, nil, true)
 		end
 	end
-
-	-- OnEvent: the inspect for the LAST requested unit landed. Update the open
-	-- tooltip if it still shows that unit; otherwise just cache the data — the
-	-- next hover shows it from the cache instead of a new "Loading" round.
-	ttt:SetScript("OnEvent",function(self,event)
-		self:UnregisterEvent("INSPECT_TALENT_READY")
-		local requestGuid = self.requestGuid
-		local requestName = self.requestName
-		self.requestGuid = nil
-		self.requestName = nil
-		if (not requestGuid) then
-			return
-		end
-		if (current.guid == requestGuid) then
-			GatherTalents(1)
-		else
-			-- The tooltip switched to another unit: parse into a copy keyed by
-			-- the requested unit and cache it, leaving `current` untouched.
-			local cached = current
-			current = { guid = requestGuid, name = requestName }
-			GatherTalents(1)
-			current = cached
-		end
-	end)
-
-	-- HOOK: OnTooltipSetUnit
-	gtt:HookScript("OnTooltipSetUnit",function(self,...)
-		-- Get the unit -- Check the UnitFrame unit if this tip is from a concated unit, such as "targettarget".
-		local _, unit = self:GetUnit()
-		if (not unit) then
-			local mFocus = GetMouseFocus()
-			if (mFocus) and (mFocus.unit) then
-				unit = mFocus.unit
-			end
-		end
-		-- Only for players over level 9 -- Ignore PvP flagged people, unless they are friendly
-		if (UnitIsPlayer(unit)) and (UnitLevel(unit) > 9 or UnitLevel(unit) == -1) and (CanInspect(unit)) then
-			wipe(current)
-			current.name = UnitName(unit)
-			current.guid = UnitGUID(unit)
-			current.unit = unit
-			-- Player
-			if (UnitIsUnit(unit,"player")) then
-				GatherTalents()
-				-- Others
-			else
-				local allowInspect = (not InspectFrame or not InspectFrame:IsShown()) and (not Examiner or not Examiner:IsShown())
-				for _, entry in ipairs(cache) do
-					if (current.guid and entry.guid and current.guid == entry.guid)
-					or (not current.guid and current.name and entry.name == current.name) then
-						self:AddLine(TALENTS_PREFIX..entry.format)
-						current.tree = entry.tree
-						current.format = entry.format
-						current[1], current[2], current[3] = entry[1], entry[2], entry[3]
-						current.guid = entry.guid
-						return
-					end
-				end
-				if (allowInspect) then
-					-- No cache entry: request the inspect and remember WHO we
-					-- asked for, so the data is cached even if the tooltip moves
-					-- on before INSPECT_TALENT_READY fires.
-					ttt.requestGuid = current.guid
-					ttt.requestName = current.name
-					ttt:RegisterEvent("INSPECT_TALENT_READY")
-					NotifyInspect(unit)
-				end
-			end
-		end
-	end)
-end
+	current.guid, current.name, current.unit = guid, UnitName(unit), unit
+	if data and data.format then
+		current.tree, current.format = data.tree, data.format
+		current[1], current[2], current[3] = data[1], data[2], data[3]
+		self:AddLine(TALENTS_PREFIX..data.format)
+	end
+end)

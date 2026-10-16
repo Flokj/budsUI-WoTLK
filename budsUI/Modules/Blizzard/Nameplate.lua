@@ -319,10 +319,10 @@ local function HealthBar_ValueChanged(frame)
 	frame.hp:SetValue(frame.healthOriginal:GetValue())
 end
 
--- Enemy BG healers: the same scoreboard rule as FrostAtomUI, without the
--- temporary show-on-every-plate preview. Arena talent detection is not enabled.
+-- BG healers on both teams: healing classes with healing > 2x damage.
+-- Keep the original role icon and the existing budsUI icon size/position.
 local healerNames = {}
-local inBattleground = true
+local inBattleground = false
 local healerPollElapsed = 0
 local HEALER_CLASSES = { PRIEST = true, PALADIN = true, SHAMAN = true, DRUID = true }
 local HEALER_ICON_SIZE = 24
@@ -357,11 +357,10 @@ end
 local function UpdateHealers()
 	wipe(healerNames)
 	if inBattleground then
-		local ownFaction = UnitFactionGroup("player") == "Horde" and 0 or 1
 		for i = 1, GetNumBattlefieldScores() do
-			local name, _, _, _, _, faction, _, _, _, class, damage, healing = GetBattlefieldScore(i)
-			if name and faction ~= ownFaction and HEALER_CLASSES[class]
-				and type(damage) == "number" and type(healing) == "number" and healing > damage * 2 then
+			local name, _, _, _, _, _, _, _, _, classToken, damage, healing = GetBattlefieldScore(i)
+			if name and HEALER_CLASSES[classToken] and type(damage) == "number"
+				and type(healing) == "number" and healing > damage * 2 then
 				healerNames[match(name, "^[^%-]+") or name] = true
 			end
 		end
@@ -1347,11 +1346,12 @@ local UPDATE_INTERVAL = 0.2
 
 -- Core right here, scan for any possible nameplate frames that are Children of the WorldFrame
 NamePlates:SetScript("OnUpdate", K.SafeOnUpdate(function(self, elapsed)
-	-- FrostAtomUI polls the BG scoreboard every ten seconds for healer marks.
+	-- Poll cached scores too, like stamp; do not rely only on score events.
 	if inBattleground then
 		healerPollElapsed = healerPollElapsed + elapsed
 		if healerPollElapsed >= 10 then
 			healerPollElapsed = 0
+			UpdateHealers()
 			RequestBattlefieldScoreData()
 		end
 	end
