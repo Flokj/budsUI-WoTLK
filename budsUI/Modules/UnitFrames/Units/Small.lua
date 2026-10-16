@@ -32,6 +32,10 @@ Module.Styles.Small = function(self, unit)
 		-- Level after the name, like Kkthnx (its default has no portrait).
 		Build.Name(self, 12, true)
 		Build.HealthText(self, 11)
+	elseif unit == "targettarget" then
+		-- Name is pre-cut to a fixed character count (buds:nameclip, no
+		-- ellipsis) so the tiny bar never gets the client's width-clip "...".
+		Build.NameCenter(self, 13, 0, "[buds:namecolor][buds:nameclip]")
 	else
 		Build.NameCenter(self, 13)
 	end

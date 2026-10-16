@@ -112,6 +112,19 @@ oUF.Tags.Methods["buds:name"] = function(unit)
 end
 oUF.Tags.Events["buds:name"] = "UNIT_NAME_UPDATE"
 
+-- Hard clip for the tiny target-of-target bar, FrostAtomUI style: the name
+-- is cut to a fixed character count with no ellipsis, so the client's
+-- automatic "..." never shows (it only appears when the text is long enough
+-- to be clipped by the width — here it already fits).
+oUF.Tags.Methods["buds:nameclip"] = function(unit)
+	local name = UnitName(unit)
+	if not name then
+		return ""
+	end
+	return K.ShortenString(name, 6)
+end
+oUF.Tags.Events["buds:nameclip"] = "UNIT_NAME_UPDATE"
+
 -- Short name for the narrow raid frames: the first few characters, no ellipsis,
 -- so a whole group reads cleanly at a glance.
 oUF.Tags.Methods["buds:nameshort"] = function(unit)
