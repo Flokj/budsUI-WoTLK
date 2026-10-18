@@ -38,38 +38,63 @@ UIErrorsFrame:SetFrameLevel(0)
 RaidWarningFrame:ClearAllPoints()
 RaidWarningFrame:SetPoint("TOP", UIParent, 0, -130)
 
-WorldStateAlwaysUpFrame:ClearAllPoints()
-WorldStateAlwaysUpFrame:SetPoint("TOP", UIParent, 0, -10)
+-- WorldStateAlwaysUpFrame (BG/arena timer bar), FrostAtomUI-style layout:
+-- all re-pointing/sizing runs synchronously inside a SECURE hook on the
+-- Blizzard update. Deferring the same work to an addon-owned timer
+-- (K.Delay = addon execution) taints the world-state path and every
+-- protected RaidGroupButton call during combat gets blocked afterwards
+-- ("Interface actions failed because of this AddOn" counter).
+-- The bar itself is anchored through a mover (saved via /moveui).
+local WORLD_STATE_WIDTH = 160
+local WORLD_STATE_ROW = 16
+local WORLD_STATE_ICON = 14
+local max = math.max
 
-hooksecurefunc("WorldStateAlwaysUpFrame_Update", function()
-	-- Delay execution to ensure all child frames are created by Blizzard/DBM first
-	K.Delay(0.1, function()
-		for i = 1, NUM_ALWAYS_UP_UI_FRAMES do
-			local frame = _G["AlwaysUpFrame"..i]
-			if not frame then return end
-
-			local text = _G["AlwaysUpFrame"..i.."Text"]
-			if text then
-				text:ClearAllPoints()
-				text:SetPoint("CENTER", frame, "CENTER", 0, 0)
-				text:SetJustifyH("CENTER")
-				text:SetFont(C.Media.Font, C.Media.Font_Size)
+local function layoutWorldState()
+	local shown = 0
+	local previous
+	for i = 1, NUM_ALWAYS_UP_UI_FRAMES or 0 do
+		local name = "AlwaysUpFrame" .. i
+		local frame = _G[name]
+		if frame and frame:IsShown() then
+			local icon, text = _G[name .. "Icon"], _G[name .. "Text"]
+			local dynamic, flash = _G[name .. "DynamicIconButton"], _G[name .. "Flash"]
+			local texture = icon:GetTexture()
+			if texture and texture:find("UI%-PVP") then
+				icon:SetTexCoord(0, 0.625, 0, 0.625)
+			else
+				icon:SetTexCoord(0, 1, 0, 1)
 			end
-
-			local icon = _G["AlwaysUpFrame"..i.."Icon"]
-			if icon then
-				icon:ClearAllPoints()
-				icon:SetPoint("RIGHT", text, "LEFT", 12, -8)
+			icon:SetSize(WORLD_STATE_ICON, WORLD_STATE_ICON)
+			icon:ClearAllPoints()
+			icon:SetPoint("LEFT")
+			text:SetFont(C.Media.Font, C.Media.Font_Size)
+			text:ClearAllPoints()
+			text:SetPoint("LEFT", icon, "RIGHT", 3, 0)
+			dynamic:SetSize(WORLD_STATE_ROW, WORLD_STATE_ROW)
+			dynamic:ClearAllPoints()
+			dynamic:SetPoint("LEFT", text, "RIGHT", 2, 0)
+			local dynamicIcon = _G[name .. "DynamicIconButtonIcon"]
+			if dynamicIcon then dynamicIcon:SetSize(WORLD_STATE_ROW, WORLD_STATE_ROW) end
+			local flashTexture = _G[name .. "FlashTexture"]
+			if flashTexture then flashTexture:SetSize(WORLD_STATE_ROW, WORLD_STATE_ROW) end
+			flash:SetSize(WORLD_STATE_ROW, WORLD_STATE_ROW)
+			frame:SetSize(WORLD_STATE_ICON + 3 + text:GetStringWidth(), WORLD_STATE_ROW)
+			frame:ClearAllPoints()
+			if previous then
+				frame:SetPoint("TOPLEFT", previous, "BOTTOMLEFT")
+			else
+				frame:SetPoint("TOPLEFT", WorldStateAlwaysUpFrame)
 			end
-
-			local dynamicIcon = _G["AlwaysUpFrame"..i.."DynamicIconButton"]
-			if dynamicIcon then
-				dynamicIcon:ClearAllPoints()
-				dynamicIcon:SetPoint("LEFT", text, "RIGHT", 0, 0)
-			end
+			previous = frame
+			shown = shown + 1
 		end
-	end)
-end)
+	end
+	WorldStateAlwaysUpFrame:SetSize(WORLD_STATE_WIDTH, max(shown, 1) * WORLD_STATE_ROW)
+end
+
+hooksecurefunc("WorldStateAlwaysUpFrame_Update", layoutWorldState)
+layoutWorldState()
 
 -- Vehicle Indicator
 local VehicleAnchor = CreateFrame("Frame", "VehicleAnchor", UIParent)
@@ -429,5 +454,8 @@ moverWait:SetScript("OnUpdate", function(self)
 		K.CreateMover(MainMenuBarBackpackButton, "BagButton", "Bag button",
 			{ "BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -256, 5 },
 			BACKPACK_SIZE, BACKPACK_SIZE)
+		K.CreateMover(WorldStateAlwaysUpFrame, "WorldState", "World state",
+			{ "TOP", UIParent, "TOP", 0, -30 },
+			WORLD_STATE_WIDTH, WORLD_STATE_ROW * 2)
 	end
 end)

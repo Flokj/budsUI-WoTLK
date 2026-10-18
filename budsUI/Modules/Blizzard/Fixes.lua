@@ -5,8 +5,6 @@ local collectgarbage = collectgarbage
 local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
 
-INTERFACE_ACTION_BLOCKED = ""
-
 -- Suppress Ascension's CallBoardUI debug print: "no cost data for CategoryType: nil Category: nil"
 -- This is a debug message printed by the game's own CallBoard Lua when no category is selected.
 do

@@ -109,7 +109,6 @@
 	<Script file="Modules\Blizzard\EnhanceTrainers.lua"/>
 	<Script file="Modules\Blizzard\Errors.lua"/>
 	<Script file="Modules\Blizzard\ExpBar.lua"/>
-	<Script file="Modules\Blizzard\Fixes.lua"/>
 	<Script file="Modules\Blizzard\Fonts.lua"/>
 	<Script file="Modules\Blizzard\ItemQuality.lua"/>
 	<Script file="Modules\Blizzard\NamePlateAuras.lua"/>
