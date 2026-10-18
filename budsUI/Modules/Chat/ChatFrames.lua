@@ -14,6 +14,7 @@ local sub = string.sub
 local GetID, GetName = GetID, GetName
 local CreateFrame = CreateFrame
 local hooksecurefunc = hooksecurefunc
+local InCombatLockdown = InCombatLockdown
 local dateFunc = BetterDate or date
 local origs = {}
 
@@ -334,11 +335,37 @@ UIChat:SetScript("OnEvent", function(self, event, addon)
 	if event == "ADDON_LOADED" then
 		if addon == "Blizzard_CombatLog" then
 			self:UnregisterEvent("ADDON_LOADED")
-			SetupChat(self)
+			if InCombatLockdown() then
+				-- ChatFrame styling calls secure dock/frame APIs (SetSize,
+				-- FCF_SetChatWindowFontSize, FCF_DockFrame); running them during
+				-- combat lockdown taints the chat dock, so every in-combat
+				-- FCFDock_UpdateTabs -> ChatFrame1:Show() gets blocked.
+				self.__pendingStyle = true
+				self:RegisterEvent("PLAYER_REGEN_ENABLED")
+			else
+				SetupChat(self)
+			end
 		end
 	elseif event == "PLAYER_ENTERING_WORLD" then
 		self:UnregisterEvent("PLAYER_ENTERING_WORLD")
-		SetupChatPosAndFont(self)
+		if InCombatLockdown() then
+			self.__pendingFonts = true
+			self:RegisterEvent("PLAYER_REGEN_ENABLED")
+		else
+			SetupChatPosAndFont(self)
+		end
+	elseif event == "PLAYER_REGEN_ENABLED" then
+		if self.__pendingStyle then
+			self.__pendingStyle = nil
+			SetupChat(self)
+		end
+		if self.__pendingFonts then
+			self.__pendingFonts = nil
+			SetupChatPosAndFont(self)
+		end
+		if not self.__pendingStyle and not self.__pendingFonts then
+			self:UnregisterEvent("PLAYER_REGEN_ENABLED")
+		end
 	end
 end)
 
