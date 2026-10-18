@@ -5,6 +5,7 @@ local unpack = unpack
 local PlaySound, PlaySoundFile = PlaySound, PlaySoundFile
 local hooksecurefunc = hooksecurefunc
 local CreateFrame = CreateFrame
+local InCombatLockdown = InCombatLockdown
 local MAX_BATTLEFIELD_QUEUES = MAX_BATTLEFIELD_QUEUES
 local GetBattlefieldStatus = GetBattlefieldStatus
 local UnitIsAFK = UnitIsAFK
@@ -38,13 +39,14 @@ UIErrorsFrame:SetFrameLevel(0)
 RaidWarningFrame:ClearAllPoints()
 RaidWarningFrame:SetPoint("TOP", UIParent, 0, -130)
 
--- WorldStateAlwaysUpFrame (BG/arena timer bar), FrostAtomUI-style layout:
--- all re-pointing/sizing runs synchronously inside a SECURE hook on the
--- Blizzard update. Deferring the same work to an addon-owned timer
--- (K.Delay = addon execution) taints the world-state path and every
--- protected RaidGroupButton call during combat gets blocked afterwards
--- ("Interface actions failed because of this AddOn" counter).
--- The bar itself is anchored through a mover (saved via /moveui).
+-- WorldStateAlwaysUpFrame (BG/arena timer bar), FrostAtomUI-style layout.
+-- All re-pointing/sizing of the rows runs synchronously inside a SECURE hook
+-- on the Blizzard update, never from an addon-owned timer or at load: an
+-- addon-context touch of this frame during combat lockdown taints it, its
+-- OnUpdate then writes the tainted WORLDSTATEALWAYSUPFRAME_TIMESINCESTART
+-- global and every in-combat RaidGroupFrame_Update (protected
+-- RaidGroupButton1..40 SetPoint/Show/Hide) is blocked and counted.
+-- The bar's own mover is therefore created out of combat only (see bottom).
 local WORLD_STATE_WIDTH = 160
 local WORLD_STATE_ROW = 16
 local WORLD_STATE_ICON = 14
@@ -68,17 +70,14 @@ local function layoutWorldState()
 			icon:SetSize(WORLD_STATE_ICON, WORLD_STATE_ICON)
 			icon:ClearAllPoints()
 			icon:SetPoint("LEFT")
-			text:SetFont(C.Media.Font, C.Media.Font_Size)
 			text:ClearAllPoints()
 			text:SetPoint("LEFT", icon, "RIGHT", 3, 0)
 			dynamic:SetSize(WORLD_STATE_ROW, WORLD_STATE_ROW)
 			dynamic:ClearAllPoints()
 			dynamic:SetPoint("LEFT", text, "RIGHT", 2, 0)
-			local dynamicIcon = _G[name .. "DynamicIconButtonIcon"]
-			if dynamicIcon then dynamicIcon:SetSize(WORLD_STATE_ROW, WORLD_STATE_ROW) end
-			local flashTexture = _G[name .. "FlashTexture"]
-			if flashTexture then flashTexture:SetSize(WORLD_STATE_ROW, WORLD_STATE_ROW) end
+			_G[name .. "DynamicIconButtonIcon"]:SetSize(WORLD_STATE_ROW, WORLD_STATE_ROW)
 			flash:SetSize(WORLD_STATE_ROW, WORLD_STATE_ROW)
+			_G[name .. "FlashTexture"]:SetSize(WORLD_STATE_ROW, WORLD_STATE_ROW)
 			frame:SetSize(WORLD_STATE_ICON + 3 + text:GetStringWidth(), WORLD_STATE_ROW)
 			frame:ClearAllPoints()
 			if previous then
@@ -94,7 +93,16 @@ local function layoutWorldState()
 end
 
 hooksecurefunc("WorldStateAlwaysUpFrame_Update", layoutWorldState)
-layoutWorldState()
+
+-- FrostAtom runs layoutWorldState() once at load; same, but only out of
+-- combat (an addon-context touch of the bar while locked down is the taint
+-- seed; the secure hook covers rendering meanwhile).
+local wsInit = CreateFrame("Frame")
+wsInit:SetScript("OnUpdate", function(self)
+	if InCombatLockdown() then return end
+	self:SetScript("OnUpdate", nil)
+	layoutWorldState()
+end)
 
 -- Vehicle Indicator
 local VehicleAnchor = CreateFrame("Frame", "VehicleAnchor", UIParent)
@@ -444,18 +452,23 @@ for _, frame in ipairs(fadeFrames) do
 end
 
 -- Movers (deferred: Core/Movers.lua loads after the modules).
+-- WorldState's mover is created out of combat only (InCombatLockdown + regen
+-- poll): anchoring the bar from addon code during combat lockdown taints it
+-- and spawns the blocked-action cascade (see the world-state block above).
+-- K.CreateMover is idempotent, so re-creating micro/bag movers per tick until
+-- then is harmless.
 local moverWait = CreateFrame("Frame")
-moverWait:SetScript("OnUpdate", function(self)
-	if K.CreateMover then
-		self:SetScript("OnUpdate", nil)
-		K.CreateMover(microMenu, "MicroMenu", "Micro menu",
-			{ "BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -2, 2 },
-			microMenu:GetWidth(), microMenu:GetHeight())
-		K.CreateMover(MainMenuBarBackpackButton, "BagButton", "Bag button",
-			{ "BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -256, 5 },
-			BACKPACK_SIZE, BACKPACK_SIZE)
-		K.CreateMover(WorldStateAlwaysUpFrame, "WorldState", "World state",
-			{ "TOP", UIParent, "TOP", 0, -30 },
-			WORLD_STATE_WIDTH, WORLD_STATE_ROW * 2)
-	end
+moverWait:SetScript("OnUpdate", function()
+	if not K.CreateMover then return end
+	K.CreateMover(microMenu, "MicroMenu", "Micro menu",
+		{ "BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -2, 2 },
+		microMenu:GetWidth(), microMenu:GetHeight())
+	K.CreateMover(MainMenuBarBackpackButton, "BagButton", "Bag button",
+		{ "BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -256, 5 },
+		BACKPACK_SIZE, BACKPACK_SIZE)
+	if InCombatLockdown() then return end
+	K.CreateMover(WorldStateAlwaysUpFrame, "WorldState", "World state",
+		{ "TOP", UIParent, "TOP", 0, -30 },
+		WORLD_STATE_WIDTH, WORLD_STATE_ROW * 2)
+	moverWait:SetScript("OnUpdate", nil)
 end)
