@@ -51,14 +51,16 @@ if C.ActionBar.SplitBars ~= true then
 	SplitBarRight:Hide()
 end
 
---	Pet bar anchor
+--	Pet bar anchor (sized to the on-screen footprint: pet buttons render
+--	with C.ActionBar.PetBarScale, so the anchor and its mover must match it)
 local petbaranchor = CreateFrame("Frame", "PetActionBarAnchor", UIParent)
+local PetBarScale = C.ActionBar.PetBarScale or 0.7
 if C.ActionBar.PetBarHorizontal == true then
-	petbaranchor:CreatePanel("Invisible", (C.ActionBar.ButtonSize * 10) + (C.ActionBar.ButtonSpace * 9), (C.ActionBar.ButtonSize + C.ActionBar.ButtonSpace), unpack(C.Position.PetHorizontal))
+	petbaranchor:CreatePanel("Invisible", ((C.ActionBar.ButtonSize * 10) + (C.ActionBar.ButtonSpace * 9)) * PetBarScale, (C.ActionBar.ButtonSize + C.ActionBar.ButtonSpace) * PetBarScale, unpack(C.Position.PetHorizontal))
 elseif C.ActionBar.RightBars > 0 then
-	petbaranchor:CreatePanel("Invisible", C.ActionBar.ButtonSize + 3, (C.ActionBar.ButtonSize * 10) + (C.ActionBar.ButtonSpace * 9), "RIGHT", rightbaranchor, "LEFT", 0, 0)
+	petbaranchor:CreatePanel("Invisible", (C.ActionBar.ButtonSize + 3) * PetBarScale, ((C.ActionBar.ButtonSize * 10) + (C.ActionBar.ButtonSpace * 9)) * PetBarScale, "RIGHT", rightbaranchor, "LEFT", 0, 0)
 else
-	petbaranchor:CreatePanel("Invisible", (C.ActionBar.ButtonSize + C.ActionBar.ButtonSpace), (C.ActionBar.ButtonSize * 10) + (C.ActionBar.ButtonSpace * 9), unpack(C.Position.RightBars))
+	petbaranchor:CreatePanel("Invisible", (C.ActionBar.ButtonSize + C.ActionBar.ButtonSpace) * PetBarScale, ((C.ActionBar.ButtonSize * 10) + (C.ActionBar.ButtonSpace * 9)) * PetBarScale, unpack(C.Position.RightBars))
 end
 petbaranchor:SetFrameStrata("LOW")
 RegisterStateDriver(petbaranchor, "visibility", "[pet,novehicleui,nobonusbar:5] show; hide")

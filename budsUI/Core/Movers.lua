@@ -526,6 +526,26 @@ end
 -- Factory
 -- ---------------------------------------------------------------------------
 
+-- Frames queued for anchoring onto their mover while in combat lockdown:
+-- a combat-time SetPoint on a protected frame is blocked outright, and on
+-- sensitive Blizzard frames it taints them (the world-state taint seed),
+-- so the re-anchor waits for PLAYER_REGEN_ENABLED. Unlike FrostAtom's
+-- Register() we do NOT gate on IsProtected() - the seed frame there was
+-- NOT protected, only combat-sensitive.
+local pendingAnchors = {}
+local anchorFlusher = CreateFrame("Frame")
+anchorFlusher:SetScript("OnEvent", function(self)
+	for frame, anchor in pairs(pendingAnchors) do
+		local mover = frame.budsUI_Mover
+		if mover then
+			frame:ClearAllPoints()
+			frame:SetPoint(anchor, mover, anchor, 0, 0)
+		end
+		pendingAnchors[frame] = nil
+	end
+	self:UnregisterEvent("PLAYER_REGEN_ENABLED")
+end)
+
 local function CaptureDefault(frame)
 	local ap, parent, rp, x, y = frame:GetPoint(1)
 	if ap then
@@ -601,12 +621,20 @@ function K.CreateMover(frame, key, label, defaultPoint, width, height, attachPoi
 
 	RestorePosition(mover)
 
-	frame:ClearAllPoints()
-	frame:SetPoint(attachPoint or "TOPLEFT", mover, attachPoint or "TOPLEFT", 0, 0)
-
 	movers[key] = mover
 	moverOrder[#moverOrder + 1] = mover
 	frame.budsUI_Mover = mover
+
+	-- Anchor the frame onto its mover, deferred out of combat lockdown
+	-- (see pendingAnchors above).
+	local anchor = attachPoint or "TOPLEFT"
+	if InCombatLockdown() then
+		pendingAnchors[frame] = anchor
+		anchorFlusher:RegisterEvent("PLAYER_REGEN_ENABLED")
+	else
+		frame:ClearAllPoints()
+		frame:SetPoint(anchor, mover, anchor, 0, 0)
+	end
 
 	return mover
 end

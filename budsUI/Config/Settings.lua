@@ -34,6 +34,7 @@ C["ActionBar"] = {
 	["OutOfRange"] = {204/255, 26/255, 26/255},
 	["PetBarHide"] = false,
 	["PetBarHorizontal"] = true,
+	["PetBarScale"] = 0.7,
 	["RightBars"] = 2,
 	["Selfcast"] = false,
 	["ShowGrid"] = true,

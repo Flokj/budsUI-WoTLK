@@ -60,6 +60,12 @@ ns.RegisterPage({
 		T("PetBarHorizontal", L_GUI_ACTIONBAR_PETBAR_HORIZONTAL or "Horizontal pet bar", {
 			type = "toggle", enabledBy = "ActionBar.PetBarHide",
 		}),
+		T("PetBarScale", L_GUI_ACTIONBAR_PETBAR_SCALE or "Pet bar scale", {
+			type = "number", min = 0.5, max = 1.5, step = 0.05, percent = true,
+			reload = true,
+			desc = "Scale of the pet action bar. The mover frame matches it.",
+			disabled = function() return ns.Get({ group = "ActionBar", option = "PetBarHide" }) end,
+		}),
 		T("StanceBarHide", L_GUI_ACTIONBAR_STANCEBAR_HIDE or "Hide stance bar", {
 			type = "toggle",
 		}),
