@@ -22,6 +22,8 @@ local function BuildMirrored(self, cfg, nameSize, style)
 	Build.HealthText(self, nameSize + 2)
 	Build.PowerText(self, 12)
 
+	Build.SpecIcon(self)
+
 	Build.Portrait(self, "right")
 	Build.PortraitLevel(self)
 

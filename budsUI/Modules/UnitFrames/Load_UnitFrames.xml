@@ -18,6 +18,7 @@
 	<Script file="Elements\Indicators.lua" />
 	<Script file="Elements\Castbar.lua" />
 	<Script file="Elements\AuraWatch.lua" />
+	<Script file="Elements\SpecIcon.lua" />
 
 	<!-- Unit styles fill Module.Styles, so they load after the builders. -->
 	<Script file="Units\Player.lua" />

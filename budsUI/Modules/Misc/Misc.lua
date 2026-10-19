@@ -53,6 +53,15 @@ local WORLD_STATE_ICON = 14
 local max = math.max
 
 local function layoutWorldState()
+	-- Combat gate (deliberate deviation from the FrostAtom donor): the
+	-- secure-hook callback still executes as addon code, and touching the
+	-- frame family (SetSize/SetPoint/ClearAllPoints) during combat lockdown
+	-- taints WorldStateAlwaysUpFrame; its OnUpdate then writes the tainted
+	-- WORLDSTATEALWAYSUPFRAME_TIMESINCESTART global (taint-6 seed) and every
+	-- in-combat RaidGroupFrame_Update pass gets blocked. Blizzard re-anchors
+	-- the rows to stock positions on every update anyway, so this layout
+	-- simply re-applies on the first out-of-combat update.
+	if InCombatLockdown() then return end
 	local shown = 0
 	local previous
 	for i = 1, NUM_ALWAYS_UP_UI_FRAMES or 0 do

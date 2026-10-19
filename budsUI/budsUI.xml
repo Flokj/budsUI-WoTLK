@@ -119,6 +119,7 @@
 	<Script file="Modules\Blizzard\SpellBook.lua"/>
 	<Script file="Data\GlyphIcons.lua"/>
 	<Script file="Data\TempEnchantSpells.lua"/>
+	<Script file="Data\SpecHints.lua"/>
 	<Script file="Modules\Blizzard\TalentFrame.lua"/>
 
 	<Script file="Modules\Buffs\AuraSource.lua"/>

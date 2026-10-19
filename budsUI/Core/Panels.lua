@@ -22,20 +22,33 @@ else
 end
 bottombaranchor:SetFrameStrata("LOW")
 
---	Right bars anchor
-local rightbaranchor = CreateFrame("Frame", "RightActionBarAnchor", UIParent)
-rightbaranchor:CreatePanel("Invisible", 1, 1, unpack(C.Position.RightBars))
-rightbaranchor:SetHeight((C.ActionBar.ButtonSize * 12) + (C.ActionBar.ButtonSpace * 11))
-if C.ActionBar.RightBars == 1 then
-	rightbaranchor:SetWidth(C.ActionBar.ButtonSize)
-elseif C.ActionBar.RightBars == 2 then
-	rightbaranchor:SetWidth((C.ActionBar.ButtonSize * 2) + C.ActionBar.ButtonSpace)
-elseif C.ActionBar.RightBars == 3 then
-	rightbaranchor:SetWidth((C.ActionBar.ButtonSize * 3) + (C.ActionBar.ButtonSpace * 2))
-else
-	rightbaranchor:Hide()
+--	Right bars anchor. Only created when something actually attaches to it:
+--	3rd right bar (Bar5 fills it at RightBars = 3), vertical pet bar
+--	(PetBarHorizontal ~= true with right bars present), vertical stance bar
+--	(ShiftHolder anchors to it BY NAME below - must exist whenever stance is
+--	vertical), or toggle mode (Toggle.lua builds its whole layout on it).
+-- Otherwise it was a dead empty frame with a mover box: Bar4 floats on its
+-- own next to the main bar and never used this anchor at all.
+local rightbaranchor
+local needRightAnchor = (C.ActionBar.RightBars or 0) >= 3
+	or C.ActionBar.ToggleMode == true
+	or (C.ActionBar.PetBarHorizontal ~= true and (C.ActionBar.RightBars or 0) > 0)
+	or C.ActionBar.StanceBarHorizontal ~= true
+if needRightAnchor then
+	rightbaranchor = CreateFrame("Frame", "RightActionBarAnchor", UIParent)
+	rightbaranchor:CreatePanel("Invisible", 1, 1, unpack(C.Position.RightBars))
+	rightbaranchor:SetHeight((C.ActionBar.ButtonSize * 12) + (C.ActionBar.ButtonSpace * 11))
+	if C.ActionBar.RightBars == 1 then
+		rightbaranchor:SetWidth(C.ActionBar.ButtonSize)
+	elseif C.ActionBar.RightBars == 2 then
+		rightbaranchor:SetWidth((C.ActionBar.ButtonSize * 2) + C.ActionBar.ButtonSpace)
+	elseif C.ActionBar.RightBars == 3 then
+		rightbaranchor:SetWidth((C.ActionBar.ButtonSize * 3) + (C.ActionBar.ButtonSpace * 2))
+	else
+		rightbaranchor:Hide()
+	end
+	rightbaranchor:SetFrameStrata("LOW")
 end
-rightbaranchor:SetFrameStrata("LOW")
 
 --	Split bar anchor
 local SplitBarLeft = CreateFrame("Frame", "SplitBarLeft", UIParent)
@@ -57,7 +70,7 @@ local petbaranchor = CreateFrame("Frame", "PetActionBarAnchor", UIParent)
 local PetBarScale = C.ActionBar.PetBarScale or 0.7
 if C.ActionBar.PetBarHorizontal == true then
 	petbaranchor:CreatePanel("Invisible", ((C.ActionBar.ButtonSize * 10) + (C.ActionBar.ButtonSpace * 9)) * PetBarScale, (C.ActionBar.ButtonSize + C.ActionBar.ButtonSpace) * PetBarScale, unpack(C.Position.PetHorizontal))
-elseif C.ActionBar.RightBars > 0 then
+elseif rightbaranchor then
 	petbaranchor:CreatePanel("Invisible", (C.ActionBar.ButtonSize + 3) * PetBarScale, ((C.ActionBar.ButtonSize * 10) + (C.ActionBar.ButtonSpace * 9)) * PetBarScale, "RIGHT", rightbaranchor, "LEFT", 0, 0)
 else
 	petbaranchor:CreatePanel("Invisible", (C.ActionBar.ButtonSize + C.ActionBar.ButtonSpace) * PetBarScale, ((C.ActionBar.ButtonSize * 10) + (C.ActionBar.ButtonSpace * 9)) * PetBarScale, unpack(C.Position.RightBars))

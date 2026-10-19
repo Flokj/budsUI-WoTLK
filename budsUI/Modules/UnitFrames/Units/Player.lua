@@ -25,6 +25,8 @@ Module.Styles.Player = function(self)
 	Build.HealthText(self, 14)
 	Build.PowerText(self, 12)
 
+	Build.SpecIcon(self)
+
 	Build.Portrait(self, "left")
 	Build.PortraitLevel(self)
 

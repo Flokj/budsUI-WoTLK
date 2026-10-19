@@ -91,6 +91,15 @@ local schema = {
 		enabledBy = "Unitframe.Portrait",
 		desc = "3D, 2D or Class.",
 	}),
+	T("SpecIcon", L_GUI_UNITFRAME_SPEC_ICON or "Spec icons", {
+		type = "toggle", reload = true,
+		desc = "Spec icon in the top-right corner of the player/target/focus health bars. Other players' specs come from the inspect queue.",
+	}),
+	T("SpecIconSize", L_GUI_UNITFRAME_SPEC_ICON_SIZE or "Spec icon size", {
+		type = "number", min = 10, max = 32, step = 1, reload = true,
+		enabledBy = "Unitframe.SpecIcon",
+		desc = "Size of the spec icon in pixels.",
+	}),
 	T("HealthPrediction", L_GUI_UNITFRAME_HEALTH_PREDICTION or "Incoming heals", {
 		type = "toggle",
 		desc = "Show incoming heals on health bars.",
