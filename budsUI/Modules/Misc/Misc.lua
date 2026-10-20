@@ -49,7 +49,7 @@ RaidWarningFrame:SetPoint("TOP", UIParent, 0, -130)
 -- The bar's own mover is therefore created out of combat only (see bottom).
 local WORLD_STATE_WIDTH = 160
 local WORLD_STATE_ROW = 16
-local WORLD_STATE_ICON = 14
+local WORLD_STATE_ICON = 22
 local max = math.max
 
 local function layoutWorldState()

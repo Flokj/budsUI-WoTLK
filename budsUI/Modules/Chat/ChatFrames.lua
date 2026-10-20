@@ -295,11 +295,10 @@ local function SetupChatPosAndFont(self)
 		local id = chat:GetID()
 		local _, fontSize = FCF_GetChatWindowInfo(id)
 
-		if fontSize < 12 then
-			FCF_SetChatWindowFontSize(nil, chat, 12)
-		else
-			FCF_SetChatWindowFontSize(nil, chat, fontSize)
-		end
+		-- No FCF_SetChatWindowFontSize here: it is a secure chat-dock API,
+		-- and calling it from addon context at login taints ChatFrame1 / the
+		-- dock for the whole session (FrostAtomUI never calls it at init).
+		-- The SetFont below styles the same frames via the frame API only.
 
 		if C.Chat.Outline == true then
 			chat:SetFont(C.Media.Font, fontSize, C.Media.Font_Style)
