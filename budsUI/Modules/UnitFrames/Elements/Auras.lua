@@ -19,6 +19,7 @@ local Module = Engine.UnitFrames
 local Build = Module.Build
 
 local max = math.max
+local ceil = math.ceil
 local DebuffTypeColor = DebuffTypeColor
 local UnitIsUnit = UnitIsUnit
 
@@ -74,36 +75,43 @@ local function IsMine(caster)
 	return caster and (UnitIsUnit(caster, "player") or UnitIsUnit(caster, "vehicle") or UnitIsUnit(caster, "pet"))
 end
 
--- Debuffs sit above the frame and grow right then up, buffs below growing
--- right then down, filling the frame width.
+-- Debuffs and buffs layout. When DebuffsBelow is enabled (FrostAtomUI style),
+-- both sit under the frame and stack dynamically. Otherwise debuffs sit above
+-- the frame and buffs below.
 function Build.Auras(self, cfg)
 	local db = C.Unitframe.Auras
 	local width = cfg.Width or 220
 	local perRow = max(1, db.PerRow or 7)
 	local spacing = db.Spacing or 6
 	local size = max(8, (width - (perRow - 1) * spacing) / perRow)
-	-- oUF derives its column count from the container width, so the panel
-	-- must span a full row or every icon lands on its own line. No floor()
-	-- on the icon size: any truncation would pile up at the row's free end
-	-- and the row would stop aligning with the frame edge.
 	local rowWidth = width
+
+	local debuffsBelow = (cfg.DebuffsBelow ~= nil and cfg.DebuffsBelow) or (db.DebuffsBelow == true)
+	local auraOrder = db.AuraOrder or "debuffs"
 
 	if cfg.Debuffs then
 		local debuffs = CreateFrame("Frame", nil, self)
-		-- Sit above the name gradient (the stack-up anchor) rather than the
-		-- frame's top, so the debuffs clear the name cleanly.
-		local anchorTo = self.__stackUp or self
-		debuffs:SetPoint("BOTTOMRIGHT", anchorTo, "TOPRIGHT", 0, Module.GAP)
 		debuffs:SetSize(rowWidth, size)
 		debuffs.size = size
 		debuffs.spacing = spacing
 		debuffs.num = db.NumDebuffs or 8
 		debuffs.onlyShowPlayer = db.OnlyPlayerDebuffs or false
-		debuffs.initialAnchor = "BOTTOMRIGHT"
-		debuffs["growth-x"] = "LEFT"
-		debuffs["growth-y"] = "UP"
+		debuffs.sortOwnFirst = db.SortOwnFirst ~= false
 		debuffs.PostCreateIcon = StyleButton
 		debuffs.PostUpdateIcon = PostUpdateIcon
+
+		if debuffsBelow then
+			debuffs:SetPoint("TOPRIGHT", self, "BOTTOMRIGHT", 0, -Module.GAP)
+			debuffs.initialAnchor = "TOPRIGHT"
+			debuffs["growth-x"] = "LEFT"
+			debuffs["growth-y"] = "DOWN"
+		else
+			local anchorTo = self.__stackUp or self
+			debuffs:SetPoint("BOTTOMRIGHT", anchorTo, "TOPRIGHT", 0, Module.GAP)
+			debuffs.initialAnchor = "BOTTOMRIGHT"
+			debuffs["growth-x"] = "LEFT"
+			debuffs["growth-y"] = "UP"
+		end
 		self.Debuffs = debuffs
 	end
 
@@ -117,9 +125,42 @@ function Build.Auras(self, cfg)
 		buffs.initialAnchor = "TOPRIGHT"
 		buffs["growth-x"] = "LEFT"
 		buffs["growth-y"] = "DOWN"
+		buffs.sortOwnFirst = db.SortOwnFirst ~= false
 		buffs.PostCreateIcon = StyleButton
 		buffs.PostUpdateIcon = PostUpdateIcon
 		self.Buffs = buffs
+	end
+
+	if debuffsBelow and cfg.Debuffs and cfg.Buffs then
+		if auraOrder == "buffs" then
+			self.Buffs.PostUpdate = function(element)
+				local debuffs = self.Debuffs
+				if not debuffs then return end
+				local visible = element.visibleBuffs or 0
+				local rows = ceil(visible / perRow)
+				debuffs:ClearAllPoints()
+				if rows > 0 then
+					local offset = -Module.GAP - rows * (size + spacing)
+					debuffs:SetPoint("TOPRIGHT", self, "BOTTOMRIGHT", 0, offset)
+				else
+					debuffs:SetPoint("TOPRIGHT", self, "BOTTOMRIGHT", 0, -Module.GAP)
+				end
+			end
+		else
+			self.Debuffs.PostUpdate = function(element)
+				local buffs = self.Buffs
+				if not buffs then return end
+				local visible = element.visibleDebuffs or 0
+				local rows = ceil(visible / perRow)
+				buffs:ClearAllPoints()
+				if rows > 0 then
+					local offset = -Module.GAP - rows * (size + spacing)
+					buffs:SetPoint("TOPRIGHT", self, "BOTTOMRIGHT", 0, offset)
+				else
+					buffs:SetPoint("TOPRIGHT", self, "BOTTOMRIGHT", 0, -Module.GAP)
+				end
+			end
+		end
 	end
 end
 

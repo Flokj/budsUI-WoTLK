@@ -18,6 +18,7 @@ C["Position"] = {
 	["PlayerBuffs"] = {"TOPRIGHT", "Minimap", "TOPLEFT", -26, 2},
 	["PowerBar"] = {"BOTTOM", "ActionBarAnchor", "TOP", 0, 130},
 	["PulseCooldown"] = {"CENTER", "UIParent", "CENTER", 0, 0},
+	["PlayerProcICD"] = {"BOTTOM", "UIParent", "BOTTOM", 0, 192},
 	["Quest"] = {"TOPRIGHT", "UIParent", -80, -345},
 	["RightBars"] = {"BOTTOMRIGHT", "UIParent", "BOTTOMRIGHT", -5, 330},
 	["StanceBar"] = {"BOTTOMLEFT", "MultiBarRightButton12", "TOPLEFT", 24, 6},

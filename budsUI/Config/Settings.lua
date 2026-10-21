@@ -205,6 +205,32 @@ C["Misc"] = {
 	["CombatAlertLeaveColor"] = { 0.3, 1, 0.3 },
 	["MicroMenuFade"] = false,
 }
+-- Internal Cooldowns Options
+C["InternalCooldowns"] = {
+	["Enable"] = true,
+	["Player"] = true,
+	["PlayerDetached"] = true,
+	["PlayerSize"] = 26,
+	["Target"] = true,
+	["Focus"] = true,
+	["HideReady"] = false,
+	["UnknownTrinkets"] = true,
+	["ActiveColor"] = { 0.2, 1, 0.2 },
+	["Size"] = 22,
+	["Spacing"] = 2,
+	["TargetOffsetX"] = 0,
+	["TargetOffsetY"] = 4,
+	["Slots"] = {
+		["trinket"] = true,
+		["ring"] = false,
+		["weapon"] = false,
+		["armor"] = false,
+		["enchant"] = false,
+		["gem"] = false,
+		["set"] = false,
+		["talent"] = false,
+	},
+}
 -- Nameplate Options
 C["Nameplate"] = {
 	["AdditionalHeight"] = 0,
@@ -380,6 +406,9 @@ C["Unitframe"] = {
 		["NumDebuffs"] = 6,
 		["Spacing"] = 6,
 		["OnlyPlayerDebuffs"] = false,
+		["DebuffsBelow"] = true,
+		["AuraOrder"] = "debuffs",
+		["SortOwnFirst"] = true,
 	},
 
 	["ClassPower"] = {

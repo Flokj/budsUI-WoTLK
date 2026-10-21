@@ -1,0 +1,782 @@
+local Engine = select(2, ...)
+local K, C = Engine:unpack()
+
+local UnitGUID = UnitGUID
+local UnitBuff = UnitBuff
+local GetInventoryItemID = GetInventoryItemID
+local GetInventoryItemLink = GetInventoryItemLink
+local GetItemInfo = GetItemInfo
+local GetItemIcon = GetItemIcon
+local GetSpellInfo = GetSpellInfo
+local GetTime = GetTime
+local IsInInstance = IsInInstance
+local time = time
+local band = bit.band
+local pairs, tonumber, sort, wipe, tremove = pairs, tonumber, table.sort, wipe, table.remove
+local select = select
+
+local MIN_COOLDOWN = 10
+local LAST_SLOT = 18
+local TRINKET_SLOTS = { [13] = true, [14] = true }
+local MAX_TRINKETS = 2
+local MEMORY_TIME = 30 * 86400
+local MAX_REMEMBERED = 1000
+local COMBATLOG_OBJECT_TYPE_PLAYER = 0x400
+local QUESTION_MARK = "Interface\\Icons\\INV_Misc_QuestionMark"
+local KIND_ORDER = { i = 1, e = 2, g = 3, s = 4 }
+local KIND_CATEGORIES = { e = "enchant", g = "gem" }
+local SLOT_CATEGORIES = {
+	[11] = "ring",
+	[12] = "ring",
+	[13] = "trinket",
+	[14] = "trinket",
+	[16] = "weapon",
+	[17] = "weapon",
+	[18] = "weapon",
+}
+local EQUIP_CATEGORIES = {
+	INVTYPE_TRINKET = "trinket",
+	INVTYPE_FINGER = "ring",
+	INVTYPE_WEAPON = "weapon",
+	INVTYPE_2HWEAPON = "weapon",
+	INVTYPE_WEAPONMAINHAND = "weapon",
+	INVTYPE_WEAPONOFFHAND = "weapon",
+	INVTYPE_SHIELD = "weapon",
+	INVTYPE_HOLDABLE = "weapon",
+	INVTYPE_RANGED = "weapon",
+	INVTYPE_RANGEDRIGHT = "weapon",
+	INVTYPE_THROWN = "weapon",
+	INVTYPE_RELIC = "weapon",
+}
+
+local EVENT_TYPES = {
+	SPELL_AURA_APPLIED = { buff = true, stack = true, debuff = true },
+	SPELL_AURA_REFRESH = { buff = true, debuff = true },
+	SPELL_AURA_APPLIED_DOSE = { stack = true },
+	SPELL_DAMAGE = { damage = true },
+	SPELL_MISSED = { damage = true },
+	SPELL_HEAL = { heal = true },
+	SPELL_ENERGIZE = { energize = true },
+	SPELL_EXTRA_ATTACKS = { extra = true },
+	SPELL_SUMMON = { summon = true },
+}
+local AURA_EVENTS = { buff = true, stack = true }
+local MAX_AURAS = 40
+
+local LOOKUP_UNITS = { "player", "target", "focus", "mouseover", "targettarget", "focustarget" }
+for i = 1, 4 do
+	LOOKUP_UNITS[#LOOKUP_UNITS + 1] = "party" .. i
+	LOOKUP_UNITS[#LOOKUP_UNITS + 1] = "party" .. i .. "target"
+	LOOKUP_UNITS[#LOOKUP_UNITS + 1] = "partypet" .. i
+end
+for i = 1, 5 do
+	LOOKUP_UNITS[#LOOKUP_UNITS + 1] = "arena" .. i
+	LOOKUP_UNITS[#LOOKUP_UNITS + 1] = "arenapet" .. i
+end
+for i = 1, 40 do
+	LOOKUP_UNITS[#LOOKUP_UNITS + 1] = "raid" .. i
+end
+
+local function UnitByGUID(guid)
+	if not guid then return end
+	for i = 1, #LOOKUP_UNITS do
+		local unit = LOOKUP_UNITS[i]
+		if UnitGUID(unit) == guid then
+			return unit
+		end
+	end
+end
+
+local function SpellTexture(spellId)
+	return select(3, GetSpellInfo(spellId))
+end
+
+local ICD = {}
+K.InternalCooldowns = ICD
+ICD.UNKNOWN = "?"
+
+local callbacks = {}
+function ICD:RegisterCallback(fn)
+	callbacks[#callbacks + 1] = fn
+end
+
+local function FireUpdate(guid)
+	for i = 1, #callbacks do
+		callbacks[i](guid)
+	end
+end
+
+local sources = {}
+local procs = {}
+
+local function addSource(keys, kind, id, cd, spell)
+	if not id or cd < MIN_COOLDOWN then
+		return
+	end
+	local key = kind .. id
+	local source = sources[key]
+	if not source then
+		source = { key = key, kind = kind, id = id, cd = cd, spell = spell, spells = {} }
+		if kind == "s" then
+			source.category = K.ProcData[spell].talent and "talent" or "set"
+		else
+			source.category = KIND_CATEGORIES[kind]
+		end
+		sources[key] = source
+	elseif cd > source.cd then
+		source.cd = cd
+	end
+	source.spells[spell] = true
+	keys[#keys + 1] = key
+end
+
+local function sharesProc(a, b)
+	local other = sources[b].spells
+	for spell in pairs(sources[a].spells) do
+		if other[spell] then
+			return true
+		end
+	end
+	return false
+end
+
+local function isGearKind(key)
+	return sources[key].kind ~= "s"
+end
+
+local function bySourcePriority(a, b)
+	local sa, sb = sources[a], sources[b]
+	if sa.kind ~= sb.kind then
+		return KIND_ORDER[sa.kind] < KIND_ORDER[sb.kind]
+	end
+	if sa.cd ~= sb.cd then
+		return sa.cd > sb.cd
+	end
+	return sa.id > sb.id
+end
+
+for spell, entry in pairs(K.ProcData) do
+	local keys = {}
+	if entry.items then
+		for item, cd in pairs(entry.items) do
+			addSource(keys, "i", item, cd, spell)
+		end
+	end
+	local cd = entry.cd or 0
+	addSource(keys, "e", entry.enchant, cd, spell)
+	addSource(keys, "g", entry.gem, cd, spell)
+	if entry.talent or entry.sets then
+		addSource(keys, "s", spell, cd, spell)
+	end
+	if #keys > 0 then
+		sort(keys, bySourcePriority)
+		procs[spell] = {
+			event = entry.event,
+			keys = keys,
+			aura = AURA_EVENTS[entry.event],
+			duration = entry.duration,
+		}
+	end
+end
+
+local gear = {}
+local learned = {}
+local starts = {}
+local auras = {}
+local memory = {}
+local playerGUID, testKeys
+
+local function itemCategory(source)
+	if not source.category then
+		local _, _, _, _, _, _, _, _, equipLoc = GetItemInfo(source.id)
+		if not equipLoc then
+			return nil
+		end
+		source.category = EQUIP_CATEGORIES[equipLoc] or "armor"
+	end
+	return source.category
+end
+
+local function isTrinket(key)
+	local source = sources[key]
+	if not source or source.kind ~= "i" then
+		return false
+	end
+	local category = itemCategory(source)
+	return category == nil or category == "trinket"
+end
+
+local function addGear(found, kind, id, slot)
+	id = tonumber(id)
+	if id and id > 0 then
+		local key = kind .. id
+		if sources[key] and not found[key] then
+			found[key] = slot
+		end
+	end
+end
+
+local function readGear(unit)
+	local found, any = {}, false
+	for slot = 1, LAST_SLOT do
+		local link = GetInventoryItemLink(unit, slot)
+		local item, enchant, gem1, gem2, gem3
+		if link then
+			item, enchant, gem1, gem2, gem3 = link:match("item:(%d+):(%d*):(%d*):(%d*):(%d*)")
+		else
+			item = GetInventoryItemID(unit, slot)
+		end
+		if item then
+			any = true
+			addGear(found, "i", item, slot)
+			addGear(found, "e", enchant, slot)
+			addGear(found, "g", gem1, slot)
+			addGear(found, "g", gem2, slot)
+			addGear(found, "g", gem3, slot)
+		end
+	end
+	return any and found or nil
+end
+
+local function sameGear(a, b)
+	if not a then
+		return false
+	end
+	for key, slot in pairs(a) do
+		if b[key] ~= slot then
+			return false
+		end
+	end
+	for key in pairs(b) do
+		if not a[key] then
+			return false
+		end
+	end
+	return true
+end
+
+local rememberedCount = 0
+
+local function forgetOldest()
+	local oldest, oldestSeen
+	for guid, record in pairs(memory) do
+		if not oldestSeen or record.seen < oldestSeen then
+			oldest, oldestSeen = guid, record.seen
+		end
+	end
+	if oldest then
+		memory[oldest] = nil
+		rememberedCount = rememberedCount - 1
+	end
+end
+
+local function remember(guid, list)
+	if guid == playerGUID then
+		return
+	end
+	local known = memory[guid] ~= nil
+	if #list == 0 then
+		if known then
+			memory[guid] = nil
+			rememberedCount = rememberedCount - 1
+		end
+		return
+	end
+	if not known then
+		if rememberedCount >= MAX_REMEMBERED then
+			forgetOldest()
+		end
+		rememberedCount = rememberedCount + 1
+	end
+	memory[guid] = { seen = time(), keys = list }
+end
+
+local function moveTimer(guid, from, to)
+	local timers = starts[guid]
+	if not (timers and timers[from]) or timers[to] then
+		return
+	end
+	timers[to], timers[from] = timers[from], nil
+	local list = auras[guid]
+	if list and list[from] then
+		list[to], list[from] = list[from], nil
+	end
+end
+
+local function trustGear(guid, found, migrate)
+	local old = learned[guid]
+	local list = {}
+	for key in pairs(found) do
+		list[#list + 1] = key
+	end
+	for i = 1, old and #old or 0 do
+		local key = old[i]
+		if not isGearKind(key) then
+			list[#list + 1] = key
+		elseif migrate and not found[key] then
+			for owned in pairs(found) do
+				if sharesProc(key, owned) then
+					moveTimer(guid, key, owned)
+					break
+				end
+			end
+		end
+	end
+	learned[guid] = list
+	remember(guid, list)
+end
+
+local function setGear(guid, found, changedSlot)
+	local old = gear[guid]
+	if not changedSlot and sameGear(old, found) then
+		return
+	end
+	local timers = starts[guid]
+	if changedSlot and timers then
+		for key in pairs(timers) do
+			if (old and old[key] == changedSlot) or found[key] == changedSlot then
+				timers[key] = nil
+			end
+		end
+	end
+	gear[guid] = found
+	trustGear(guid, found, not changedSlot)
+	FireUpdate(guid)
+end
+
+local function isLearned(list, key)
+	for i = 1, list and #list or 0 do
+		if list[i] == key then
+			return true
+		end
+	end
+	return false
+end
+
+local function learn(guid, key)
+	local list = learned[guid]
+	if not list then
+		list = {}
+		learned[guid] = list
+	end
+	if isLearned(list, key) then
+		return
+	end
+	for i = #list, 1, -1 do
+		if sharesProc(list[i], key) then
+			tremove(list, i)
+		end
+	end
+	if isTrinket(key) then
+		local count, oldest = 0, nil
+		for i = 1, #list do
+			if isTrinket(list[i]) then
+				count = count + 1
+				oldest = oldest or i
+			end
+		end
+		if count >= MAX_TRINKETS then
+			tremove(list, oldest)
+		end
+	end
+	list[#list + 1] = key
+	remember(guid, list)
+end
+
+local function isTrusted(owned, known, key)
+	if owned and owned[key] then
+		return true
+	end
+	return isLearned(known, key) and not (owned and isGearKind(key))
+end
+
+local function pickSource(guid, keys, now)
+	local owned = gear[guid]
+	local known = learned[guid]
+	local timers = starts[guid]
+	local busy = false
+	for i = 1, #keys do
+		local key = keys[i]
+		if isTrusted(owned, known, key) then
+			local start = timers and timers[key]
+			if not start or now - start >= sources[key].cd then
+				return key
+			end
+			busy = true
+		end
+	end
+	if busy then
+		return
+	end
+	if owned then
+		for i = 1, #keys do
+			if not isGearKind(keys[i]) then
+				return keys[i]
+			end
+		end
+	end
+	return keys[1]
+end
+
+local function refreshGear(guid)
+	local unit = UnitByGUID(guid)
+	if unit and K.Inspect and K.Inspect.Request then
+		K.Inspect:Request(unit, nil, true)
+	end
+end
+
+local function auraTiming(destGUID, spellId, proc, now)
+	local unit = destGUID and UnitByGUID(destGUID)
+	if unit then
+		for i = 1, MAX_AURAS do
+			local name, _, _, _, _, duration, expires, _, _, _, id = UnitBuff(unit, i)
+			if not name then
+				break
+			end
+			if id == spellId and duration and duration > 0 then
+				return expires - duration, duration
+			end
+		end
+	end
+	return now, proc.duration
+end
+
+local function findAura(guid, spellId)
+	local list = auras[guid]
+	if list then
+		for key, aura in pairs(list) do
+			if aura.spell == spellId then
+				return key, aura
+			end
+		end
+	end
+end
+
+local function setAura(guid, key, spellId, destGUID, proc, now)
+	local list = auras[guid]
+	if not list then
+		list = {}
+		auras[guid] = list
+	end
+	local aura = list[key] or {}
+	aura.spell = spellId
+	aura.start, aura.duration = auraTiming(destGUID, spellId, proc, now)
+	list[key] = aura
+end
+
+local function onAuraRemoved(guid, spellId)
+	local key = findAura(guid, spellId)
+	if key then
+		auras[guid][key] = nil
+		FireUpdate(guid)
+	end
+end
+
+local function onCombatLogEvent(...)
+	local timestamp, event, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10 = ...
+	local sourceGUID, sourceFlags, destGUID, spellId
+	if type(arg3) == "boolean" then
+		sourceGUID = arg4
+		sourceFlags = arg6
+		destGUID = arg7
+		spellId = arg10
+	else
+		sourceGUID = arg3
+		sourceFlags = arg5
+		destGUID = arg6
+		spellId = arg9
+	end
+
+	local proc = procs[spellId]
+	if not proc or not sourceGUID then
+		return
+	end
+	if event == "SPELL_AURA_REMOVED" then
+		if proc.aura then
+			onAuraRemoved(sourceGUID, spellId)
+		end
+		return
+	end
+	local types = EVENT_TYPES[event]
+	if not types or not types[proc.event] or band(sourceFlags or 0, COMBATLOG_OBJECT_TYPE_PLAYER) == 0 then
+		return
+	end
+	local now = GetTime()
+	local key = pickSource(sourceGUID, proc.keys, now)
+	if not key then
+		local activeKey = proc.aura and findAura(sourceGUID, spellId)
+		if activeKey then
+			setAura(sourceGUID, activeKey, spellId, destGUID, proc, now)
+			FireUpdate(sourceGUID)
+		end
+		return
+	end
+	local timers = starts[sourceGUID]
+	if not timers then
+		timers = {}
+		starts[sourceGUID] = timers
+	end
+	timers[key] = now
+	if proc.aura then
+		setAura(sourceGUID, key, spellId, destGUID, proc, now)
+	end
+	local owned = gear[sourceGUID]
+	if not (owned and owned[key]) then
+		if owned and isGearKind(key) and sourceGUID ~= playerGUID then
+			gear[sourceGUID] = nil
+			refreshGear(sourceGUID)
+		end
+		learn(sourceGUID, key)
+	end
+	FireUpdate(sourceGUID)
+end
+
+local function readPlayer(changedSlot)
+	playerGUID = UnitGUID("player")
+	local found = playerGUID and readGear("player")
+	if found then
+		setGear(playerGUID, found, changedSlot)
+	end
+end
+
+local sortOwned
+
+local function slotRank(slot)
+	return TRINKET_SLOTS[slot] and slot - LAST_SLOT or slot
+end
+
+local function byGearSlot(a, b)
+	local ra, rb = slotRank(sortOwned[a]), slotRank(sortOwned[b])
+	if ra ~= rb then
+		return ra < rb
+	end
+	return KIND_ORDER[sources[a].kind] < KIND_ORDER[sources[b].kind]
+end
+
+local function isListed(list, key)
+	for i = 1, #list do
+		if sources[list[i]] and sharesProc(list[i], key) then
+			return true
+		end
+	end
+	return false
+end
+
+local function isShownLearned(owned, list, key)
+	return not (owned and isGearKind(key)) and not isListed(list, key)
+end
+
+function ICD:Collect(guid, list, unknownTrinkets)
+	wipe(list)
+	if not guid then
+		return list
+	end
+	local owned = gear[guid]
+	if owned then
+		for key in pairs(owned) do
+			list[#list + 1] = key
+		end
+		sortOwned = owned
+		sort(list, byGearSlot)
+		sortOwned = nil
+		for i = #list, 2, -1 do
+			for j = 1, i - 1 do
+				if sharesProc(list[i], list[j]) then
+					tremove(list, i)
+					break
+				end
+			end
+		end
+	end
+	local known = learned[guid]
+	local trinkets = 0
+	for i = 1, known and #known or 0 do
+		local key = known[i]
+		if isTrinket(key) and isShownLearned(owned, list, key) then
+			list[#list + 1] = key
+			trinkets = trinkets + 1
+		end
+	end
+	if unknownTrinkets and not owned then
+		for _ = trinkets + 1, MAX_TRINKETS do
+			list[#list + 1] = self.UNKNOWN
+		end
+	end
+	for i = 1, known and #known or 0 do
+		local key = known[i]
+		if not isTrinket(key) and isShownLearned(owned, list, key) then
+			list[#list + 1] = key
+		end
+	end
+	return list
+end
+
+function ICD:GetSource(key)
+	return sources[key]
+end
+
+function ICD:GetCategory(guid, key)
+	local source = sources[key]
+	if not source then
+		return "trinket"
+	end
+	if source.kind ~= "i" then
+		return source.category
+	end
+	local owned = guid and gear[guid]
+	local slot = owned and owned[key]
+	if slot then
+		return SLOT_CATEGORIES[slot] or "armor"
+	end
+	return itemCategory(source)
+end
+
+function ICD:GetTexture(key)
+	local source = sources[key]
+	if not source then
+		return QUESTION_MARK
+	end
+	if source.kind == "i" then
+		return GetItemIcon(source.id) or SpellTexture(source.spell) or QUESTION_MARK
+	end
+	return SpellTexture(source.spell) or QUESTION_MARK
+end
+
+function ICD:GetCooldown(guid, key)
+	local timers = guid and starts[guid]
+	local start = timers and timers[key]
+	local source = sources[key]
+	if start and source and start + source.cd > GetTime() then
+		return start, source.cd
+	end
+end
+
+function ICD:GetAura(guid, key)
+	local list = guid and auras[guid]
+	local aura = list and list[key]
+	if not aura then
+		return
+	end
+	local limit = aura.duration or sources[key].cd
+	if aura.start + limit > GetTime() then
+		return aura.start, aura.duration
+	end
+	list[key] = nil
+end
+
+function ICD:GetTestKeys()
+	if not testKeys then
+		testKeys = {}
+		for key in pairs(sources) do
+			testKeys[#testKeys + 1] = key
+		end
+		sort(testKeys)
+	end
+	return testKeys
+end
+
+local function onGearReady(guid, unit)
+	local found = readGear(unit)
+	if found then
+		setGear(guid, found)
+	end
+end
+
+local function onEquipmentChanged(_, slot)
+	readPlayer(slot)
+end
+
+local function onInventoryChanged(_, unit)
+	if unit == "player" then
+		readPlayer()
+	end
+end
+
+local function onEnteringWorld()
+	local _, instanceType = IsInInstance()
+	if instanceType == "arena" then
+		wipe(starts)
+		wipe(auras)
+		FireUpdate()
+	end
+	readPlayer()
+end
+
+local function loadMemory()
+	if type(budsUIData) ~= "table" then
+		budsUIData = {}
+	end
+	if type(budsUIData.ProcSources) ~= "table" then
+		budsUIData.ProcSources = {}
+	end
+	local store = budsUIData.ProcSources
+	memory = store
+	rememberedCount = 0
+	local now = time()
+	for guid, record in pairs(store) do
+		local keys = type(record) == "table" and record.keys
+		if not keys or not record.seen or now - record.seen > MEMORY_TIME then
+			store[guid] = nil
+		else
+			for i = #keys, 1, -1 do
+				if not sources[keys[i]] then
+					tremove(keys, i)
+				end
+			end
+			for i = #keys, 1, -1 do
+				for j = i + 1, #keys do
+					if sharesProc(keys[i], keys[j]) then
+						tremove(keys, i)
+						break
+					end
+				end
+			end
+			if #keys == 0 then
+				store[guid] = nil
+			else
+				learned[guid] = keys
+				rememberedCount = rememberedCount + 1
+			end
+		end
+	end
+	if rememberedCount > MAX_REMEMBERED then
+		local guids = {}
+		for guid in pairs(store) do
+			guids[#guids + 1] = guid
+		end
+		sort(guids, function(a, b)
+			return store[a].seen > store[b].seen
+		end)
+		for k = MAX_REMEMBERED + 1, #guids do
+			store[guids[k]] = nil
+		end
+		rememberedCount = MAX_REMEMBERED
+	end
+end
+
+local driver = CreateFrame("Frame")
+driver:RegisterEvent("PLAYER_LOGIN")
+driver:RegisterEvent("PLAYER_ENTERING_WORLD")
+driver:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+driver:RegisterEvent("UNIT_INVENTORY_CHANGED")
+driver:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+
+driver:SetScript("OnEvent", function(self, event, ...)
+	if not C.InternalCooldowns or C.InternalCooldowns.Enable ~= true then
+		return
+	end
+	if event == "COMBAT_LOG_EVENT_UNFILTERED" then
+		onCombatLogEvent(...)
+	elseif event == "PLAYER_ENTERING_WORLD" then
+		onEnteringWorld()
+	elseif event == "PLAYER_EQUIPMENT_CHANGED" then
+		onEquipmentChanged(...)
+	elseif event == "UNIT_INVENTORY_CHANGED" then
+		onInventoryChanged(...)
+	elseif event == "PLAYER_LOGIN" then
+		loadMemory()
+		if K.Inspect and K.Inspect.RegisterGearCallback then
+			K.Inspect:RegisterGearCallback(onGearReady)
+		end
+	end
+end)

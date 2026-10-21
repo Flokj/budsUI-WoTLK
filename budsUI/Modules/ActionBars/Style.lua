@@ -95,6 +95,9 @@ local function StyleNormalButton(self)
 end
 
 local function StyleSmallButton(normal, button, icon, name, pet)
+	if InCombatLockdown() then return end
+	if not button then return end
+
 	local flash = _G[name.."Flash"]
 	button:SetNormalTexture("")
 	button.SetNormalTexture = K.Noop

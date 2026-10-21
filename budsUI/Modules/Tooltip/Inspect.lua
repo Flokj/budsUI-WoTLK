@@ -1,8 +1,8 @@
 local K, C = select(2, ...):unpack()
-if C.Tooltip.Enable ~= true or C.Tooltip.Talents ~= true then return end
+if (C.Tooltip.Enable ~= true or C.Tooltip.Talents ~= true) and (not C.InternalCooldowns or C.InternalCooldowns.Enable ~= true) then return end
 
 -- FrostAtomUI's serialized inspect queue, adapted to budsUI's engine.
--- Only talent replies are published here; gear/honor consumers are not ported.
+-- Publishes talent and gear callbacks.
 local TICK = 0.1
 local SEND_INTERVAL = 1.5
 local URGENT_DELAY = 0.2
@@ -26,6 +26,8 @@ local Inspect = {}
 K.Inspect = Inspect
 local pending, retries, inspected = {}, {}, {}
 local callbacks = {}
+local gearCallbacks = {}
+local gearGuid, gearUnit, gearTries, gearAt
 local request
 local urgentGuid, urgentTime
 local lastSend, manualTime = -SEND_INTERVAL, -MANUAL_BACKOFF
@@ -34,6 +36,10 @@ queue:Hide()
 
 function Inspect:RegisterTalentCallback(callback)
 	callbacks[#callbacks + 1] = callback
+end
+
+function Inspect:RegisterGearCallback(callback)
+	gearCallbacks[#gearCallbacks + 1] = callback
 end
 
 function Inspect:UnitByGUID(guid, hint)
@@ -115,6 +121,34 @@ local function send(now)
 	end
 end
 
+local function isGearComplete(unit)
+	for slot = 1, 18 do
+		if GetInventoryItemID(unit, slot) and not GetInventoryItemLink(unit, slot) then
+			return false
+		end
+	end
+	return true
+end
+
+local function checkGear(now)
+	local unit = Inspect:UnitByGUID(gearGuid, gearUnit)
+	if not unit then
+		gearGuid = nil
+		return
+	end
+	gearUnit = unit
+	if gearTries < 10 and not isGearComplete(unit) then
+		gearTries = gearTries + 1
+		gearAt = now + 0.3
+		return
+	end
+	local guid = gearGuid
+	gearGuid = nil
+	for i = 1, #gearCallbacks do
+		gearCallbacks[i](guid, unit)
+	end
+end
+
 queue:SetScript("OnUpdate", function(self, elapsed)
 	self.elapsed = (self.elapsed or 0) + elapsed
 	if self.elapsed < TICK then return end
@@ -125,9 +159,12 @@ queue:SetScript("OnUpdate", function(self, elapsed)
 		request = nil
 		fail(expired.guid, expired.unit)
 	end
+	if gearGuid and now >= gearAt then
+		checkGear(now)
+	end
 	-- 3.3.5 drops replies for targets superseded by another NotifyInspect.
-	if not request then send(now) end
-	if not request and not urgentGuid and not next(pending) then self:Hide() end
+	if not request and not gearGuid then send(now) end
+	if not request and not gearGuid and not urgentGuid and not next(pending) then self:Hide() end
 end)
 
 hooksecurefunc("NotifyInspect", function(unit)
@@ -151,7 +188,7 @@ queue:SetScript("OnEvent", function(_, event)
 	if event == "PLAYER_ENTERING_WORLD" then
 		wipe(pending)
 		wipe(retries)
-		request, urgentGuid = nil, nil
+		request, urgentGuid, gearGuid = nil, nil, nil
 		queue:Hide()
 		return
 	end
@@ -167,5 +204,14 @@ queue:SetScript("OnEvent", function(_, event)
 	if urgentGuid == ready.guid then urgentGuid = nil end
 	inspected[ready.guid] = GetTime()
 	local unit = Inspect:UnitByGUID(ready.guid, ready.unit)
-	for i = 1, #callbacks do callbacks[i](ready.guid, unit, ready.name) end
+	if unit then
+		for i = 1, #callbacks do callbacks[i](ready.guid, unit, ready.name) end
+	end
+	if #gearCallbacks > 0 and ready.guid then
+		gearGuid = ready.guid
+		gearUnit = ready.unit
+		gearTries = 0
+		gearAt = GetTime() + 0.1
+		queue:Show()
+	end
 end)

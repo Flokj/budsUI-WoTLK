@@ -12,7 +12,7 @@ local ALLOWED_GROUPS = {
 	["ActionBar"] = true, ["Announcements"] = true, ["Aura"] = true,
 	["Automation"] = true, ["Bag"] = true, ["Blizzard"] = true,
 	["Chat"] = true, ["Cooldown"] = true, ["Error"] = true,
-	["Filger"] = true, ["General"] = true, ["Loot"] = true,
+	["Filger"] = true, ["General"] = true, ["InternalCooldowns"] = true, ["Loot"] = true,
 	["Minimap"] = true, ["Misc"] = true, ["MoverPositions"] = true,
 	["Nameplate"] = true, ["PowerBar"] = true, ["PulseCD"] = true,
 	["Skins"] = true, ["ThreatMeter"] = true, ["Tooltip"] = true, ["Unitframe"] = true,

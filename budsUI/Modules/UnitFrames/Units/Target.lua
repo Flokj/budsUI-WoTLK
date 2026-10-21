@@ -33,6 +33,9 @@ local function BuildMirrored(self, cfg, nameSize, style)
 	-- Name first so it sits directly above health, then the aura panels on top.
 	Build.Name(self, nameSize + 2, true)
 	Build.Auras(self, cfg)
+	if Build.Procs then
+		Build.Procs(self, style)
+	end
 end
 
 Module.Styles.Target = function(self)

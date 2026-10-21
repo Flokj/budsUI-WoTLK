@@ -322,6 +322,23 @@ for _, e in ipairs({
 	S("Auras", "OnlyPlayerDebuffs", L_GUI_UNITFRAME_OPT_ONLY_MINE or "Only your debuffs", {
 		type = "toggle",
 	}),
+	S("Auras", "SortOwnFirst", L_GUI_UNITFRAME_OPT_SORT_OWN_FIRST or "Own auras first", {
+		type = "toggle", reload = true,
+		desc = "Show your own debuffs and buffs before those of other players.",
+	}),
+	S("Auras", "DebuffsBelow", L_GUI_UNITFRAME_OPT_DEBUFFS_BELOW or "Debuffs below with buffs", {
+		type = "toggle", reload = true,
+		desc = "Place debuffs and buffs together below the frame.",
+	}),
+	S("Auras", "AuraOrder", L_GUI_UNITFRAME_OPT_AURA_ORDER or "Aura order", {
+		type = "select", width = 130, reload = true,
+		values = {
+			{ "debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS_FIRST or "Debuffs first" },
+			{ "buffs", L_GUI_UNITFRAME_OPT_BUFFS_FIRST or "Buffs first" },
+		},
+		enabledBy = "Unitframe.Auras.DebuffsBelow",
+		desc = "Which aura block is closer to the frame when both are below.",
+	}),
 }) do
 	schema[#schema + 1] = e
 end

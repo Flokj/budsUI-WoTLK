@@ -52,13 +52,12 @@ bar:SetScript("OnEvent", function(self, event, arg1)
 		end
 		RegisterStateDriver(self, "visibility", "[pet,novehicleui,nobonusbar:5] show; hide")
 		hooksecurefunc("PetActionBar_Update", K.PetBarUpdate)
+		K.StylePet()
 	elseif event == "PET_BAR_UPDATE" or event == "UNIT_PET" and arg1 == "player"
 	or event == "PLAYER_CONTROL_LOST" or event == "PLAYER_CONTROL_GAINED" or event == "PLAYER_FARSIGHT_FOCUS_CHANGED" or event == "UNIT_FLAGS"
-	or arg1 == "pet" and (event == "UNIT_AURA") then
+	or arg1 == "pet" and (event == "UNIT_AURA") or event == "PET_BAR_UPDATE_USABLE" then
 		K.PetBarUpdate()
 	elseif event == "PET_BAR_UPDATE_COOLDOWN" then
 		PetActionBar_UpdateCooldowns()
-	else
-		K.StylePet()
 	end
 end)

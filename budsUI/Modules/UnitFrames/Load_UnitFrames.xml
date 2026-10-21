@@ -10,6 +10,8 @@
 	<Script file="HealPrediction.lua" />
 
 	<!-- Element builders fill Module.Build. -->
+	<Script file="ProcData.lua" />
+	<Script file="InternalCooldowns.lua" />
 	<Script file="Elements\Bars.lua" />
 	<Script file="Elements\Portrait.lua" />
 	<Script file="Elements\Texts.lua" />
@@ -19,6 +21,7 @@
 	<Script file="Elements\Castbar.lua" />
 	<Script file="Elements\AuraWatch.lua" />
 	<Script file="Elements\SpecIcon.lua" />
+	<Script file="Elements\Procs.lua" />
 
 	<!-- Unit styles fill Module.Styles, so they load after the builders. -->
 	<Script file="Units\Player.lua" />

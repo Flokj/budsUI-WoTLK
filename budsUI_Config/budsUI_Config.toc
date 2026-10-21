@@ -32,6 +32,7 @@ Pages\Skins.lua
 Pages\ThreatMeter.lua
 Pages\Tooltip.lua
 Pages\Unitframe.lua
+Pages\InternalCooldowns.lua
 
 Core.lua
 

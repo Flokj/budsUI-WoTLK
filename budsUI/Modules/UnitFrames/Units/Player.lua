@@ -49,6 +49,9 @@ Module.Styles.Player = function(self)
 		Build.ClassPower(self, cfg.Width)
 	end
 	Build.Auras(self, cfg)
+	if Build.Procs then
+		Build.Procs(self, "player")
+	end
 
 	-- Sit evenly between the action bars below and the unit frames above.
 	Build.DetachedCastbar(self, "PlayerCastbar", "Player Castbar", castbar.PlayerWidth, castbar.PlayerHeight, { "BOTTOM", UIParent, "BOTTOM", 25, 385 }, "left")

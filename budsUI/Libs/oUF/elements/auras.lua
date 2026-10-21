@@ -318,28 +318,62 @@ end
 
 local function filterIcons(element, unit, filter, limit, isDebuff, offset, dontHide)
 	if(not offset) then offset = 0 end
-	local index = 1
 	local visible = 0
 	local hidden = 0
-	-- ElvUI changed block
 	local created = 0
-	-- end block
-	while(visible < limit) do
-		local result = updateIcon(element, unit, index, offset, filter, isDebuff, visible)
-		if(not result) then
-			break
-		elseif(result == VISIBLE) then
-			visible = visible + 1
-		elseif(result == HIDDEN) then
-			hidden = hidden + 1
-		-- ElvUI changed block
-		elseif result == CREATED then
-			visible = visible + 1
-			created = created + 1
-		-- end block
+
+	if(element.sortOwnFirst) then
+		local indices = {}
+		local idx = 1
+		while true do
+			local name, _, _, _, _, _, _, caster = UnitAura(unit, idx, filter)
+			if(not name) then break end
+			if(caster == 'player' or caster == 'vehicle' or caster == 'pet') then
+				indices[#indices + 1] = idx
+			end
+			idx = idx + 1
+		end
+		idx = 1
+		while true do
+			local name, _, _, _, _, _, _, caster = UnitAura(unit, idx, filter)
+			if(not name) then break end
+			if(caster ~= 'player' and caster ~= 'vehicle' and caster ~= 'pet') then
+				indices[#indices + 1] = idx
+			end
+			idx = idx + 1
 		end
 
-		index = index + 1
+		for i = 1, #indices do
+			if(visible >= limit) then break end
+			local result = updateIcon(element, unit, indices[i], offset, filter, isDebuff, visible)
+			if(result == VISIBLE) then
+				visible = visible + 1
+			elseif(result == HIDDEN) then
+				hidden = hidden + 1
+			elseif(result == CREATED) then
+				visible = visible + 1
+				created = created + 1
+			end
+		end
+	else
+		local index = 1
+		while(visible < limit) do
+			local result = updateIcon(element, unit, index, offset, filter, isDebuff, visible)
+			if(not result) then
+				break
+			elseif(result == VISIBLE) then
+				visible = visible + 1
+			elseif(result == HIDDEN) then
+				hidden = hidden + 1
+			-- ElvUI changed block
+			elseif result == CREATED then
+				visible = visible + 1
+				created = created + 1
+			-- end block
+			end
+
+			index = index + 1
+		end
 	end
 
 	-- ElvUI changed block
