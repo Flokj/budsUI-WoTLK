@@ -13,6 +13,13 @@ if C.Chat.TabsMouseover == true then
 	CHAT_FRAME_TAB_SELECTED_MOUSEOVER_ALPHA = 1
 	CHAT_FRAME_TAB_NORMAL_MOUSEOVER_ALPHA = 1
 	CHAT_FRAME_TAB_ALERTING_MOUSEOVER_ALPHA = 1
+else
+	CHAT_FRAME_TAB_SELECTED_NOMOUSE_ALPHA = 1
+	CHAT_FRAME_TAB_NORMAL_NOMOUSE_ALPHA = 1
+	CHAT_FRAME_TAB_ALERTING_NOMOUSE_ALPHA = 1
+	CHAT_FRAME_TAB_SELECTED_MOUSEOVER_ALPHA = 1
+	CHAT_FRAME_TAB_NORMAL_MOUSEOVER_ALPHA = 1
+	CHAT_FRAME_TAB_ALERTING_MOUSEOVER_ALPHA = 1
 end
 
 local Fane = CreateFrame("Frame")
@@ -55,48 +62,19 @@ local OnLeave = function(self)
 	updateFS(self, emphasis, r, g, b)
 end
 
-local ChatFrame2_SetAlpha = function(self, alpha)
-	if CombatLogQuickButtonFrame_Custom then
-		CombatLogQuickButtonFrame_Custom:SetAlpha(alpha)
-	end
-end
-
-local ChatFrame2_GetAlpha = function(self)
-	if CombatLogQuickButtonFrame_Custom then
-		return CombatLogQuickButtonFrame_Custom:GetAlpha()
-	end
-end
-
 local faneifyTab = function(frame, sel)
 	local i = frame:GetID()
 
 	if not frame.Fane then
-		frame.leftSelectedTexture.Show = frame.leftSelectedTexture.Hide
-		frame.middleSelectedTexture.Show = frame.middleSelectedTexture.Hide
-		frame.rightSelectedTexture.Show = frame.rightSelectedTexture.Hide
-		
+		if frame.leftSelectedTexture then frame.leftSelectedTexture:SetAlpha(0) end
+		if frame.middleSelectedTexture then frame.middleSelectedTexture:SetAlpha(0) end
+		if frame.rightSelectedTexture then frame.rightSelectedTexture:SetAlpha(0) end
+		if frame.leftHighlightTexture then frame.leftHighlightTexture:SetTexture(nil) end
+		if frame.middleHighlightTexture then frame.middleHighlightTexture:SetTexture(nil) end
+		if frame.rightHighlightTexture then frame.rightHighlightTexture:SetTexture(nil) end
+
 		frame:HookScript("OnEnter", OnEnter)
 		frame:HookScript("OnLeave", OnLeave)
-		if C.Chat.TabsMouseover ~= true then
-			frame:SetAlpha(1)
-
-			if i ~= 2 then
-				-- T10: Proper closure so intent is explicit: intercept SetAlpha to prevent Blizzard
-				-- fade system from dimming the tab and remove it from fade tracking.
-				frame.SetAlpha = function(self, alpha)
-					UIFrameFadeRemoveFrame(self)
-				end
-			else
-				frame.SetAlpha = ChatFrame2_SetAlpha
-				frame.GetAlpha = ChatFrame2_GetAlpha
-
-				-- We do this here as people might be using AddonLoader together with Fane
-				if CombatLogQuickButtonFrame_Custom then
-					CombatLogQuickButtonFrame_Custom:SetAlpha(0.4)
-				end
-			end
-		end
-
 		frame.Fane = true
 	end
 

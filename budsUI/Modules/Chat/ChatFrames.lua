@@ -311,12 +311,9 @@ local function SetupChatPosAndFont(self)
 
 		if i == 2 then
 			if C.Chat.CombatLog ~= true then
-				FCF_DockFrame(chat)
-				ChatFrame2Tab:EnableMouse(false)
-				ChatFrame2Tab:SetText("")
-				ChatFrame2Tab.SetText = K.Noop
-				ChatFrame2Tab:SetWidth(0.001)
-				ChatFrame2Tab.SetWidth = K.Noop
+				if chat.isDocked or chat:IsShown() then
+					FCF_Close(chat)
+				end
 			end
 		end
 	end
