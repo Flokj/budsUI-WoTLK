@@ -47,9 +47,9 @@ ns.PageFiles = ns.PageFiles or {
 	"PowerBar",
 	"PulseCD",
 	"Skins",
-	"ThreatMeter",
 	"Tooltip",
 	"Unitframe",
+	"InternalCooldowns",
 }
 
 -- Compile + run one page chunk (loadstring-style). Every page file must

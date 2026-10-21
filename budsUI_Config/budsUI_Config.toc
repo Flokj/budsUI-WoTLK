@@ -29,7 +29,6 @@ Pages\Nameplate.lua
 Pages\PowerBar.lua
 Pages\PulseCD.lua
 Pages\Skins.lua
-Pages\ThreatMeter.lua
 Pages\Tooltip.lua
 Pages\Unitframe.lua
 Pages\InternalCooldowns.lua
