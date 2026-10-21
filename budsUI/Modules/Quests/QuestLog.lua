@@ -9,6 +9,7 @@ local GetID = GetID
 -- Quest level(yQuestLevel by Yleaf)
 local function questlevel()
 	local buttons = QuestLogScrollFrame.buttons
+	if not buttons then return end
 	local numButtons = #buttons
 	local scrollOffset = HybridScrollFrame_GetOffset(QuestLogScrollFrame)
 	local numEntries = GetNumQuestLogEntries()
@@ -16,9 +17,9 @@ local function questlevel()
 	for i = 1, numButtons do
 		local questIndex = i + scrollOffset
 		local questLogTitle = buttons[i]
-		if questIndex <= numEntries then
+		if questIndex <= numEntries and questLogTitle then
 			local title, level, _, _, isHeader = GetQuestLogTitle(questIndex)
-			if not isHeader then
+			if title and not isHeader then
 				questLogTitle:SetText("["..level.."] "..title)
 				QuestLogTitleButton_Resize(questLogTitle)
 			end

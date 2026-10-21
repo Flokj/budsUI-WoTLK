@@ -847,7 +847,7 @@ local function updateGlyphRow(button, glyphType, editable)
 	local icon, name = button.slot.icon, button.nameText
 	if not glyphSpell then
 		icon:SetTexture(nil)
-		name:SetText(enabled and GLYPH_EMPTY or GLYPH_LOCKED)
+		name:SetText(enabled and (GLYPH_EMPTY or "Empty") or (GLYPH_LOCKED or "Locked"))
 		name:SetTextColor(unpack(PARCHMENT_DISABLED_COLOR))
 	else
 		local spellIcon = K.GlyphSpellIcon(glyphSpell)
@@ -858,7 +858,7 @@ local function updateGlyphRow(button, glyphType, editable)
 			icon:SetTexture(iconFile or GLYPH_RUNE_TEXTURE)
 			setColor(icon, GLYPH_COLORS[glyphType])
 		end
-		name:SetText((GetSpellInfo(glyphSpell)))
+		name:SetText((GetSpellInfo(glyphSpell)) or (UNKNOWN or "Unknown"))
 		name:SetTextColor(unpack(PARCHMENT_TEXT_COLOR))
 	end
 	icon:SetDesaturated(not editable)
@@ -874,10 +874,14 @@ local function updateGlyphs(height, numGroups)
 	local left = PANE_BORDER + GLYPH_INDENT
 	local right = PANE_BORDER + GLYPH_PADDING
 	local y = PANE_BORDER + PANE_HEADER + GLYPH_PADDING
+	local numSockets = GetNumGlyphSockets()
+	if not numSockets or numSockets == 0 then
+		numSockets = 6
+	end
 	for glyphType = 1, 2 do
 		panel.headers[glyphType]:SetPoint("TOPLEFT", left, -y)
 		y = y + 22
-		for socket = 1, GetNumGlyphSockets() do
+		for socket = 1, numSockets do
 			local _, socketType = GetGlyphSocketInfo(socket, view.group)
 			if (socketType or GLYPH_TYPES[socket]) == glyphType then
 				local button = panel.sockets[socket] or createGlyphRow(panel, socket, glyphType)

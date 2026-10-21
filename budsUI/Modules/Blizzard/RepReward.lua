@@ -76,37 +76,39 @@ function ShowReputations()
 		local factionId, amtRep, factionName, isHeader, hasRep, bonusRep, bonusRepCommendation, amtBonus, amtBase, stringRepColor1, stringRepColor2, stringRepLine
 		for i = 1, numRewFactions do
 			factionId, amtBase = GetQuestLogRewardFactionInfo(i)
-			factionName, _, _, _, _, _, _, _, isHeader, _, hasRep = GetFactionInfoByID(factionId)
-			if factionName and (not isHeader or hasRep) then
-				foundRep = true
-				amtBase = floor(amtBase / 100)
-				bonusRep = CalcBonusRep(factionName)
-				bonusRepCommendation = CalcBonusRepCommendation(factionName)
-				if factionName == "Cenarion Circle" or factionName == "Timbermaw Hold" or factionName == "Argent Dawn" then
-					amtBase = amtBase * 2
-				elseif factionName == "Thorium Brotherhood" then
-					amtBase = amtBase * 4
-				end
-				amtRep = floor((amtBase * (1 + bonusRep)) * bonusRepCommendation)
-				amtBonus = amtRep - amtBase
-				if amtBase < 0 then
-					stringRepColor1 = "|cff621a00"
-					stringRepColor2 = "|r"
-				else
-					stringRepColor1 = ""
-					stringRepColor2 = ""
-				end
+			if factionId and amtBase then
+				factionName, _, _, _, _, _, _, _, isHeader, _, hasRep = GetFactionInfoByID(factionId)
+				if factionName and (not isHeader or hasRep) then
+					foundRep = true
+					amtBase = floor(amtBase / 100)
+					bonusRep = CalcBonusRep(factionName)
+					bonusRepCommendation = CalcBonusRepCommendation(factionName)
+					if factionName == "Cenarion Circle" or factionName == "Timbermaw Hold" or factionName == "Argent Dawn" then
+						amtBase = amtBase * 2
+					elseif factionName == "Thorium Brotherhood" then
+						amtBase = amtBase * 4
+					end
+					amtRep = floor((amtBase * (1 + bonusRep)) * bonusRepCommendation)
+					amtBonus = amtRep - amtBase
+					if amtBase < 0 then
+						stringRepColor1 = "|cff621a00"
+						stringRepColor2 = "|r"
+					else
+						stringRepColor1 = ""
+						stringRepColor2 = ""
+					end
 
-				stringRepLine = factionName..": "..stringRepColor1..amtRep..stringRepColor2
-				if amtBonus ~= 0 then
-					stringRepLine = stringRepLine.."\n"..stringRepColor1.." ("..amtBase.." base + "..amtBonus.." bonus)"..stringRepColor2
+					stringRepLine = factionName..": "..stringRepColor1..amtRep..stringRepColor2
+					if amtBonus ~= 0 then
+						stringRepLine = stringRepLine.."\n"..stringRepColor1.." ("..amtBase.." base + "..amtBonus.." bonus)"..stringRepColor2
+					end
+					if stringRep then
+						stringRep = stringRep.."\n\n"..stringRepLine
+					else
+						stringRep = stringRepLine
+					end
+					stringRepLine = nil
 				end
-				if stringRep then
-					stringRep = stringRep.."\n\n"..stringRepLine
-				else
-					stringRep = stringRepLine
-				end
-				stringRepLine = nil
 			end
 		end
 		if not foundRep then
@@ -134,7 +136,10 @@ ReputationsDetailFrame.text:SetTextColor(0, 0, 0, 1)
 
 local function Reputations_ShowTitle()
 	if QuestInfoRewardsHeader then
-		ReputationsTitleFrame.text:SetTextColor(QuestInfoRewardsHeader:GetTextColor())
+		local r, g, b = QuestInfoRewardsHeader:GetTextColor()
+		if r and g and b then
+			ReputationsTitleFrame.text:SetTextColor(r, g, b)
+		end
 	end
 	ReputationsTitleFrame.text:SetText("Reputations")
 	return ReputationsTitleFrame
@@ -149,13 +154,16 @@ local function Reputations_ShowDetail()
 	local stringRep, numRepFactions = ShowReputations()
 	local windowSize
 	if QuestInfoDescriptionText then
-		ReputationsDetailFrame.text:SetTextColor(QuestInfoDescriptionText:GetTextColor())
+		local r, g, b = QuestInfoDescriptionText:GetTextColor()
+		if r and g and b then
+			ReputationsDetailFrame.text:SetTextColor(r, g, b)
+		end
 	end
 	if numRepFactions then
 		windowSize = numRepFactions * 30 + 20
 		ReputationsDetailFrame:SetSize(288, windowSize)
 	end
-	ReputationsDetailFrame.text:SetText(stringRep)
+	ReputationsDetailFrame.text:SetText(stringRep or "")
 	return ReputationsDetailFrame
 end
 
