@@ -387,6 +387,9 @@ function Module.Build.Procs(self, unit)
 		container:SetPoint("BOTTOMRIGHT", anchorTo, "TOPRIGHT", cfg.TargetOffsetX or 0, cfg.TargetOffsetY or 4)
 	elseif unit == "focus" then
 		container:SetPoint("BOTTOMRIGHT", anchorTo, "TOPRIGHT", 0, 4)
+	elseif unit == "player" then
+		container.growth = "RIGHT"
+		container:SetPoint("BOTTOMLEFT", self, "TOPLEFT", 0, 4)
 	else
 		container:SetPoint("BOTTOMLEFT", anchorTo, "TOPLEFT", 0, 4)
 	end
@@ -414,7 +417,7 @@ driver:SetScript("OnEvent", function(self, event, unit)
 				end
 				for i = 1, #containers do
 					local c = containers[i]
-					if c ~= playerBlock and c:IsShown() and (guid == nil or guid == c.guid) then
+					if c ~= playerBlock and (guid == nil or guid == c.guid or (c.unit and guid == UnitGUID(c.unit))) then
 						refresh(c)
 					end
 				end
