@@ -28,6 +28,9 @@ local UnitExists = UnitExists
 local UnitCreatureType = UnitCreatureType
 local CreateFrame = CreateFrame
 local match = string.match
+local band = bit.band
+
+local COMBATLOG_OBJECT_REACTION_HOSTILE = 0x40
 
 -- Config (geometry sourced from build config C.Nameplate, donor defaults as fallback)
 local USE_MODERN_BORDER = false
@@ -401,6 +404,11 @@ local setPool, entryPool = {}, {}
 local dirty = {}
 local pendingScans = {}
 local guidPlates = {}
+local activeTimerPlates = {}
+local activeTimerCount = 0
+local ticker = CreateFrame("Frame")
+ticker:Hide()
+ticker.nextTick = 0
 local playerGUID, petGUID = nil, nil
 
 local function getSet(guid)
@@ -671,25 +679,38 @@ end
 -- runs inside pcall so one malformed event can never break the addon.
 local function HandleCombatLogEvent(timestamp, subEvent, srcGUID, srcName, srcFlags, dstGUID, dstName, dstFlags, a1, a2, a3, a4, a5)
 	if subEvent == "SPELL_AURA_APPLIED" or subEvent == "SPELL_AURA_REFRESH" then
-		-- a1=spellId(number), a2=spellName(string), a4=auraType
-		if type(a1) == "number" and type(a2) == "string" then
-			onAuraApplied(srcGUID, dstGUID, a1, a2, a4)
+		if type(a1) ~= "number" or type(a2) ~= "string" or type(dstGUID) ~= "string" then return end
+		if a4 == "BUFF" then
+			if not SPELLS_WHITELIST[a2] or (dstFlags and band(dstFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) == 0) then
+				return
+			end
+		else
+			local mine = type(srcGUID) == "string" and (srcGUID == playerGUID or srcGUID == petGUID)
+			if not mine and not SPELLS_WHITELIST[a2] then
+				return
+			end
+			if SPELLS_BLACKLIST[a2] then
+				return
+			end
 		end
+		onAuraApplied(srcGUID, dstGUID, a1, a2, a4)
 	elseif subEvent == "SPELL_AURA_APPLIED_DOSE" or subEvent == "SPELL_AURA_REMOVED_DOSE" then
-		-- a2=spellName(string), a5=new stack count(number); never use a5 as a key
-		if type(a2) == "string" and type(a5) == "number" then
+		if cache[dstGUID] and type(a2) == "string" and type(a5) == "number" then
 			onAuraDose(dstGUID, a1, a2, a5)
 		end
 	elseif subEvent == "SPELL_AURA_REMOVED" or subEvent == "SPELL_AURA_BROKEN" or subEvent == "SPELL_AURA_BROKEN_SPELL" then
-		if type(a2) == "string" then
+		if cache[dstGUID] and type(a2) == "string" then
 			onAuraRemoved(dstGUID, a1, a2)
 		end
 	elseif subEvent == "UNIT_DIED" or subEvent == "UNIT_DESTROYED" or subEvent == "UNIT_DISSIPATES" then
-		onUnitDied(dstGUID)
+		if cache[dstGUID] then
+			onUnitDied(dstGUID)
+		end
 	end
 end
 
 local function sweep(now)
+	if not next(cache) then return end
 	for guid, set in next, cache do
 		if type(guid) ~= "string" or type(set) ~= "table" then
 			releaseSet(guid)
@@ -732,6 +753,16 @@ local function WipeAuraCache()
 	for pendingGuid in next, pendingScans do
 		pendingScans[pendingGuid] = nil
 	end
+	for i = 1, activeTimerCount do
+		local p = activeTimerPlates[i]
+		if p then
+			p.__timerActive = false
+			p.__hasTimers = false
+			activeTimerPlates[i] = nil
+		end
+	end
+	activeTimerCount = 0
+	ticker:Hide()
 end
 
 local function IsGuidString(s)
@@ -917,6 +948,7 @@ local function AuraIcons_OnHide(self)
 end
 
 local function hideAll(plate)
+	plate.__hasTimers = false
 	local auraIcons = plate.__auraIcons
 	if auraIcons then
 		for i = #auraIcons, 1, -1 do
@@ -925,6 +957,75 @@ local function hideAll(plate)
 		auraIcons:Hide()
 	end
 end
+
+-- Ticker (FrostAtomUI sleep model): runs ONLY when activeTimerCount > 0.
+-- When all timers expire or plates hide, ticker:Hide() turns off OnUpdate.
+local function activatePlateTimers(plate)
+	if not plate.__timerActive then
+		plate.__timerActive = true
+		activeTimerCount = activeTimerCount + 1
+		activeTimerPlates[activeTimerCount] = plate
+	end
+	ticker.nextTick = 0
+	ticker:Show()
+end
+
+local function updatePlateTimers(plate, now)
+	local auraIcons = plate.__auraIcons
+	if not auraIcons or not auraIcons:IsShown() or not plate:IsShown() then
+		return false
+	end
+	local guid = plate.__auraGuid
+	local hasAny = false
+	for i = 1, #auraIcons do
+		local icon = auraIcons[i]
+		if icon and icon.endTime then
+			local remain = icon.endTime - now
+			if remain > 0 then
+				hasAny = true
+				icon.remain = remain
+				if not icon.nextUpdate or icon.nextUpdate == 0 or remain <= icon.nextUpdate then
+					icon.timer:SetText(ShortTime(remain, true))
+					icon.nextUpdate = remain - TimerUntilChange(remain)
+				end
+			else
+				icon.endTime = nil
+				icon.remain = nil
+				icon.nextUpdate = nil
+				if guid then
+					markDirty(guid)
+				end
+			end
+		end
+	end
+	return hasAny
+end
+
+ticker:SetScript("OnUpdate", function(self)
+	local now = GetTime()
+	if now < self.nextTick then return end
+	self.nextTick = now + TIMER_INTERVAL
+	local i = 1
+	while i <= activeTimerCount do
+		local plate = activeTimerPlates[i]
+		if plate and plate:IsShown() and plate.__hasTimers and updatePlateTimers(plate, now) then
+			i = i + 1
+		else
+			if plate then
+				plate.__timerActive = false
+				plate.__hasTimers = false
+			end
+			activeTimerPlates[i] = activeTimerPlates[activeTimerCount]
+			activeTimerPlates[activeTimerCount] = nil
+			activeTimerCount = activeTimerCount - 1
+		end
+	end
+	if activeTimerCount == 0 then
+		self:Hide()
+	end
+end)
+
+local MAX_AURA_ICONS = 8
 
 -- Drawing (donor updatePlate-style, dirty-checked): SetSize only when the size
 -- changes, no ClearAllPoints per icon unless the slot/size/position moved,
@@ -973,6 +1074,9 @@ function updatePlate(plate)
 			else
 				countNormal = countNormal + 1
 			end
+			if (countHighlight + countNormal) >= MAX_AURA_ICONS then
+				break
+			end
 		end
 	end
 
@@ -981,6 +1085,7 @@ function updatePlate(plate)
 
 	local indexNormal, indexHighlight = 0, 0
 	local shown = 0
+	local hasTimers = false
 	for i = 1, #set do
 		local entry = set[i]
 		local expires = entry.expires
@@ -1032,6 +1137,9 @@ function updatePlate(plate)
 					icon.nextUpdate = 0
 				end
 			end
+			if exp > 0 then
+				hasTimers = true
+			end
 
 			-- Guarded color lookup: the combat-log path stores debuffType =
 			-- "none" (unknown type) and 3.3.5 DebuffTypeColor has no "none"
@@ -1068,6 +1176,10 @@ function updatePlate(plate)
 				icon._countVal = cnt
 				icon.count:SetText(cnt)
 			end
+
+			if shown >= MAX_AURA_ICONS then
+				break
+			end
 		end
 	end
 
@@ -1075,37 +1187,13 @@ function updatePlate(plate)
 		auraIcons[i] = ReleaseIcon(auraIcons[i])
 	end
 
+	plate.__hasTimers = hasTimers
+	if hasTimers then
+		activatePlateTimers(plate)
+	end
+
 	if shown == 0 then
 		auraIcons:Hide()
-	end
-end
-
--- Timer ticker (donor updateTimers): 0.1s, ONLY timer text. Never touches
--- icon layout. Expired entries mark their guid dirty so the flush drops them.
-local function updateAllTimers(_, now)
-	now = now or GetTime()
-	for guid, plate in next, guidPlates do
-		local auraIcons = plate.__auraIcons
-		if auraIcons and plate:IsShown() then
-			for i = 1, #auraIcons do
-				local icon = auraIcons[i]
-				if icon and icon.endTime then
-					local remain = icon.endTime - now
-					if remain > 0 then
-						icon.remain = remain
-						if not icon.nextUpdate or icon.nextUpdate == 0 or remain <= icon.nextUpdate then
-							icon.timer:SetText(ShortTime(remain, true))
-							icon.nextUpdate = remain - TimerUntilChange(remain)
-						end
-					else
-						icon.endTime = nil
-						icon.remain = nil
-						icon.nextUpdate = nil
-						markDirty(guid)
-					end
-				end
-			end
-		end
 	end
 end
 
@@ -1247,22 +1335,16 @@ if C.Nameplate.Auras == true then
 	playerGUID = UnitGUID("player")
 	petGUID = UnitGUID("pet")
 
-	-- Donor timers: one 0.1s ticker for countdown text, one 10s sweep.
-	-- Multiplexed on the prebuilt Core/Scheduler (donor ns tickers equivalent).
+	-- Sweep ticker: 10s garbage collection for expired cache sets.
+	-- Countdown text is owned by the dedicated sleeping ticker above.
 	if K.Scheduler and K.Scheduler.AddTicker then
-		K.Scheduler.AddTicker("NamePlateAurasTimers", updateAllTimers, TIMER_INTERVAL)
 		K.Scheduler.AddTicker("NamePlateAurasSweep", sweepTick, SWEEP_INTERVAL)
 	else
 		local fallback = CreateFrame("Frame")
-		local timerAccum, sweepAccum = 0, 0
+		local sweepAccum = 0
 		fallback:SetScript("OnUpdate", K.SafeOnUpdate(function(self, elapsed)
 			if C.Nameplate.Auras ~= true then return end
-			timerAccum = timerAccum + elapsed
 			sweepAccum = sweepAccum + elapsed
-			if timerAccum >= TIMER_INTERVAL then
-				timerAccum = 0
-				updateAllTimers(nil, GetTime())
-			end
 			if sweepAccum >= SWEEP_INTERVAL then
 				sweepAccum = 0
 				sweep(GetTime())
