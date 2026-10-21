@@ -389,7 +389,7 @@ function Module.Build.Procs(self, unit)
 		container:SetPoint("BOTTOMRIGHT", anchorTo, "TOPRIGHT", 0, 4)
 	elseif unit == "player" then
 		container.growth = "RIGHT"
-		container:SetPoint("BOTTOMLEFT", self, "TOPLEFT", 0, 4)
+		container:SetPoint("BOTTOMLEFT", self, "TOPLEFT", 0, 8)
 	else
 		container:SetPoint("BOTTOMLEFT", anchorTo, "TOPLEFT", 0, 4)
 	end
