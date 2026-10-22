@@ -787,7 +787,7 @@ local function createFrame()
 
 	local content = CreateFrame("Frame", nil, scroll)
 	content:SetPoint("TOPLEFT")
-	content:SetWidth(580)
+	content:SetWidth(550)
 	content:SetHeight(100)
 	scroll:SetScrollChild(content)
 	frame.content = content
