@@ -1,13 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Units/Small.lua
-Purpose:
-	The companion frames: pet, target of target, focus target.
-	Only the pet reads like the target frame, with the name above the bar.
-	Target of target and focus target stay compact with the name on the bar.
-	The pet reads left-to-right like the player it belongs to, so its
-	portrait sits on the left, the others sit on the right.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Units/Small.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

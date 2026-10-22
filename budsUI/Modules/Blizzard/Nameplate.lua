@@ -375,19 +375,7 @@ function NamePlates:UPDATE_BATTLEFIELD_SCORE()
 end
 NamePlates:RegisterEvent("UPDATE_BATTLEFIELD_SCORE")
 
--- Blacklist concealment helpers (FrostAtom "hiddenByName" intent, 3.3.5-style).
--- A blacklisted plate must be BOTH invisible AND non-interactive: hiding the
--- healthbar alone leaves the stock plate frame's own hit rect alive, so the
--- Blizzard mouseover highlight still lights up the empty spot and the plate
--- stays clickable. 3.3.5 nameplate frames ARE PROTECTED (IsProtected() returns
--- true), so plain frame:SetSize()/EnableMouse() is filtered or errors in
--- combat lockdown. The hit zone is therefore zeroed through the secure-frame
--- HitRect module (NameplateHitRect.lua, ported from FrostAtom HitRect.lua):
--- K.NameplateHitRect_Update(frame, w, 0, true) writes the size into a secure
--- marker's clamp rect and the header WrapScript sweep applies
--- plate:SetSize(w, 0) from inside the protected environment.
-
--- Hide every visible bit of a blacklisted plate and neutralize its hit zone.
+-- Hide blacklisted plate and zero click-rect via NameplateHitRect.
 local function ApplyBlacklistHide(frame)
 	if not frame or not frame.hp then return end
 	-- Remember the normal hit size once so un-blacklist can restore it.
@@ -610,26 +598,6 @@ local function UpdateObjects(frame)
 	else
 		frame.hp.name:SetText(frame.hp.oldname:GetText())
 	end
-
-	--[[ Setup level text
-	local level, elite, mylevel = tonumber(frame.hp.oldlevel:GetText()), frame.hp.elite:IsShown(), K.Level
-	frame.hp.level:ClearAllPoints()
-	if C.Nameplate.ClassIcons == true and frame.isClass == true then
-		frame.hp.level:SetPoint("RIGHT", frame.hp.name, "LEFT", -2, 0)
-	else
-		frame.hp.level:SetPoint("RIGHT", frame.hp, "LEFT", -2, 0)
-	end
-	frame.hp.level:SetTextColor(frame.hp.oldlevel:GetTextColor())
-	if frame.hp.boss:IsShown() then
-		frame.hp.level:SetText("??")
-		frame.hp.level:SetTextColor(204/255, 13/255, 0/255)
-		frame.hp.level:Show()
-	elseif not elite and level == mylevel then
-		frame.hp.level:Hide()
-	else
-		frame.hp.level:SetText(level..(elite and "+" or ""))
-		frame.hp.level:Show()
-	end]]
 
 	frame.overlay:ClearAllPoints()
 	frame.overlay:SetAllPoints(frame.hp)
@@ -906,15 +874,7 @@ local function ShowHealth(frame, ...)
 	end
 end
 
--- Unit resolution for aura coverage (FrostAtomUI Identity.lua philosophy):
--- Blizzard recycles stock nameplate frames and 3.3.5 exposes no plate->unit
--- token, so each update pass re-resolves from EVERY unit token the client can
--- resolve (target/focus/mouseover/boss/arena/pet/party/raid targets) and binds
--- exactly ONE plate per guid. Same-name duplicate plates are disambiguated by
--- health fraction; a plate keeps its sticky guid (frame.guid) until it is
--- explicitly rebound, stolen, hidden, or recycled, so a mob that was once
--- target/mouseover keeps showing ITS OWN cached auras instead of leaking a
--- neighbor's.
+-- Unit resolution and plate->GUID binding.
 local HEALTH_TOLERANCE = 0.02
 local CONFIRM_HOLD = 1
 local UnitHealth = UnitHealth
@@ -1188,14 +1148,7 @@ local function BindPlateToGuid(frame, guid, now)
 	return true
 end
 
--- Per-pass aura resolution (runs ONCE per 0.2s ticker, not once per plate):
--- 1. rebuild nameIndex (unique plate, or false on duplicate names);
--- 2. resolve every unit token in priority order to exactly one plate;
--- 3. bind claimed plates via the token path (exact UnitAura scan);
--- 4. for unclaimed plates: keep the sticky guid alive (redraw from the
---    combat-log cache), bind token-less enemy PLAYERS by unique name, or
---    release. Sticky guids + health disambiguation are what keep two
---    same-named mobs on their own aura rows.
+-- Resolve unit tokens to plates, redraw cached auras.
 local function ResolvePlateAuras(now)
 	if C.Nameplate.Auras ~= true or not K.NamePlateAuras_Update then return end
 	now = now or GetTime()

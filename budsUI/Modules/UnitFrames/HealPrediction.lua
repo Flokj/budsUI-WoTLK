@@ -1,19 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/HealPrediction.lua
-Purpose:
-  Incoming heals + absorb shields for the oUF health bars on WoW 3.3.5.
-  The client has no prediction APIs for either, so both are
-  reconstructed: LibHealComm-4.0 plus an own-cast fallback for heals, and a
-  known-shield table decremented from the combat log for absorbs. Health
-  bars opt in through Prediction.CreateBars and refresh through
-  Prediction.Refresh / Prediction.Follow.
-
-  Ported from FrostAtomUI Modules/HealPrediction.lua (Interface 30300) to
-  the budsUI engine: Engine/UnitFrames table instead of the ns module
-  framework, C.Unitframe keys instead of ns.Config, Module.Texture()
-  instead of ns.Media.blank. No retail-only API.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/HealPrediction.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

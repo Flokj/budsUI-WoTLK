@@ -300,13 +300,7 @@ GameTooltip:HookScript("OnTooltipSetUnit", function(self)
 			break
 		end
 	end
-	--[[
-	if UnitExists(unit.."target") and unit ~= "player" then
-		local hex, r, g, b = GetColor(unit.."target")
-		if not r and not g and not b then r, g, b = 1, 1, 1 end
-		GameTooltip:AddLine(UnitName(unit.."target"), r, g, b)
-	end
-	]]
+
 	if C.Tooltip.Target == true and UnitExists(unit.."target") then
 		local hex, r, g, b = GetColor(unit.."target")
 		--local r, g, b = GameTooltip_UnitColor(unit.."target")

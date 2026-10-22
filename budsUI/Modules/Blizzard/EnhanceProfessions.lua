@@ -1,16 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/Blizzard/EnhanceProfessions.lua
-Purpose:
-	Enhanced trade skill window, ported from Leatrix Plus (WotLK):
-	double-wide frame with a taller recipe list.
-
-	Notes:
-	- Leatrix's ElvUI compatibility block is intentionally dropped:
-	  budsUI is not ElvUI and never loads its skins.
-	- Like Leatrix, only TradeSkillFrame is enhanced. Enchanting uses
-	  CraftFrame in 3.3.5 and is left at default size.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/Blizzard/EnhanceProfessions.lua
 
 local K, C, L, _ = select(2, ...):unpack()
 

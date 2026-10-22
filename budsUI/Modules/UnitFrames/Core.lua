@@ -1,16 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Core.lua
-Purpose:
-	UnitFrames module entry point. Owns the shared constants, the stacking
-	helpers every element builder uses, and the spawn pass. The look of an
-	individual unit lives in Units/, and reusable element builders live in
-	Elements/.
-
-	Ported from KkthnxUI retail to WoW 3.3.5. Geometry is unchanged: health
-	and power are two separate bordered bars stacked with a gap, so a unit's
-	outer height is Height + GAP + PowerHeight.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Core.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

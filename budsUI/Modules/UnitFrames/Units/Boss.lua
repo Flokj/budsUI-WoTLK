@@ -1,14 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Units/Boss.lua
-Purpose:
-	Boss style frames. Narrow bars stacked down the right side of the screen
-	with the name on the bar, debuffs fanning out to the left, and an
-	attached castbar so you can tell which of several casters is the problem.
-
-	Ported from KkthnxUI retail: no encounter alternate-power bar on 3.3.5
-	(Build.AlternativePower is a no-op here).
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Units/Boss.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

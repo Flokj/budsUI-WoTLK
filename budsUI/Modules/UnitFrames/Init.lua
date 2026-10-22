@@ -1,10 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Init.lua
-Purpose:
-	Spawn pass. Runs last (see Load_UnitFrames.xml), after every style and
-	builder has registered itself on Engine.UnitFrames.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Init.lua
 
 local Engine = select(2, ...)
 local Module = Engine.UnitFrames

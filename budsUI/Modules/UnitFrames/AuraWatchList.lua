@@ -1,22 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/AuraWatchList.lua
-Purpose:
-	The default tracked auras for the corner Aura Watch on party and raid
-	frames. Keyed by class, then by spell id. Each entry places a small dot
-	or icon in one corner of the frame so a healer can read their own heals
-	over time at a glance.
-
-	Entry fields:
-		corner - "TOPLEFT" | "TOPRIGHT" | "BOTTOMLEFT" | "BOTTOMRIGHT" | "CENTER"
-		color  - dot colour {r, g, b} (dot style only)
-		style  - "dot" (default) or "icon" (shows the spell icon and its swipe)
-		mine   - true to only light up when the aura is ours
-
-	Ported from KkthnxUI retail: WotLK spell ids only (rank 1 base ids match
-	every rank through UnitAura's spellId). Atonement and later additions are
-	gone; Prayer of Mending uses its WotLK id.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/AuraWatchList.lua
 
 local Engine = select(2, ...)
 local K = Engine:unpack()

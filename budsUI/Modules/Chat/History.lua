@@ -1,28 +1,7 @@
 local K, C, L, _ = select(2, ...):unpack()
 if C.Chat.Enable ~= true then return end
 
---[[ budsUI Chat History (ported from FrostAtom History.lua)
-	- Keeps chat window content across /reload: the last N lines per frame are
-	  re-added on login with a dimmed "messages before the reload" separator.
-	- Persists the edit-box COMMAND history (Up/Down recall) across /reload.
-	- No copy-chat dialog here: budsUI already ships CopyChat.lua (/copychat).
-
-	Storage shape (per character, created on demand):
-		budsUIData.CharacterData["Realm-Name"].ChatHistory = {
-			lines    = { ["ChatFrame1"] = { { text, r, g, b }, ... }, ... },
-			commands = { mostRecent, ..., oldest },
-		}
-
-	Load-order note: this file is listed BEFORE ChatFrames.lua in budsUI.xml,
-	so our AddMessage wrappers capture the ORIGINAL Blizzard AddMessage and
-	ChatFrames.lua then wraps OUR wrapper with its formatting layer:
-		live message:  ChatFrames.Format -> capture -> Blizzard original
-		restored line: Blizzard original (raw path, no double timestamps)
-	Restored lines are still run through the same raw path with dimmed colors
-	(FrostAtom RESTORED_DIM), while the undimmed text is kept in memory so a
-	follow-up /reload saves the true colors again.
-]]
-
+-- Chat history and edit-box command history restore across /reload.
 local _G = _G
 local type, pairs, ipairs = type, pairs, ipairs
 local tinsert, tremove = table.insert, table.remove

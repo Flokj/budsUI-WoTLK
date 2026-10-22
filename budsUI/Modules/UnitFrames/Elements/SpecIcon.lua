@@ -1,13 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Elements/SpecIcon.lua
-Purpose:
-	Spec icon in the top-right corner of the health bar (player, target and
-	focus). Own spec is read from the talent tabs locally; other players come
-	through the inspect pipeline (K.Inspect, shared with the tooltip spec
-	line), GUID-keyed. Icons are the talent-tree textures per class/spec
-	(SPEC_ICONS, ported from FrostAtomUI's UIKit).
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Elements/SpecIcon.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

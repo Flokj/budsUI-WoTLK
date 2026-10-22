@@ -1,12 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/Skins/Blizzard/CharacterStats.lua
-Purpose:
-	Extended character stats panel (collapsible categories, item level /
-	GearScore header, spec in the level line), sourced from ElvUI_Enhanced
-	via the standalone EnhancedCharacterFrame addon. Disable the standalone
-	version while this skin is on, or the right panel spawns twice.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/Skins/Blizzard/CharacterStats.lua
 
 local K, C, L, _ = select(2, ...):unpack()
 if not C["Skins"].CharacterStats then return end

@@ -1,14 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Compat.lua
-Purpose:
-	Glue between the ported KkthnxUI unit frames and the budsUI engine.
-	budsUI has no module framework and targets WoW 3.3.5, so this file:
-	- creates the shared UnitFrames table (Module) with a tiny RegisterEvent
-	  mixin backed by its own dispatch frame,
-	- exposes the embedded oUF handle (Libs/oUF, X-oUF global),
-	- backfills the K helpers the ported builders expect but budsUI lacks.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Compat.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

@@ -1,16 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Elements/Portrait.lua
-Purpose:
-	The detached portrait box. It sits beside the unit and spans the whole
-	frame height (health, gap, power), squared by the spawn pass.
-
-	Three styles: a 3D model, the flat 2D face texture, or a class icon.
-
-	Ported from KkthnxUI retail to WoW 3.3.5: SetPortraitTexture has no atlas
-	path here, so the crop is applied unconditionally for 2D portraits and
-	class icons use CLASS_ICON_TCOORDS.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Elements/Portrait.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

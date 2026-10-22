@@ -1,13 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/AuraFilter.lua
-Purpose:
-	Which debuff schools the player's class can remove. Used by the group
-	dispel highlight and the dispel-only aura filter.
-
-	Ported from KkthnxUI retail: WotLK dispel table (no monks, evokers, or
-	Cataclysm-era dispel changes; shaman cleanse is Curse-only here).
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/AuraFilter.lua
 
 local Engine = select(2, ...)
 local K = Engine:unpack()

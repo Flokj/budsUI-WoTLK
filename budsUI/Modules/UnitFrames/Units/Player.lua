@@ -1,13 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Units/Player.lua
-Purpose:
-	The player frame. Portrait on the left, health and power stacked, class
-	resource above, debuffs above that, and a free floating castbar down by
-	the action bars the way the original KkthnxUI had it.
-
-	No name text here on purpose. You know who you are.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Units/Player.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

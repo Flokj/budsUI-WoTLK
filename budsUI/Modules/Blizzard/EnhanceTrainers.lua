@@ -1,14 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/Blizzard/EnhanceTrainers.lua
-Purpose:
-	Enhanced class trainer window, ported from Leatrix Plus (WotLK):
-	double-wide frame, taller skill list with extra rows and a
-	"Train All" button with cost tooltip.
-
-	Leatrix's ElvUI compatibility block is intentionally dropped:
-	budsUI is not ElvUI and never loads its skins.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/Blizzard/EnhanceTrainers.lua
 
 local K, C, L, _ = select(2, ...):unpack()
 

@@ -1,20 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Elements/Bars.lua
-Purpose:
-	The bar family: health (with an incoming-heals prediction bar), power,
-	the druid mana strip while shapeshifted.
-
-	Health and power are separate bordered boxes, so each one owns its own
-	background and border rather than sharing one on the parent frame.
-
- 	Ported from KkthnxUI retail to WoW 3.3.5:
- 	- bar smoothing does not exist on this client, dropped;
- 	- Midnight secret-value handling is gone;
- 	- the client has no incoming-heal / absorb prediction APIs, so the
- 	  incoming-heal and absorb segments ride on Module.HealPrediction
- 	  (LibHealComm-4.0 plus combat-log shields) instead of Blizzard APIs.
- -----------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Elements/Bars.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

@@ -1,17 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Elements/ClassPower.lua
-Purpose:
-	Class resources above the player frame: combo points for rogues and
-	feral druids, death knight runes.
-
-	Only the widget the player's class can actually use is built, so a
-	warrior never reserves empty space above their health bar.
-
-	Ported from KkthnxUI retail to WoW 3.3.5: holy power, chi, soul shards,
-	arcane charges, essence, and stagger do not exist here. Combo points ride
-	on classic oUF's CPoints element, runes on its Runes element.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Elements/ClassPower.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

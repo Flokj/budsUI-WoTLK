@@ -1,25 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Elements/Indicators.lua
-Purpose:
-	The small status icons: raid marker, combat, resting, leader, role, ready
-	check, resurrect, summon.
-
-	Every icon sits inside the health bar rather than poking out above it.
-	Group frames are laid out by a secure header, so anything that overflowed
-	the frame would land on the neighbour above.
-
-	Threat is the exception: instead of yet another icon it recolours the
-	health border, which is far easier to read mid pull.
-
-	Ported from KkthnxUI retail to WoW 3.3.5:
-	- classic oUF Threat PostUpdate signature (element, unit, status, r,g,b);
-	- dispel highlight scans with UnitAura (no C_UnitAuras);
-	- no phase indicator (no phasing API);
-	- resting/combat use the Blizzard state icon with 3.3.5 texcoords;
-	- group role shows a tank/healer letter (no role icon art on 3.3.5);
-	- no quest indicator (no quest-mob unit API on 3.3.5).
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Elements/Indicators.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

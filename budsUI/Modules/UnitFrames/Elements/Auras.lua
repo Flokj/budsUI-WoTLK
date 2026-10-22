@@ -1,17 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Elements/Auras.lua
-Purpose:
-	Buff and debuff displays for the unit frames, built on classic oUF's
-	Buffs/Debuffs elements (UnitAura based).
-
-	Ported from KkthnxUI retail to WoW 3.3.5: Blizzard's Midnight
-	CustomAuraContainer does not exist here, so this is a full rewrite that
-	keeps the same look and layout (debuffs above growing right then up,
-	buffs below growing right then down, compact dispel rows beside group
-	frames). Dispel filtering uses a CustomFilter against K.CanDispel because
-	3.3.5 UnitAura has no RAID_DISPELLABLE filter token.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Elements/Auras.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

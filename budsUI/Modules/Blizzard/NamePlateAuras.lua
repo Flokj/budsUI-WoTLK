@@ -1,17 +1,7 @@
 local K, C, L, _ = select(2, ...):unpack()
 if C.Nameplate.Enable ~= true then return end
 
--- FrostAtomUI donor architecture (see _hermes_refs/FrostAtomUI/Modules/NamePlates/Auras.lua):
--- shared guid-keyed aura cache + pools, event-driven (CLEU + UNIT_AURA) with
--- markDirty + deferred single-frame flush, a 0.1s ticker that only refreshes
--- timer text, and dirty-checked drawing. No scheduled per-guid UnitAura scans.
---
--- Public API (kept for Nameplate.lua, which must call only these two):
---   K.NamePlateAuras_Update(plate, unitOrGuid) -- bind plate, scan if needed, redraw via flush
---   K.NamePlateAuras_Hide(plate)               -- release bind + icons
--- WoW 3.3.5 quirk: UnitAura returns only 10 values (no 11th spellID), so all
--- cache matching is by spellId when known with a spell-name fallback.
-
+-- Nameplate auras engine: CLEU + UnitAura cache and icon pool.
 local next, type, unpack = next, type, unpack
 local floor = math.floor
 local MathMin = math.min

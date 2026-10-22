@@ -1,28 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/Blizzard/TalentFrame.lua
-Purpose:
-	Replacement talent window, ported from FrostAtomUI
-	(Modules/Books/TalentFrame.lua): all three talent trees side by side,
-	glyph panel, dual spec tabs, pet talents, talent code import/export,
-	preview mode and spec switch buttons.
-
-Notes:
-	- Gated by C.Blizzard.TalentFrame (default true, needs /rl).
-	- budsUI adaptations (donor ns.* helpers are inlined):
-	  WINDOW_INSET -> { left=16, right=16, top=16, bottom=16 } (top/bottom unused by layout),
-	  SkinIconButton -> donor slot art + normal/pushed/highlight/checked textures,
-	  SetShown -> Show/Hide, Defer -> K.Defer("TalentFrame", refresh) on the shared
-	  Core/Scheduler ticker (all GLYPH_*/talent events dedupe into one next-frame refresh),
-	  CreateInset -> donor border-only "panel", preserving spec/parchment art,
-	  CreateLabel -> CreateFontString, CreateButton -> UIPanelButtonTemplate,
-	  FitButton -> SetWidth, CreateSideTab -> SpellBookSkillLineTabTemplate,
-	  CreateWindow -> custom frame + SetUIPanelLayout attributes,
-	  GlyphSpellIcon -> K.GlyphSpellIcon from Data/GlyphIcons.lua,
-	  TalentTree export -> K.TalentTree (donor ns.TalentTree parity).
-	- StaticPopup dialogs renamed to BUDSUI_* to avoid collisions.
-	- Event registration uses a plain event frame (no module prototype).
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/Blizzard/TalentFrame.lua
 
 local K, C, L, _ = select(2, ...):unpack()
 if C.Blizzard.TalentFrame ~= true then return end

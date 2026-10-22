@@ -1,13 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Units/Target.lua
-Purpose:
-	Target and focus. Both are the player frame mirrored: portrait on the
-	right, name above health, debuffs above the name, buffs below, and a
-	detached castbar.
-
-	Focus is the same shape at a smaller size, so the two share one builder.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Units/Target.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

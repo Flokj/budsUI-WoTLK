@@ -1,14 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Elements/Texts.lua
-Purpose:
-	Text on and around a unit: the name above the health bar, and the health
-	and power values centred on their bars.
-
-	Ported from KkthnxUI retail to WoW 3.3.5: health/power numbers are plain
-	values here (no secret numbers, no UnitHealthPercent API), driven from
-	the bar's own PostUpdate straight into SetFormattedText.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Elements/Texts.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

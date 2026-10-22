@@ -1,15 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Tags.lua
-Purpose:
-	Custom oUF text tags. Bar values are not here on purpose: those are driven
-	straight into SetFormattedText from the bar's PostUpdate (see
-	Elements/Texts.lua).
-
-	Ported from KkthnxUI retail: all Midnight secret-value handling is gone
-	(3.3.5 has no secret values), UnitInPartyIsAI does not exist, and name
-	trimming uses budsUI's UTF-8 safe K.ShortenString.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Tags.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

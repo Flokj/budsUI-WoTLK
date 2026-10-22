@@ -1,16 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Elements/Castbar.lua
-Purpose:
-	Castbars. The player, target, and focus bars are detached and get their
-	own mover, the way the original KkthnxUI placed them. Boss and group bars
-	stay attached to their unit.
-
-	Ported from KkthnxUI retail to WoW 3.3.5: classic oUF drives the progress
-	with start/end arithmetic (no DurationObject, no secret booleans), so the
-	callbacks take plain values. notInterruptible is a normal boolean. No
-	empower stages exist here.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Elements/Castbar.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

@@ -1,16 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Elements/AuraWatch.lua
-Purpose:
-	Corner Aura Watch for party and raid frames. Small dots (or icons) in the
-	frame corners light up when one of the tracked auras from AuraWatchList
-	is present, so a healer can read their heals over time without squinting
-	at the debuff row. Registered as our own oUF element so it refreshes on
-	UNIT_AURA like everything else.
-
-	Ported from KkthnxUI retail to WoW 3.3.5: aura data comes from UnitAura
-	(no C_UnitAuras), which also returns the spell id here.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Elements/AuraWatch.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

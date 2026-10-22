@@ -1,12 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Core/Scheduler.lua
-Purpose:
-	Shared single-frame scheduler ported 1:1 from FrostAtomUI Core/Scheduler.lua.
-	One hidden ticker frame multiplexes tickers, timed callbacks and deferred
-	(next-frame) callbacks so independent callers never clobber each other's
-	OnUpdate scripts. Exposed as K.Scheduler plus K.Defer / K.After shortcuts.
------------------------------------------------------------------------------]]
+-- budsUI :: Core/Scheduler.lua
 
 local K, C, L, _ = select(2, ...):unpack()
 

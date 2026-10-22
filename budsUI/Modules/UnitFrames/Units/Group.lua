@@ -1,19 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Units/Group.lua
-Purpose:
-	Party and raid. Both are header children, which means the header owns the
-	spacing, so nothing here may stack outside the frame bounds. The name goes
-	on the health bar, numbers go on the power bar, and the status icons take
-	the health bar corners.
-
-	Raid is the compact variant: health takes almost the whole frame and the
-	power bar is a hairline along the bottom, so there is no room for numbers.
-
-	Ported from KkthnxUI retail to WoW 3.3.5: power type 0 is mana here too,
-	so the mana-only mode is unchanged apart from the classic PostUpdate
-	signature (element, unit, cur, max).
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Units/Group.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

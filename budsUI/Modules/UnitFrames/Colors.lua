@@ -1,15 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Colors.lua
-Purpose:
-	Power and reaction palette, applied over the oUF colour tables so every
-	health bar coloured by reaction and every power bar uses them. Values live
-	in the config so they can be tuned. Module.ApplyUnitColors re-reads them.
-
-	Ported from KkthnxUI retail: Midnight-only power tokens (Lunar, Maelstrom,
-	Insanity, Fury, Pain) and Enum.PowerType lookups are gone; 3.3.5 power is
-	keyed by token string, which is all classic oUF needs.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Colors.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

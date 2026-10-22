@@ -1,20 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/UnitFrames/Test.lua
-Purpose:
-	Config mode. Instead of drawing throwaway mock frames, this forces the
-	real single frames to show with the player's own data, which is the
-	sturdiest way to preview them.
-
-	Ported from KkthnxUI retail to WoW 3.3.5:
-	- no C_Timer (3.3.5); the follow-up child sweep runs on a one-shot
-	  OnUpdate shim instead;
-	- secure headers cannot conjure phantom units, so solo each header shows
-	  its player child plus spare single-unit preview frames in the group
-	  style (ElvUI-style); grouped, the real members show instead.
-
-	Nothing here runs in combat.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/UnitFrames/Test.lua
 
 local Engine = select(2, ...)
 local K, C = Engine:unpack()

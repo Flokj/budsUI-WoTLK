@@ -1,25 +1,7 @@
 local K, C, L, _ = select(2, ...):unpack()
 if C.Nameplate.Enable ~= true then return end
 
--- Secure-frame HitRect hack ported from FrostAtom (_hermes_refs/frostatom/HitRect.lua).
--- WotLK 3.3.5 nameplate frames ARE PROTECTED (IsProtected() returns true), so plain
--- frame:SetSize() / EnableMouse() from addon code is filtered or errors during
--- combat lockdown. The ONLY working hack resizes the plate's CLICK RECT from
--- INSIDE a registered secure handler:
---   * one hidden SecureFrameTemplate marker per plate holds the wanted size in
---     its clamp rect (marker:SetClampRectInsets(-width, 0, 0, -height));
---   * a SecureHandlerBaseTemplate header WrapScripts every plate's OnShow/OnHide
---     with a sweep body that walks WorldFrame children, counts explicitly
---     protected plates, and calls plate:SetSize(markerWidth, markerHeight) from
---     within the protected environment (works in combat);
---   * a pulse marker + combat state-driver frames re-trigger the sweep while
---     in combat; insecure Update() only writes the marker clamp rect and bumps
---     the pulse counter during lockdown, queuing the direct SetSize for
---     PLAYER_REGEN_ENABLED.
--- budsUI adaptation: no FrostAtom module/db/config deps; plates are tracked in
--- this file's own list (fed by every Update call). Only used for the
--- nameplate blacklist: hidden plates get hit rect (w, 0).
-
+-- Secure-frame click-rect resize for protected WotLK 3.3.5 nameplates.
 local CreateFrame = CreateFrame
 local WorldFrame = WorldFrame
 local InCombatLockdown = InCombatLockdown

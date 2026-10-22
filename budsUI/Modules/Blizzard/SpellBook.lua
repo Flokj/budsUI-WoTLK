@@ -1,21 +1,4 @@
---[[-----------------------------------------------------------------------------
-Addon: budsUI
-File: Modules/Blizzard/SpellBook.lua
-Purpose:
-	Replacement spellbook window, ported from FrostAtomUI (Modules/Books/SpellBook.lua):
-	all spell tabs + pet book in one wide window, 4-column grid, search box,
-	hide-passive / hide-auras (Paladin) / hide-totems (Shaman) filters, secure buttons with cooldowns,
-	drag-drop, autocast and microbutton hook.
-
-Notes:
-	- Gated by C.Blizzard.SpellBook (default true, needs /rl).
-	- Filter state lives in C.Blizzard.SpellBookHidePassive / SpellBookHideAuras / SpellBookHideTotems.
-	- Secure snippets are copied 1:1 from the donor, except PlayerInCombat()
-	  (not present in 3.3.5) which is replaced by InCombatLockdown().
-	- budsUI has no K.WatchConfig, so no config watcher is registered;
-	  the in-window checkboxes write secure attributes directly and sync
-	  back to C.Blizzard in onRender. The config page toggle needs /rl.
------------------------------------------------------------------------------]]
+-- budsUI :: Modules/Blizzard/SpellBook.lua
 
 local K, C, L, _ = select(2, ...):unpack()
 if C.Blizzard.SpellBook ~= true then return end
