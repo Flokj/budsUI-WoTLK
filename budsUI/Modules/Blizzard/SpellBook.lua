@@ -882,21 +882,40 @@ local function createScrollBar()
 	frame.scrollBar = scrollBar
 end
 
-local function createFilterCheck(filter, previous)
-	local name = FRAME_NAME .. filter.option:gsub("^SpellBook", "")
+local function createCheck(name, text, previous)
 	local check = CreateFrame("CheckButton", name, frame, "OptionsSmallCheckButtonTemplate")
 	check:SetSize(26, 26)
 	check:SetHitRectInsets(0, 0, 0, 0)
-	check:EnableMouse(false)
 	local label = _G[name .. "Text"]
 	label:SetFontObject(GameFontNormalSmall)
-	label:SetText(filter.label)
+	label:SetText(text)
 	check.fullWidth = check:GetWidth() + label:GetStringWidth()
 	if previous then
 		check:SetPoint("LEFT", previous, "LEFT", previous.fullWidth + 12, 0)
 	else
 		check:SetPoint("TOPLEFT", 74, -38)
 	end
+	return check
+end
+
+local function createRanksCheck()
+	local check = createCheck(FRAME_NAME .. "ShowAllRanks", SHOW_ALL_SPELL_RANKS or "Show all spell ranks")
+	check:SetScript("OnShow", function(self)
+		self:SetChecked(GetCVarBool("ShowAllSpellRanks"))
+	end)
+	check:SetScript("OnClick", function(self)
+		local checked = self:GetChecked() and true or false
+		PlaySound(checked and "igMainMenuOptionCheckBoxOn" or "igMainMenuOptionCheckBoxOff")
+		SetCVar("ShowAllSpellRanks", checked and "1" or "0")
+		layout()
+	end)
+	return check
+end
+
+local function createFilterCheck(filter, previous)
+	local name = FRAME_NAME .. filter.option:gsub("^SpellBook", "")
+	local check = createCheck(name, filter.label, previous)
+	check:EnableMouse(false)
 	check:SetChecked(C.Blizzard[filter.option])
 	filterChecks[filter] = check
 
@@ -922,6 +941,9 @@ end
 local function createToolbar()
 	local _, class = UnitClass("player")
 	local previous
+	if class ~= "ROGUE" and class ~= "WARRIOR" then
+		previous = createRanksCheck()
+	end
 	for _, filter in ipairs(FILTERS) do
 		if not filter.class or filter.class == class then
 			previous = createFilterCheck(filter, previous)
