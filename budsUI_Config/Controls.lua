@@ -216,7 +216,9 @@ function ns.Set(entry, value)
 		end
 	end
 
-	if entry.reload then
+	if entry.apply then
+		pcall(entry.apply, value)
+	elseif entry.reload then
 		ns.FlagReload()
 	end
 end

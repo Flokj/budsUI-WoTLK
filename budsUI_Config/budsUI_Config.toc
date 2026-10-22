@@ -32,6 +32,7 @@ Pages\Skins.lua
 Pages\Tooltip.lua
 Pages\Unitframe.lua
 Pages\InternalCooldowns.lua
+Pages\Movers.lua
 
 Core.lua
 

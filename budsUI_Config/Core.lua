@@ -9,13 +9,41 @@ local max = math.max
 local tinsert = tinsert
 
 local FRAME_NAME = "budsUIConfigFrame"
-local WIDTH, HEIGHT = 780, 520
-local NAV_WIDTH = 160
+local WIDTH, HEIGHT = 800, 560
+local NAV_WIDTH = 175
 
 local frame
 local currentPage
+local lastSelectedPage
+local makeButton
 
 ns.pages = ns.pages or {}
+
+local CATEGORY_ICONS = {
+	General = "INV_Misc_Gear_01",
+	Profiles = "INV_Misc_ScrollUnrolled01",
+	ActionBar = "INV_Misc_EngGizmos_30",
+	Announcements = "Spell_Holy_Silence",
+	Automation = "Trade_Engineering",
+	Bag = "INV_Misc_Bag_08",
+	Blizzard = "INV_Misc_Book_09",
+	Aura = "Spell_Holy_PowerWordShield",
+	Chat = "INV_Letter_15",
+	Cooldown = "Spell_Nature_TimeStop",
+	Error = "Ability_Creature_Cursed_01",
+	Filger = "Spell_Arcane_StudentOfMagic",
+	Loot = "INV_Box_01",
+	Minimap = "INV_Misc_Map_01",
+	Misc = "INV_Misc_Gear_02",
+	Nameplate = "Ability_Hunter_MarkedForDeath",
+	PowerBar = "Spell_Lightning_LightningBolt01",
+	PulseCD = "Spell_Nature_WispSplode",
+	Skins = "Trade_Engraving",
+	Tooltip = "INV_Misc_Note_01",
+	Unitframe = "Achievement_Character_Human_Male",
+	InternalCooldowns = "INV_Misc_PocketWatch_01",
+	Movers = "Ability_Hunter_Pathfinding",
+}
 
 -- ---------------------------------------------------------------------------
 -- Page loading: Pages/*.lua register via ns.RegisterPage().
@@ -50,6 +78,7 @@ ns.PageFiles = ns.PageFiles or {
 	"Tooltip",
 	"Unitframe",
 	"InternalCooldowns",
+	"Movers",
 }
 
 -- Compile + run one page chunk (loadstring-style). Every page file must
@@ -249,30 +278,197 @@ function ns.RefreshPage(full)
 	end
 end
 
-showPage = function(page)
-	currentPage = page
-	-- Category title removed: right panel shows no header text.
-	if frame.titleText then
-		frame.titleText:SetText("")
-		frame.titleText:Hide()
+local function isPageModified(page)
+	if not page or page.noReset then return false end
+	local function checkSchema(schema)
+		if not schema then return false end
+		local list = (type(schema) == "function" and schema()) or schema
+		for _, entry in ipairs(list) do
+			if not entry.header and not entry.description and not entry.noReset
+					and (entry.group or entry.path) and ns.IsModified(entry) then
+				return true
+			end
+		end
+		return false
 	end
-	buildPageContent(frame.content, page.schema or {}, frame.rows)
-	frame.scroll:SetVerticalScroll(0)
-	ns.RefreshPage()
+	if page.schema and checkSchema(page.schema) then
+		return true
+	end
+	if page.tabs then
+		for _, tab in ipairs(page.tabs) do
+			if checkSchema(tab.schema) then
+				return true
+			end
+		end
+	end
+	return false
 end
+ns.IsPageModified = isPageModified
 
 local function refreshNav()
+	if not frame or not frame.navButtons then return end
 	for _, info in ipairs(frame.navButtons) do
 		if info.page == currentPage then
 			info.button:LockHighlight()
 		else
 			info.button:UnlockHighlight()
 		end
+		if info.dirtyDot then
+			if isPageModified(info.page) then
+				info.dirtyDot:Show()
+			else
+				info.dirtyDot:Hide()
+			end
+		end
 	end
 end
 
-local function selectPage(page)
-	showPage(page)
+showPage = function(page, tabKey)
+	currentPage = page
+	if page.key ~= "__SEARCH__" then
+		lastSelectedPage = page
+	end
+	if frame.titleText then
+		frame.titleText:SetText("")
+		frame.titleText:Hide()
+	end
+
+	local schema
+	if page.tabs and #page.tabs > 0 then
+		if frame.tabBar then
+			frame.tabBar:Show()
+		end
+		frame.scroll:SetPoint("TOPLEFT", 6, -34)
+
+		page.activeTabKey = tabKey or page.activeTabKey or page.tabs[1].key
+		local activeTab = page.tabs[1]
+		for _, tab in ipairs(page.tabs) do
+			if tab.key == page.activeTabKey then
+				activeTab = tab
+				break
+			end
+		end
+
+		if frame.tabBar and frame.tabBar.buttons then
+			for _, btn in ipairs(frame.tabBar.buttons) do
+				btn:Hide()
+			end
+			local x = 0
+			for i, tab in ipairs(page.tabs) do
+				local btn = frame.tabBar.buttons[i]
+				if not btn then
+					btn = makeButton(frame.tabBar, tab.name or tab.key, 90)
+					btn:SetHeight(20)
+					frame.tabBar.buttons[i] = btn
+				end
+				btn:ClearAllPoints()
+				btn:SetPoint("LEFT", x, 0)
+				btn:SetText(tab.name or tab.key)
+				btn:SetWidth(max(75, btn:GetFontString():GetStringWidth() + 16))
+				btn:Show()
+				if tab.key == page.activeTabKey then
+					btn:LockHighlight()
+				else
+					btn:UnlockHighlight()
+				end
+				local tKey = tab.key
+				btn:SetScript("OnClick", function()
+					PlaySound("igMainMenuOptionCheckBoxOn")
+					page.activeTabKey = tKey
+					showPage(page, tKey)
+				end)
+				x = x + btn:GetWidth() + 4
+			end
+		end
+		schema = (type(activeTab.schema) == "function" and activeTab.schema()) or activeTab.schema or {}
+	else
+		if frame.tabBar then
+			frame.tabBar:Hide()
+		end
+		frame.scroll:SetPoint("TOPLEFT", 6, -8)
+		schema = (type(page.schema) == "function" and page.schema()) or page.schema or {}
+	end
+
+	buildPageContent(frame.content, schema, frame.rows)
+	frame.scroll:SetVerticalScroll(0)
+	ns.RefreshPage()
+	refreshNav()
+end
+
+local function selectPage(page, tabKey)
+	showPage(page, tabKey)
+	refreshNav()
+end
+
+function ns.PerformSearch(query)
+	if not query or query == "" then
+		if lastSelectedPage then
+			selectPage(lastSelectedPage)
+		end
+		return
+	end
+	local q = string.lower(query)
+	local results = {}
+	local seen = {}
+
+	local function scanSchema(schema, catName)
+		if not schema then return end
+		local list = (type(schema) == "function" and schema()) or schema
+		for _, entry in ipairs(list) do
+			if not entry.header and not entry.description and not entry.noReset
+					and (entry.group or entry.path or entry.label) then
+				local label = entry.label and string.lower(entry.label) or ""
+				local desc = entry.desc and string.lower(entry.desc) or ""
+				local group = entry.group and string.lower(entry.group) or ""
+				local opt = entry.option and string.lower(entry.option) or ""
+				if label:find(q, 1, true) or desc:find(q, 1, true)
+						or group:find(q, 1, true) or opt:find(q, 1, true) then
+					local uid = tostring(entry.group) .. "." .. tostring(entry.option) .. "." .. tostring(entry.key or entry.path or entry.label)
+					if not seen[uid] then
+						seen[uid] = true
+						local copy = {}
+						for k, v in pairs(entry) do
+							copy[k] = v
+						end
+						copy.label = "|cff808080[" .. catName .. "]|r " .. (entry.label or "")
+						results[#results + 1] = copy
+					end
+				end
+			end
+		end
+	end
+
+	for _, page in ipairs(ns.pages) do
+		local catName = page.name or page.key or "Page"
+		if page.tabs and #page.tabs > 0 then
+			for _, tab in ipairs(page.tabs) do
+				scanSchema(tab.schema, catName .. " > " .. (tab.name or tab.key))
+			end
+		elseif page.schema then
+			scanSchema(page.schema, catName)
+		end
+	end
+
+	local searchSchema = {
+		{ header = "Search Results (" .. #results .. ")" },
+	}
+	if #results == 0 then
+		searchSchema[#searchSchema + 1] = {
+			description = "No settings found matching \"" .. query .. "\".",
+		}
+	else
+		for _, item in ipairs(results) do
+			searchSchema[#searchSchema + 1] = item
+		end
+	end
+
+	local searchPage = {
+		key = "__SEARCH__",
+		name = "Search Results",
+		schema = searchSchema,
+		noReset = true,
+	}
+	showPage(searchPage)
 	refreshNav()
 end
 
@@ -281,12 +477,24 @@ end
 -- ---------------------------------------------------------------------------
 
 StaticPopupDialogs["BUDSUI_CONFIG_RESET_PAGE"] = {
-	text = "Reset all %s settings on this page to defaults?",
+	text = "Reset all %s settings to defaults?",
 	button1 = YES,
 	button2 = CANCEL,
 	OnAccept = function(self, page)
 		if page then
-			for _, entry in ipairs(page.schema) do
+			local schema = {}
+			if page.tabs and #page.tabs > 0 then
+				local activeKey = page.activeTabKey or page.tabs[1].key
+				for _, tab in ipairs(page.tabs) do
+					if tab.key == activeKey then
+						schema = (type(tab.schema) == "function" and tab.schema()) or tab.schema or {}
+						break
+					end
+				end
+			else
+				schema = (type(page.schema) == "function" and page.schema()) or page.schema or {}
+			end
+			for _, entry in ipairs(schema) do
 				if not entry.header and not entry.description and not entry.noReset
 						and (entry.group or entry.path) then
 					ns.ResetEntry(entry)
@@ -353,7 +561,7 @@ local function backdropOf(panel)
 	end
 end
 
-local function makeButton(parent, text, width)
+makeButton = function(parent, text, width)
 	local button = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
 	button:SetSize(width or 100, 23)
 	button:SetText(text)
@@ -414,47 +622,163 @@ local function createFrame()
 	-- Hint text ("Right-click ... APPLY reloads UI") removed.
 	frame.titleText = nil
 
-	-- Left: nav (fixed list, all 22 pages fit without scrolling) ----
+	-- Left: nav (search + scrollable category list) ----
 	local navPanel = CreateFrame("Frame", nil, frame)
 	navPanel:SetPoint("TOPLEFT", 12, -40)
 	navPanel:SetSize(NAV_WIDTH, HEIGHT - 40 - 44)
 	backdropOf(navPanel)
 
-	-- Plain container instead of a ScrollFrame: no scrollbar needed.
-	local navList = CreateFrame("Frame", nil, navPanel)
-	navList:SetPoint("TOPLEFT", 4, -6)
-	navList:SetPoint("BOTTOMRIGHT", -4, 6)
+	-- Search box at top of navPanel
+	local searchBox = CreateFrame("EditBox", FRAME_NAME .. "SearchBox", navPanel)
+	searchBox:SetPoint("TOPLEFT", 6, -6)
+	searchBox:SetPoint("TOPRIGHT", -26, -6)
+	searchBox:SetHeight(20)
+	searchBox:SetAutoFocus(false)
+	searchBox:SetFontObject("GameFontHighlightSmall")
+	searchBox:SetTextInsets(4, 4, 0, 0)
+	backdropOf(searchBox)
 
-	local navChild = navList
+	local searchHint = searchBox:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+	searchHint:SetPoint("LEFT", 6, 0)
+	searchHint:SetText("Search...")
+	frame.searchHint = searchHint
+
+	local clearBtn = CreateFrame("Button", nil, navPanel)
+	clearBtn:SetPoint("LEFT", searchBox, "RIGHT", 4, 0)
+	clearBtn:SetSize(18, 18)
+	local clearText = clearBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+	clearText:SetPoint("CENTER")
+	clearText:SetText("x")
+	clearBtn:SetFontString(clearText)
+	clearBtn:SetScript("OnClick", function()
+		searchBox:SetText("")
+		searchBox:ClearFocus()
+		if lastSelectedPage then
+			selectPage(lastSelectedPage)
+		end
+	end)
+
+	searchBox:SetScript("OnEscapePressed", function(self)
+		self:SetText("")
+		self:ClearFocus()
+		if lastSelectedPage then
+			selectPage(lastSelectedPage)
+		end
+	end)
+
+	searchBox:SetScript("OnEditFocusGained", function()
+		searchHint:Hide()
+	end)
+	searchBox:SetScript("OnEditFocusLost", function(self)
+		if self:GetText() == "" then
+			searchHint:Show()
+		end
+	end)
+
+	searchBox:SetScript("OnTextChanged", function(self)
+		local text = self:GetText()
+		if text and text ~= "" then
+			searchHint:Hide()
+			if #text >= 2 then
+				ns.PerformSearch(text)
+			end
+		else
+			if not self:HasFocus() then
+				searchHint:Show()
+			end
+			if currentPage and currentPage.key == "__SEARCH__" and lastSelectedPage then
+				selectPage(lastSelectedPage)
+			end
+		end
+	end)
+	frame.searchBox = searchBox
+
+	local navScroll = CreateFrame("ScrollFrame", FRAME_NAME .. "NavScroll", navPanel)
+	navScroll:SetPoint("TOPLEFT", 4, -30)
+	navScroll:SetPoint("BOTTOMRIGHT", -4, 4)
+	navScroll:EnableMouseWheel(true)
+
+	local navChild = CreateFrame("Frame", nil, navScroll)
+	navChild:SetPoint("TOPLEFT")
+	navChild:SetWidth(NAV_WIDTH - 8)
+	navChild:SetHeight(100)
+	navScroll:SetScrollChild(navChild)
+	frame.navScroll = navScroll
+
+	navScroll:SetScript("OnMouseWheel", function(self, delta)
+		local current = self:GetVerticalScroll()
+		local maxScroll = max(0, navChild:GetHeight() - navScroll:GetHeight())
+		local newScroll = min(maxScroll, max(0, current - delta * 25))
+		self:SetVerticalScroll(newScroll)
+	end)
 
 	frame.navButtons = {}
 	local y = -2
 	for _, page in ipairs(ns.pages) do
 		local button = CreateFrame("Button", nil, navChild)
 		button:SetPoint("TOPLEFT", 2, y)
-		button:SetSize(NAV_WIDTH - 36, 18)
+		button:SetSize(NAV_WIDTH - 12, 18)
+
+		local icon = button:CreateTexture(nil, "ARTWORK")
+		icon:SetSize(14, 14)
+		icon:SetPoint("LEFT", 2, 0)
+		local iconName = CATEGORY_ICONS[page.key] or "INV_Misc_QuestionMark"
+		icon:SetTexture("Interface\\Icons\\" .. iconName)
+		icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+		button.icon = icon
+
 		local label = button:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-		label:SetAllPoints()
+		label:SetPoint("LEFT", icon, "RIGHT", 4, 0)
+		label:SetPoint("RIGHT", button, "RIGHT", -14, 0)
 		label:SetJustifyH("LEFT")
 		label:SetText(page.name or page.key or "?")
 		button:SetFontString(label)
+		button.label = label
+
+		local dot = button:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+		dot:SetPoint("RIGHT", button, "RIGHT", -2, 0)
+		dot:SetText("|cff59bfff*|r")
+		dot:Hide()
+		button.dirtyDot = dot
+
 		button:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
 		local p = page
 		button:SetScript("OnClick", function()
 			PlaySound("igMainMenuOptionCheckBoxOn")
+			searchBox:SetText("")
+			searchBox:ClearFocus()
 			selectPage(p)
 		end)
-		frame.navButtons[#frame.navButtons + 1] = { button = button, page = page }
+		button:SetScript("OnEnter", function(self)
+			if ns.IsPageModified and ns.IsPageModified(p) then
+				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+				GameTooltip:SetText(p.name or p.key)
+				GameTooltip:AddLine("Has modified settings", 0.35, 0.75, 1.0)
+				GameTooltip:Show()
+			end
+		end)
+		button:SetScript("OnLeave", function()
+			GameTooltip:Hide()
+		end)
+
+		frame.navButtons[#frame.navButtons + 1] = { button = button, page = page, dirtyDot = dot }
 		y = y - 19
 	end
-	-- navList is anchor-fixed (TOPLEFT/BOTTOMRIGHT of navPanel): 22 rows of
-	-- 19px = ~420px fit into the ~424px tall list, no scrollbar needed.
+	navChild:SetHeight(math.abs(y) + 10)
 
 	-- Right: page scroll + content ----
 	local rightPanel = CreateFrame("Frame", nil, frame)
 	rightPanel:SetPoint("TOPLEFT", navPanel, "TOPRIGHT", 8, 0)
 	rightPanel:SetPoint("BOTTOMRIGHT", -12, 44)
 	backdropOf(rightPanel)
+
+	local tabBar = CreateFrame("Frame", nil, rightPanel)
+	tabBar:SetPoint("TOPLEFT", 6, -6)
+	tabBar:SetPoint("TOPRIGHT", -26, -6)
+	tabBar:SetHeight(24)
+	tabBar:Hide()
+	tabBar.buttons = {}
+	frame.tabBar = tabBar
 
 	local scroll = CreateFrame("ScrollFrame", FRAME_NAME .. "Scroll", rightPanel, "UIPanelScrollFrameTemplate")
 	scroll:SetPoint("TOPLEFT", 6, -8)
@@ -463,7 +787,7 @@ local function createFrame()
 
 	local content = CreateFrame("Frame", nil, scroll)
 	content:SetPoint("TOPLEFT")
-	content:SetWidth(560)
+	content:SetWidth(580)
 	content:SetHeight(100)
 	scroll:SetScrollChild(content)
 	frame.content = content

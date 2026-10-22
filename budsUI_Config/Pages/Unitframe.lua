@@ -57,7 +57,7 @@ local TEXT_FORMAT = {
 	{ "Both", "Both" },
 }
 
-local schema = {
+local generalSchema = {
 	{ header = L_GUI_UNITFRAME_GENERAL or "General" },
 	T("Enable", L_GUI_UNITFRAME_ENABLE or "Enable unitframes", {
 		type = "toggle", reload = true,
@@ -174,12 +174,14 @@ local schema = {
 		type = "toggle",
 		desc = "Corner dots on party/raid frames for tracked heals.",
 	}),
+}
 
+local unitsSchema = {
 	{ header = L_GUI_UNITFRAME_OPT_PLAYER or "Player" },
 	S("Player", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle" }),
 }
 for _, e in ipairs(Dims("Player")) do
-	schema[#schema + 1] = e
+	unitsSchema[#unitsSchema + 1] = e
 end
 for _, e in ipairs({
 	S("Player", "Buffs", L_GUI_UNITFRAME_OPT_BUFFS or "Buffs", { type = "toggle" }),
@@ -192,44 +194,46 @@ for _, e in ipairs({
 	}),
 	S("Player", "ShowName", L_GUI_UNITFRAME_OPT_SHOW_NAME or "Show name", { type = "toggle" }),
 }) do
-	schema[#schema + 1] = e
+	unitsSchema[#unitsSchema + 1] = e
 end
 
-schema[#schema + 1] = { header = L_GUI_UNITFRAME_OPT_TARGET or "Target" }
-schema[#schema + 1] = S("Target", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle" })
+unitsSchema[#unitsSchema + 1] = { header = L_GUI_UNITFRAME_OPT_TARGET or "Target" }
+unitsSchema[#unitsSchema + 1] = S("Target", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle" })
 for _, e in ipairs(Dims("Target")) do
-	schema[#schema + 1] = e
+	unitsSchema[#unitsSchema + 1] = e
 end
-schema[#schema + 1] = S("Target", "Buffs", L_GUI_UNITFRAME_OPT_BUFFS or "Buffs", { type = "toggle" })
-schema[#schema + 1] = S("Target", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS or "Debuffs", { type = "toggle" })
+unitsSchema[#unitsSchema + 1] = S("Target", "Buffs", L_GUI_UNITFRAME_OPT_BUFFS or "Buffs", { type = "toggle" })
+unitsSchema[#unitsSchema + 1] = S("Target", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS or "Debuffs", { type = "toggle" })
 
-schema[#schema + 1] = { header = L_GUI_UNITFRAME_OPT_FOCUS or "Focus" }
-schema[#schema + 1] = S("Focus", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle" })
+unitsSchema[#unitsSchema + 1] = { header = L_GUI_UNITFRAME_OPT_FOCUS or "Focus" }
+unitsSchema[#unitsSchema + 1] = S("Focus", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle" })
 for _, e in ipairs(Dims("Focus")) do
-	schema[#schema + 1] = e
+	unitsSchema[#unitsSchema + 1] = e
 end
-schema[#schema + 1] = S("Focus", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS or "Debuffs", { type = "toggle" })
+unitsSchema[#unitsSchema + 1] = S("Focus", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS or "Debuffs", { type = "toggle" })
 
-schema[#schema + 1] = { header = L_GUI_UNITFRAME_OPT_TARGETTOT or "Target of target" }
-schema[#schema + 1] = S("TargetOfTarget", "Enable", "Target of target", { type = "toggle" })
+unitsSchema[#unitsSchema + 1] = { header = L_GUI_UNITFRAME_OPT_TARGETTOT or "Target of target" }
+unitsSchema[#unitsSchema + 1] = S("TargetOfTarget", "Enable", "Target of target", { type = "toggle" })
 for _, e in ipairs(Dims("TargetOfTarget")) do
-	schema[#schema + 1] = e
+	unitsSchema[#unitsSchema + 1] = e
 end
-schema[#schema + 1] = S("TargetOfTarget", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS or "Debuffs", { type = "toggle" })
-schema[#schema + 1] = { header = L_GUI_UNITFRAME_OPT_PET or "Pet" }
-schema[#schema + 1] = S("Pet", "Enable", "Pet", { type = "toggle" })
+unitsSchema[#unitsSchema + 1] = S("TargetOfTarget", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS or "Debuffs", { type = "toggle" })
+unitsSchema[#unitsSchema + 1] = { header = L_GUI_UNITFRAME_OPT_PET or "Pet" }
+unitsSchema[#unitsSchema + 1] = S("Pet", "Enable", "Pet", { type = "toggle" })
 for _, e in ipairs(Dims("Pet")) do
-	schema[#schema + 1] = e
+	unitsSchema[#unitsSchema + 1] = e
 end
-schema[#schema + 1] = S("Pet", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS or "Debuffs", { type = "toggle" })
-schema[#schema + 1] = { header = L_GUI_UNITFRAME_OPT_FOCUSTARGET or "Focus target" }
-schema[#schema + 1] = S("FocusTarget", "Enable", "Focus target", { type = "toggle" })
+unitsSchema[#unitsSchema + 1] = S("Pet", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS or "Debuffs", { type = "toggle" })
+unitsSchema[#unitsSchema + 1] = { header = L_GUI_UNITFRAME_OPT_FOCUSTARGET or "Focus target" }
+unitsSchema[#unitsSchema + 1] = S("FocusTarget", "Enable", "Focus target", { type = "toggle" })
 for _, e in ipairs(Dims("FocusTarget")) do
-	schema[#schema + 1] = e
+	unitsSchema[#unitsSchema + 1] = e
 end
-schema[#schema + 1] = S("FocusTarget", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS or "Debuffs", { type = "toggle" })
+unitsSchema[#unitsSchema + 1] = S("FocusTarget", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS or "Debuffs", { type = "toggle" })
 
-schema[#schema + 1] = { header = L_GUI_UNITFRAME_OPT_PARTY or "Party" }
+local groupSchema = {
+	{ header = L_GUI_UNITFRAME_OPT_PARTY or "Party" },
+}
 for _, e in ipairs({
 	S("Party", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle" }),
 	S("Party", "Width", L_GUI_UNITFRAME_WIDTH or "Width", { type = "number", min = 40, max = 400, step = 1 }),
@@ -246,10 +250,10 @@ for _, e in ipairs({
 	S("Party", "DispelHighlight", L_GUI_UNITFRAME_OPT_DISPEL or "Dispel highlight", { type = "toggle" }),
 	S("Party", "Castbar", L_GUI_UNITFRAME_OPT_CASTBAR or "Castbar", { type = "toggle" }),
 }) do
-	schema[#schema + 1] = e
+	groupSchema[#groupSchema + 1] = e
 end
 
-schema[#schema + 1] = { header = L_GUI_UNITFRAME_OPT_RAID or "Raid" }
+groupSchema[#groupSchema + 1] = { header = L_GUI_UNITFRAME_OPT_RAID or "Raid" }
 for _, e in ipairs({
 	S("Raid", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle" }),
 	S("Raid", "Width", L_GUI_UNITFRAME_WIDTH or "Width", { type = "number", min = 40, max = 200, step = 1 }),
@@ -286,13 +290,13 @@ for _, e in ipairs({
 	S("Raid", "DispelHighlight", L_GUI_UNITFRAME_OPT_DISPEL or "Dispel highlight", { type = "toggle" }),
 	S("Raid", "ShowGroupNumber", L_GUI_UNITFRAME_OPT_GROUP_NUMBERS or "Group numbers", { type = "toggle" }),
 }) do
-	schema[#schema + 1] = e
+	groupSchema[#groupSchema + 1] = e
 end
 
-schema[#schema + 1] = { header = L_GUI_UNITFRAME_OPT_BOSS or "Boss" }
-schema[#schema + 1] = S("Boss", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle" })
+groupSchema[#groupSchema + 1] = { header = L_GUI_UNITFRAME_OPT_BOSS or "Boss" }
+groupSchema[#groupSchema + 1] = S("Boss", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle" })
 for _, e in ipairs(Dims("Boss")) do
-	schema[#schema + 1] = e
+	groupSchema[#groupSchema + 1] = e
 end
 for _, e in ipairs({
 	S("Boss", "Spacing", L_GUI_UNITFRAME_SPACING or "Spacing", {
@@ -302,10 +306,12 @@ for _, e in ipairs({
 	S("Boss", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS or "Debuffs", { type = "toggle" }),
 	S("Boss", "Castbar", L_GUI_UNITFRAME_OPT_CASTBAR or "Castbar", { type = "toggle" }),
 }) do
-	schema[#schema + 1] = e
+	groupSchema[#groupSchema + 1] = e
 end
 
-schema[#schema + 1] = { header = L_GUI_UNITFRAME_OPT_AURAS or "Auras" }
+local elementsSchema = {
+	{ header = L_GUI_UNITFRAME_OPT_AURAS or "Auras" },
+}
 for _, e in ipairs({
 	S("Auras", "PerRow", L_GUI_UNITFRAME_OPT_PER_ROW or "Auras per row", {
 		type = "number", min = 1, max = 12, step = 1,
@@ -340,18 +346,18 @@ for _, e in ipairs({
 		desc = "Which aura block is closer to the frame when both are below.",
 	}),
 }) do
-	schema[#schema + 1] = e
+	elementsSchema[#elementsSchema + 1] = e
 end
 
-schema[#schema + 1] = { header = L_GUI_UNITFRAME_OPT_CLASSPOWER or "Class power", advanced = true }
-schema[#schema + 1] = S("ClassPower", "Height", L_GUI_UNITFRAME_HEIGHT or "Height", {
+elementsSchema[#elementsSchema + 1] = { header = L_GUI_UNITFRAME_OPT_CLASSPOWER or "Class power", advanced = true }
+elementsSchema[#elementsSchema + 1] = S("ClassPower", "Height", L_GUI_UNITFRAME_HEIGHT or "Height", {
 	type = "number", min = 4, max = 30, step = 1, advanced = true,
 })
-schema[#schema + 1] = S("ClassPower", "Spacing", L_GUI_UNITFRAME_SPACING or "Spacing", {
+elementsSchema[#elementsSchema + 1] = S("ClassPower", "Spacing", L_GUI_UNITFRAME_SPACING or "Spacing", {
 	type = "number", min = 0, max = 20, step = 1, advanced = true,
 })
 
-schema[#schema + 1] = { header = L_GUI_UNITFRAME_OPT_CASTBAR or "Castbar" }
+elementsSchema[#elementsSchema + 1] = { header = L_GUI_UNITFRAME_OPT_CASTBAR or "Castbar" }
 for _, e in ipairs({
 	S("Castbar", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle" }),
 	S("Castbar", "ShowIcon", L_GUI_UNITFRAME_OPT_SHOW_ICON or "Icon", { type = "toggle" }),
@@ -381,20 +387,20 @@ for _, e in ipairs({
 		type = "number", min = 10, max = 60, step = 1,
 	}),
 }) do
-	schema[#schema + 1] = e
+	elementsSchema[#elementsSchema + 1] = e
 end
 
-schema[#schema + 1] = { header = L_GUI_UNITFRAME_OPT_POWERS or "Power colors", advanced = true }
+elementsSchema[#elementsSchema + 1] = { header = L_GUI_UNITFRAME_OPT_POWERS or "Power colors", advanced = true }
 for _, token in ipairs({ "MANA", "RAGE", "FOCUS", "ENERGY", "RUNIC_POWER" }) do
 	local label = token:lower():gsub("^%l", string.upper):gsub("_(%l)", function(c)
 		return " " .. string.upper(c)
 	end)
-	schema[#schema + 1] = S("PowerColors", token, label, { type = "color", advanced = true })
+	elementsSchema[#elementsSchema + 1] = S("PowerColors", token, label, { type = "color", advanced = true })
 end
 
-schema[#schema + 1] = { header = L_GUI_UNITFRAME_OPT_REACTION or "Reaction colors", advanced = true }
+elementsSchema[#elementsSchema + 1] = { header = L_GUI_UNITFRAME_OPT_REACTION or "Reaction colors", advanced = true }
 for i = 1, 8 do
-	schema[#schema + 1] = S("ReactionColors", i,
+	elementsSchema[#elementsSchema + 1] = S("ReactionColors", i,
 		_G["FACTION_STANDING_LABEL" .. i] or ("Reaction " .. i),
 		{ type = "color", advanced = true })
 end
@@ -403,5 +409,10 @@ ns.RegisterPage({
 	key = "Unitframe",
 	name = L_GUI_UNITFRAME or "Unitframes",
 	order = 22,
-	schema = schema,
+	tabs = {
+		{ key = "General", name = "General", schema = generalSchema },
+		{ key = "Units", name = "Units", schema = unitsSchema },
+		{ key = "Group", name = "Group", schema = groupSchema },
+		{ key = "Elements", name = "Elements", schema = elementsSchema },
+	},
 })
