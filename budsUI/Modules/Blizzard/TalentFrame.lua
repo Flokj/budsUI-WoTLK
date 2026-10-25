@@ -22,6 +22,7 @@ local GetNumGlyphSockets, GetGlyphSocketInfo, GlyphMatchesSocket, PlaceGlyphInSo
 local GetSpellInfo, IsShiftKeyDown, SetPortraitTexture, UnitName =
 	GetSpellInfo, IsShiftKeyDown, SetPortraitTexture, UnitName
 local SetCVar = SetCVar
+local SendChatMessage = SendChatMessage
 local select2, min, max, abs, sort, tconcat, tonumber =
 	select, math.min, math.max, math.abs, table.sort, table.concat, tonumber
 
@@ -81,6 +82,13 @@ local STR_PASTE_CODE = "Paste code"
 local STR_PASTE_TIP = "Places the talents of a Wowhead talent code as a preview, Learn learns them"
 local STR_COPY_HELP = "Ctrl+C to copy"
 local STR_PASTE_HELP = "Paste a talent code (Ctrl+V)"
+
+-- Third talent set served by the realm (WowCircle ".spec 3" chat command). The
+-- 3.3.5 client only knows two talent groups, so this is a command button, not a real tab.
+local STR_THIRD_SPEC = "Third talent set"
+local STR_THIRD_SPEC_TIP = "Toggles the third talent set into the second slot via the server commands \".spec 2\" / \".spec 3\""
+local STR_THIRD_ACTIVE = "Third set is active - click to return to the second"
+local STR_THIRD_INACTIVE = "Second set is active - click to load the third"
 
 local BRANCH_COORDS = {
 	down = { [true] = { 0, 0.125, 0, 0.484375 }, [false] = { 0, 0.125, 0.515625, 1 } },
@@ -644,6 +652,135 @@ local function showSpecTooltip(self)
 	GameTooltip:Show()
 end
 
+local thirdPending
+
+-- Per-character storage for the third-spec toggle (budsUIData SavedVariables).
+local function thirdSpecStore()
+	if type(budsUIData) ~= "table" then
+		budsUIData = {}
+	end
+	if type(budsUIData.CharacterData) ~= "table" then
+		budsUIData.CharacterData = {}
+	end
+	local key = (K.Realm or GetRealmName()) .. "-" .. (K.Name or UnitName("player"))
+	if type(budsUIData.CharacterData[key]) ~= "table" then
+		budsUIData.CharacterData[key] = {}
+	end
+	if type(budsUIData.CharacterData[key].ThirdSpec) ~= "table" then
+		budsUIData.CharacterData[key].ThirdSpec = {}
+	end
+	return budsUIData.CharacterData[key].ThirdSpec
+end
+
+-- Fingerprint of the talent content currently loaded into group 2. The realm
+-- swaps the third spec into group 2, so this is the only client-side way to tell
+-- which server set is mounted there.
+local function thirdFingerprint(cache)
+	if not cache or not cache.numTabs then
+		return nil
+	end
+	local parts = {}
+	for index = 1, cache.numTabs do
+		local info = cache[index]
+		if info and info.name then
+			parts[#parts + 1] = info.name
+			parts[#parts + 1] = info.icon or "?"
+			parts[#parts + 1] = info.pointsSpent or 0
+		else
+			parts[#parts + 1] = "#"
+		end
+	end
+	parts[#parts + 1] = cache.primaryTabIndex or 0
+	return tconcat(parts, "|")
+end
+
+local function thirdReadFingerprint()
+	local tab = frame and frame.specTabs and frame.specTabs[2]
+	if not tab or not tab.cache then
+		return nil
+	end
+	return thirdFingerprint(tab.cache)
+end
+
+-- Is the mounted group-2 content the realm's third set? Falls back to the last
+-- user intent while the button is still learning the two builds.
+local function thirdIsThird(store, cur)
+	if store.fp2 and store.fp3 and store.fp2 ~= store.fp3 then
+		return cur and cur == store.fp3 or false
+	end
+	return store.onThird and true or false
+end
+
+local function syncThirdSpec()
+	local tab = frame and frame.specTabs and frame.specTabs[2]
+	if not tab or not tab.cache then
+		return
+	end
+	if GetNumTalentGroups(false, false) < 2 then
+		return
+	end
+	TalentFrame_UpdateSpecInfoCache(tab.cache, false, false, 2)
+	local store = thirdSpecStore()
+	local cur = thirdFingerprint(tab.cache)
+	if thirdPending then
+		-- Learn the build only when the click actually changed group-2 content.
+		if cur and cur ~= thirdPending.before and cur ~= store.fp2 and cur ~= store.fp3 then
+			if thirdPending.spec == "3" then
+				store.fp3 = cur
+			else
+				store.fp2 = cur
+			end
+		end
+		thirdPending = nil
+	end
+	local onThird = thirdIsThird(store, cur)
+	if onThird ~= (store.onThird and true or false) then
+		store.onThird = onThird
+	end
+	local third = frame.thirdTab
+	if third then
+		third:SetChecked(onThird)
+		if third.badge then
+			third.badge:SetTextColor(onThird and 1 or 1, onThird and 0.82 or 1, onThird and 0 or 1)
+		end
+		-- Mirror the mounted slot-2 build: second-tree icon normally, third-tree
+		-- icon while the third set is swapped in. The "3" badge keeps the button distinct.
+		local info = tab.cache.primaryTabIndex and tab.cache[tab.cache.primaryTabIndex]
+		if info and info.icon then
+			third:SetNormalTexture(info.icon)
+		end
+	end
+end
+
+local function activateThirdSpec()
+	local store = thirdSpecStore()
+	local cur = thirdReadFingerprint()
+	local onThird = thirdIsThird(store, cur)
+	if onThird then
+		SendChatMessage(".spec 2", "SAY")
+		store.onThird = false
+		thirdPending = { spec = "2", before = cur }
+	else
+		SendChatMessage(".spec 3", "SAY")
+		store.onThird = true
+		thirdPending = { spec = "3", before = cur }
+	end
+	PlaySound("igCharacterInfoTab")
+	K.After(0.8, syncThirdSpec)
+end
+
+local function showThirdSpecTooltip(self)
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+	GameTooltip:AddLine(STR_THIRD_SPEC, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
+	local onThird = thirdIsThird(thirdSpecStore(), thirdReadFingerprint())
+	GameTooltip:AddLine(
+		onThird and STR_THIRD_ACTIVE or STR_THIRD_INACTIVE,
+		GREEN_FONT_COLOR.r, GREEN_FONT_COLOR.g, GREEN_FONT_COLOR.b
+	)
+	GameTooltip:AddLine(STR_THIRD_SPEC_TIP, HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b, true)
+	GameTooltip:Show()
+end
+
 local function updateSpecTabs(numGroups, numPetGroups)
 	local showTabs = numGroups > 1 or numPetGroups > 0
 	local y
@@ -679,6 +816,19 @@ local function updateSpecTabs(numGroups, numPetGroups)
 			tab:Hide()
 		end
 	end
+
+	local third = frame.thirdTab
+	if third then
+		if showTabs then
+			third:ClearAllPoints()
+			third:SetPoint("TOPLEFT", frame, "TOPRIGHT", SIDE_TAB_X, (y or SIDE_TAB_Y) - BUTTON_SIZE - 22)
+			third:Show()
+		else
+			third:Hide()
+		end
+	end
+
+	syncThirdSpec()
 end
 
 local function updateStatus(numGroups)
@@ -1353,6 +1503,21 @@ local function createFrame()
 		specTabs[i] = tab
 	end
 	frame.specTabs = specTabs
+
+	local third = createSideTab(frame, QUESTION_MARK)
+	third:SetScript("OnClick", activateThirdSpec)
+	third:SetScript("OnEnter", showThirdSpecTooltip)
+	third:SetScript("OnLeave", function()
+		GameTooltip:Hide()
+	end)
+	local badge = third:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	badge:SetPoint("BOTTOMRIGHT", -1, 0)
+	badge:SetText("3")
+	badge:SetTextColor(1, 1, 1)
+	badge:SetShadowColor(0, 0, 0, 1)
+	badge:SetShadowOffset(1, -1)
+	third.badge = badge
+	frame.thirdTab = third
 
 	createStatus()
 	for i = 1, MAX_TABS do

@@ -17,7 +17,7 @@ local GetTime = GetTime
 local UnitGUID = UnitGUID
 
 local totemSize = 32
-local totemSpacing = 8
+local totemSpacing = 6
 local totemWidth = (totemSize * 4) + (totemSpacing * 3)
 
 local MAX_TOTEMS = 4
