@@ -484,6 +484,8 @@ K.ConfigValidationRules = {
 	["Chat.Enable"] = {"boolean"},
 	["Chat.WhisperSound"] = {"boolean"},
 	["Chat.LinkBrackets"] = {"boolean"},
+	["Chat.ClassColorMentions"] = {"boolean"},
+	["Chat.ClassColorMentionsSpeech"] = {"boolean"},
 	["Chat.SavedHistoryLines"] = {"number", 0, 500},
 	["Chat.SavedCommands"] = {"number", 0, 500},
 	

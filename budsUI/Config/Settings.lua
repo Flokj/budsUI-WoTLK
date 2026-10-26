@@ -123,6 +123,8 @@ C["Chat"] = {
 	["BubbleShowSender"] = true,
 	["BubbleTypeBorder"] = true,
 	["BubbleMaxWidth"] = 300,
+	["ClassColorMentions"] = true, -- chat: recolor player names mentioned in messages by class color
+	["ClassColorMentionsSpeech"] = true, -- bubbles: same, inside chat bubbles
 }
 -- Cooldown Options
 C["Cooldown"] = {

@@ -29,6 +29,10 @@ ns.RegisterPage({
 		T("Enable", L_GUI_CHAT_ENABLE or "Enable chat", {
 			type = "toggle", reload = true,
 		}),
+		T("ClassColorMentions", L_GUI_CHAT_CLASS_COLOR_MENTIONS or "Class-colored player names in chat", {
+			type = "toggle",
+			desc = "Color player names mentioned in chat messages by class (e.g. linked damage meters).",
+		}),
 		T("Width", L_GUI_CHAT_WIDTH or "Chat width", {
 			type = "number", min = 200, max = 800, step = 10,
 		}),
@@ -94,6 +98,10 @@ ns.RegisterPage({
 		T("BubbleMaxWidth", L_GUI_CHAT_BUBBLE_MAX_WIDTH or "Maximum chat bubble width", {
 			type = "number", min = 100, max = 600, step = 10,
 			desc = "Maximum chat bubble width.",
+		}),
+		T("ClassColorMentionsSpeech", L_GUI_CHAT_BUBBLE_CLASS_COLOR_MENTIONS or "Class-colored player names in bubbles", {
+			type = "toggle",
+			desc = "Color player names mentioned inside chat bubbles by class.",
 		}),
 		{ header = "Spam filter", advanced = true },
 		T("Filter", L_GUI_CHAT_SPAM or "Systems spam filter", {
