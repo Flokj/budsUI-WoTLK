@@ -5,9 +5,13 @@ if C.Chat.Enable ~= true then return end
 -- and chat bubbles get colored by their class.
 
 local GetPlayerInfoByGUID = GetPlayerInfoByGUID
+local UnitGUID = UnitGUID
+local GetNumRaidMembers = GetNumRaidMembers
+local GetNumPartyMembers = GetNumPartyMembers
+local hooksecurefunc = hooksecurefunc
 local format, gmatch, gsub = string.format, string.gmatch, string.gsub
 local strlower = string.lower
-local pairs, next = pairs, next
+local pairs, next, wipe = pairs, next, wipe
 local pcall = pcall
 
 local CUSTOM_CLASS_COLORS = CUSTOM_CLASS_COLORS
@@ -15,10 +19,12 @@ local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 
 -- name (lowered) -> english class token
 local ClassNames = {}
+K.ClassNames = ClassNames
 
 -- Resolve a name's class by its GUID, cache name->class (mirrors ElvUI).
 local GuidCache = {}
 local function GetPlayerInfo(guid)
+	if not guid or guid == "" then return end
 	local data = GuidCache[guid]
 	if not data then
 		local ok, _, englishClass, _, _, _, name, realm = pcall(GetPlayerInfoByGUID, guid)
@@ -36,6 +42,11 @@ local function GetPlayerInfo(guid)
 	return data
 end
 
+-- Hook GetPlayerInfoByGUID so any addon/Blizzard lookup caches the player into ClassNames (matches ElvUI CH:SecureHook('GetPlayerInfoByGUID')).
+hooksecurefunc("GetPlayerInfoByGUID", function(guid)
+	GetPlayerInfo(guid)
+end)
+
 local function EscapeString(s)
 	return (gsub(s, "([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1"))
 end
@@ -44,6 +55,7 @@ end
 -- any word matching a known player name in its class color.
 local protectLinks = {}
 local function CheckKeyword(message)
+	wipe(protectLinks)
 	for hyperLink in gmatch(message, "|c%x-|H.-|h.-|h|r") do
 		protectLinks[hyperLink] = gsub(hyperLink, "%s", "|s")
 	end
@@ -74,21 +86,29 @@ local function CheckKeyword(message)
 
 	for hyperLink, tempLink in pairs(protectLinks) do
 		rebuiltString = gsub(rebuiltString, EscapeString(tempLink), function() return hyperLink end)
-		protectLinks[hyperLink] = nil
 	end
+	wipe(protectLinks)
 
 	return rebuiltString
 end
 
 local CHAT_EVENTS = {
+	"CHAT_MSG_BATTLEGROUND",
+	"CHAT_MSG_BATTLEGROUND_LEADER",
+	"CHAT_MSG_BN_WHISPER",
+	"CHAT_MSG_BN_WHISPER_INFORM",
 	"CHAT_MSG_CHANNEL",
+	"CHAT_MSG_EMOTE",
 	"CHAT_MSG_GUILD",
+	"CHAT_MSG_GUILD_ACHIEVEMENT",
 	"CHAT_MSG_OFFICER",
 	"CHAT_MSG_PARTY",
 	"CHAT_MSG_PARTY_LEADER",
 	"CHAT_MSG_RAID",
 	"CHAT_MSG_RAID_LEADER",
+	"CHAT_MSG_RAID_WARNING",
 	"CHAT_MSG_SAY",
+	"CHAT_MSG_TEXT_EMOTE",
 	"CHAT_MSG_WHISPER",
 	"CHAT_MSG_WHISPER_INFORM",
 	"CHAT_MSG_YELL",
@@ -110,6 +130,45 @@ end
 for _, event in ipairs(CHAT_EVENTS) do
 	ChatFrame_AddMessageEventFilter(event, ChatMentionFilter)
 end
+
+-- Cache local player and current group/raid members into ClassNames immediately on roster updates.
+local function ScanRoster()
+	if K.Name and K.Class then
+		ClassNames[strlower(K.Name)] = K.Class
+		if K.Realm and K.Realm ~= "" then
+			ClassNames[strlower(K.Name .. "-" .. K.Realm)] = K.Class
+		end
+	end
+
+	local playerGUID = UnitGUID("player")
+	if playerGUID then
+		GetPlayerInfo(playerGUID)
+	end
+
+	local numRaid = GetNumRaidMembers()
+	if numRaid > 0 then
+		for i = 1, numRaid do
+			local guid = UnitGUID("raid" .. i)
+			if guid then
+				GetPlayerInfo(guid)
+			end
+		end
+	else
+		local numParty = GetNumPartyMembers()
+		for i = 1, numParty do
+			local guid = UnitGUID("party" .. i)
+			if guid then
+				GetPlayerInfo(guid)
+			end
+		end
+	end
+end
+
+local rosterWatcher = CreateFrame("Frame")
+rosterWatcher:RegisterEvent("PLAYER_ENTERING_WORLD")
+rosterWatcher:RegisterEvent("PARTY_MEMBERS_CHANGED")
+rosterWatcher:RegisterEvent("RAID_ROSTER_UPDATE")
+rosterWatcher:SetScript("OnEvent", ScanRoster)
 
 -- Same recolor inside chat bubbles (budsUI bubble engine).
 local BubbleLayer = K.BubbleLayer
