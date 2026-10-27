@@ -33,12 +33,18 @@ end
 local function Durability_Init()
 	local holder = CreateFrame("Frame", "budsUIDurability", UIParent)
 	holder:SetSize(110, 18)
-	holder:SetBackdrop(K.Backdrop)
-	K.CreateBorder(holder)
-	-- Colors AFTER CreateBorder: it re-applies the backdrop, resetting white
-	holder:SetBackdropColor(unpack(C.Media.Backdrop_Color))
-	holder:SetBackdropBorderColor(unpack(C.Media.Border_Color))
 	holder:EnableMouse(true)
+	holder:SetHitRectInsets(-4, -4, -4, -4)
+
+	local backdrop = CreateFrame("Frame", nil, holder)
+	backdrop:SetBackdrop(K.Backdrop)
+	backdrop:SetBackdropColor(unpack(C.Media.Backdrop_Color))
+	backdrop:SetBackdropBorderColor(unpack(C.Media.Border_Color))
+	backdrop:ClearAllPoints()
+	backdrop:SetPoint("TOPLEFT", holder, "TOPLEFT", -4, 4)
+	backdrop:SetPoint("BOTTOMRIGHT", holder, "BOTTOMRIGHT", 4, -4)
+	backdrop:SetFrameLevel(holder:GetFrameLevel() > 0 and holder:GetFrameLevel() - 1 or 0)
+	holder.backdrop = backdrop
 
 	local text = holder:CreateFontString(nil, "OVERLAY")
 	text:SetFont(C.Media.Font, C.Media.Font_Size, C.Media.Font_Style)
@@ -47,7 +53,7 @@ local function Durability_Init()
 	text:SetShadowOffset(1, -1)
 	holder.Text = text
 
-	K.CreateMover(holder, "Durability", DURABILITY, { "BOTTOMLEFT", UIParent, "BOTTOMLEFT", 450, 6 }, 110, 18)
+	K.CreateMover(holder, "Durability", DURABILITY, { "BOTTOMLEFT", UIParent, "BOTTOMLEFT", 450, 6 }, 110, 18, "CENTER")
 
 	local function Update()
 		local min, count = 1, 0
@@ -67,6 +73,12 @@ local function Durability_Init()
 				DURABILITY, r * 255, g * 255, b * 255, min * 100)
 		else
 			text:SetFormattedText("|cff9d9d9d%s: --|r", DURABILITY)
+		end
+
+		local textWidth = text:GetStringWidth()
+		local textHeight = text:GetStringHeight()
+		if textWidth and textWidth > 0 then
+			holder:SetSize(math.max(100, math.floor(textWidth + 0.5)), math.max(16, math.floor(textHeight + 0.5)))
 		end
 	end
 

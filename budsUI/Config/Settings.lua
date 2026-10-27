@@ -42,6 +42,12 @@ C["ActionBar"] = {
 	["SplitBars"] = false,
 	["StanceBarHide"] = false,
 	["StanceBarHorizontal"] = true,
+	["TotemButtonSize"] = 34,
+	["TotemButtonSpace"] = 4,
+	["TotemColumns"] = 6,
+	["TotemFlyoutSize"] = 26,
+	["TotemFlyoutRows"] = 10,
+	["TotemFlyoutSpace"] = 2,
 }
 -- Announcements Options
 C["Announcements"] = {
@@ -305,7 +311,7 @@ C["Skins"] = {
 	["ChatBubble"] = true,
 	["CLCRet"] = false,
 	["DBM"] = false,
-	["MinimapButtons"] = true,
+	["MinimapButtons"] = false,
 	["Recount"] = false,
 	["Skada"] = false,
 	["WeakAuras"] = false,

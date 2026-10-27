@@ -21,7 +21,7 @@ ns.pages = ns.pages or {}
 
 local CATEGORY_ICONS = {
 	General = "INV_Misc_Gear_01",
-	Profiles = "INV_Misc_ScrollUnrolled01",
+	Profiles = "INV_Scroll_02",
 	ActionBar = "INV_Misc_EngGizmos_30",
 	Announcements = "Spell_Holy_Silence",
 	Automation = "Trade_Engineering",

@@ -72,6 +72,31 @@ ns.RegisterPage({
 		T("StanceBarHorizontal", L_GUI_ACTIONBAR_STANCEBAR_HORIZONTAL or "Horizontal stance bar", {
 			type = "toggle",
 		}),
+		{ header = "Totem bar" },
+		T("TotemButtonSize", L_GUI_ACTIONBAR_TOTEM_SIZE or "Totem button size", {
+			type = "number", min = 20, max = 50, step = 1, reload = true,
+			desc = "Size of the main totem bar buttons.",
+		}),
+		T("TotemButtonSpace", L_GUI_ACTIONBAR_TOTEM_SPACE or "Totem button space", {
+			type = "number", min = 1, max = 10, step = 1, reload = true,
+			desc = "Space between totem bar buttons.",
+		}),
+		T("TotemColumns", L_GUI_ACTIONBAR_TOTEM_COLUMNS or "Totem bar columns", {
+			type = "number", min = 1, max = 6, step = 1, reload = true,
+			desc = "Number of buttons per row (6 = horizontal, 1 = vertical).",
+		}),
+		T("TotemFlyoutSize", L_GUI_ACTIONBAR_TOTEM_FLYOUT_SIZE or "Flyout button size", {
+			type = "number", min = 16, max = 40, step = 1,
+			desc = "Button size in the popup menu that opens above each totem slot.",
+		}),
+		T("TotemFlyoutRows", L_GUI_ACTIONBAR_TOTEM_FLYOUT_ROWS or "Flyout buttons per column", {
+			type = "number", min = 1, max = 12, step = 1,
+			desc = "Maximum buttons per column in the totem menu (10 = single column).",
+		}),
+		T("TotemFlyoutSpace", L_GUI_ACTIONBAR_TOTEM_FLYOUT_SPACE or "Flyout spacing", {
+			type = "number", min = 0, max = 10, step = 1,
+			desc = "Space between buttons in the totem popup menu.",
+		}),
 		{ header = "Combat feedback", advanced = true },
 		T("EquipBorder", L_GUI_ACTIONBAR_EQUIP_BORDER or "Equipped border", {
 			type = "toggle",

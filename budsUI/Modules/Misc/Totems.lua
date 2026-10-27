@@ -312,12 +312,12 @@ local function Totem_Init()
 
 	playerGUID = UnitGUID("player")
 
-	local holder = CreateFrame("Frame", "budsUI_TotemBar", UIParent)
+	local holder = CreateFrame("Frame", "budsUI_TotemTimers", UIParent)
 	holder:SetWidth(totemWidth)
 	holder:SetHeight(totemSize)
 	holder:SetClampedToScreen(true)
 
-	K.CreateMover(holder, "TotemBar", "Totems", {"BOTTOM", UIParent, "TOP", -370, -436}, totemWidth, totemSize)
+	K.CreateMover(holder, "TotemTimers", "Totem Timers", {"BOTTOM", UIParent, "TOP", -370, -436}, totemWidth, totemSize)
 
 	for index, slot in ipairs(SLOT_ORDER) do
 		local button = CreateTotemButton(slot, holder)

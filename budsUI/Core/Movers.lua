@@ -683,9 +683,13 @@ end
 
 local function AdoptLegacyFrames()
 	for _, name in ipairs(LEGACY_MOVER_NAMES) do
-		local frame = _G[name]
-		if frame and type(frame) == "table" and frame.GetName and frame:GetName() then
-			if not movers[name] then K.RegisterMoverFrame(frame) end
+		if name == "ShiftHolder" and (K.Class == "SHAMAN" or K.Class == "MAGE" or K.Class == "HUNTER") then
+			-- Skip stance bar mover on classes that have no stances/shapeshift forms
+		else
+			local frame = _G[name]
+			if frame and type(frame) == "table" and frame.GetName and frame:GetName() then
+				if not movers[name] then K.RegisterMoverFrame(frame) end
+			end
 		end
 	end
 	for _, entry in pairs(K.MoverFrames) do

@@ -18,7 +18,7 @@ local tinsert = table.insert
 local COLLECTOR_CELL      = 32   -- cell size for each button
 local COLLECTOR_COLUMNS   = 4    -- grid columns
 local COLLECTOR_PADDING   = 6    -- padding inside the panel
-local COLLECTOR_TOGGLE_SZ = 22   -- toggle button size
+local COLLECTOR_TOGGLE_SZ = 14   -- toggle button size
 local ICON_INSET          = 3    -- inset from minimap edge
 
 -- ── Blacklist ──────────────────────────────────────────────────
@@ -29,12 +29,14 @@ local BlackList = {
 	["MinimapZoneTextButton"]      = true,
 	["MiniMapRecordingButton"]     = true,
 	["MiniMapTracking"]            = true,
+	["MiniMapTrackingButton"]      = true,
 	["MiniMapVoiceChatFrame"]      = true,
 	["MiniMapWorldMapButton"]      = true,
 	["MiniMapLFGFrame"]            = true,
+	["MiniMapInstanceDifficulty"]  = true,
 	["MinimapZoomIn"]              = true,
 	["MinimapZoomOut"]             = true,
-	["MiniMapMailFrame"]            = true,
+	["MiniMapMailFrame"]           = true,
 	["BattlefieldMinimap"]         = true,
 	["MinimapBackdrop"]            = true,
 	["GameTimeFrame"]              = true,
@@ -46,7 +48,23 @@ local BlackList = {
 	["ButtonCollectFrame"]         = true,
 	["ButtonCollectPanel"]         = true,
 	["ButtonCollectToggle"]        = true,
-	["HandyNotesPin"]              = true,
+}
+
+local IGNORED_PATTERNS = {
+	"^budsUI",
+	"^FrostAtomUI",
+	"Pin$",
+	"Pin%d+",
+	"Node",
+	"Note",
+	"^GatherMate",
+	"^Questie",
+	"^TomTom",
+	"^Routes",
+	"^QuestHelper",
+	"^Carbonite",
+	"^HandyNotes",
+	"^ButtonCF",
 }
 
 -- ── State ──────────────────────────────────────────────────────
@@ -58,7 +76,6 @@ local lastChildCount   = -1
 -- UI elements
 local collectorPanel
 local collectorToggle
-local toggleGlyph
 
 -- ── Grid layout ─────────────────────────────────────────────────
 local function layoutCollector()
@@ -98,12 +115,20 @@ end
 
 -- ── Collectability test ─────────────────────────────────────────
 local function isCollectable(child)
-	if child:GetObjectType() ~= "Button" or collectedState[child] then
+	if not child or child:GetObjectType() ~= "Button" or collectedState[child] then
 		return false
 	end
 	local name = child:GetName()
 	if not name or BlackList[name] then
 		return false
+	end
+	if name:find("^LibDBIcon10_") then
+		return true
+	end
+	for i = 1, #IGNORED_PATTERNS do
+		if name:find(IGNORED_PATTERNS[i]) then
+			return false
+		end
 	end
 	return true
 end
@@ -128,35 +153,37 @@ local function collectButton(button)
 	end
 end
 
--- ── Scan minimap for new buttons ────────────────────────────────
-local function scanButtons()
-	local children = { Minimap:GetChildren() }
+-- ── Collect buttons from a frame ────────────────────────────────
+local function collectFrom(frame)
+	if not frame then return end
+	local children = { frame:GetChildren() }
 	for i = 1, #children do
 		local child = children[i]
 		if isCollectable(child) then
 			collectButton(child)
 		end
 	end
+end
+
+local function childCount()
+	return Minimap:GetNumChildren() + (MinimapBackdrop and MinimapBackdrop:GetNumChildren() or 0)
+end
+
+-- ── Scan minimap for new buttons ────────────────────────────────
+local function scanButtons()
+	local count = childCount()
+	if count == lastChildCount then
+		return
+	end
+	local before = #collected
+	pcall(collectFrom, Minimap)
 	if MinimapBackdrop then
-		local bdChildren = { MinimapBackdrop:GetChildren() }
-		for i = 1, #bdChildren do
-			local child = bdChildren[i]
-			if isCollectable(child) then
-				collectButton(child)
-			end
-		end
+		pcall(collectFrom, MinimapBackdrop)
 	end
-	if MinimapCluster then
-		local clusterChildren = { MinimapCluster:GetChildren() }
-		for i = 1, #clusterChildren do
-			local child = clusterChildren[i]
-			if isCollectable(child) then
-				collectButton(child)
-			end
-		end
+	lastChildCount = childCount()
+	if #collected ~= before then
+		layoutCollector()
 	end
-	lastChildCount = Minimap:GetNumChildren()
-	layoutCollector()
 end
 
 -- ── Release all collected buttons back to originals ─────────────
@@ -185,10 +212,14 @@ end
 local function setCollectorOpen(open)
 	if open then
 		collectorPanel:Show()
-		toggleGlyph:SetText(">")   -- right-pointing = panel visible
+		if collectorToggle and collectorToggle.glyph then
+			K.SetGlyph(collectorToggle.glyph, "chevron-right", 10, "OUTLINE")
+		end
 	else
 		collectorPanel:Hide()
-		toggleGlyph:SetText("<")   -- left-pointing  = panel hidden
+		if collectorToggle and collectorToggle.glyph then
+			K.SetGlyph(collectorToggle.glyph, "chevron-left", 10, "OUTLINE")
+		end
 	end
 end
 
@@ -197,49 +228,40 @@ local function onToggleClick()
 	setCollectorOpen(not collectorPanel:IsShown())
 end
 
--- ── Toggle hover glow ───────────────────────────────────────────
-local function onToggleEnter()
-	K:UIFrameFadeIn(collectorToggle, 0.25, 0.6, 1.0)
-end
-local function onToggleLeave()
-	if not InCombatLockdown() then
-		K:UIFrameFadeOut(collectorToggle, 0.25, 1.0, 0.6)
-	end
-end
-
 -- ── Create the collector UI ─────────────────────────────────────
 local function createCollector()
 	-- ── Panel ──────────────────────────────────────────────────
 	collectorPanel = CreateFrame("Frame", "ButtonCollectPanel", UIParent)
 	collectorPanel:SetFrameStrata("HIGH")
 	collectorPanel:SetClampedToScreen(true)
-	collectorPanel:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMLEFT",
-		-ICON_INSET - COLLECTOR_TOGGLE_SZ - 4, -3)
+	collectorPanel:SetPoint("TOPRIGHT", Minimap, "TOPLEFT", -ICON_INSET - 3, 3)
 	collectorPanel:SetBackdrop(K.Backdrop)
-	collectorPanel:SetBackdropColor(0.05, 0.05, 0.05, 0.85)
+	collectorPanel:SetBackdropColor(unpack(C.Media.Backdrop_Color))
 	collectorPanel:SetBackdropBorderColor(unpack(C.Media.Border_Color))
 	collectorPanel:Hide()
 
 	-- ── Toggle button ──────────────────────────────────────────
 	collectorToggle = CreateFrame("Button", "ButtonCollectToggle", Minimap)
 	collectorToggle:SetSize(COLLECTOR_TOGGLE_SZ, COLLECTOR_TOGGLE_SZ)
-	collectorToggle:SetPoint("LEFT", ICON_INSET, 0)
+	collectorToggle:SetPoint("LEFT", Minimap, "LEFT", ICON_INSET, 0)
 	collectorToggle:SetFrameLevel(Minimap:GetFrameLevel() + 2)
-	collectorToggle:SetScript("OnClick",     onToggleClick)
-	collectorToggle:SetScript("OnEnter",     onToggleEnter)
-	collectorToggle:SetScript("OnLeave",     onToggleLeave)
-	-- No backdrop — arrow only, no white box.
+	collectorToggle:SetScript("OnClick", onToggleClick)
 	collectorToggle:SetNormalTexture(nil)
 	collectorToggle:SetPushedTexture(nil)
 	collectorToggle:SetHighlightTexture(nil)
 	collectorToggle:SetDisabledTexture(nil)
 
-	-- Glyph text (arrow character)
-	toggleGlyph = collectorToggle:CreateFontString(nil, "OVERLAY")
-	toggleGlyph:SetFont(C.Media.Font, 14, "OUTLINE")
-	toggleGlyph:SetTextColor(1, 1, 1, 1)
-	toggleGlyph:SetPoint("CENTER", 0, 0)
-	toggleGlyph:SetText("<")   -- start closed → left-pointing
+	-- Glyph icon (chevron)
+	collectorToggle.glyph = K.CreateGlyph(collectorToggle, "chevron-left", 10, "OVERLAY", "OUTLINE")
+	collectorToggle.glyph:SetPoint("CENTER", 0, 0)
+	collectorToggle.glyph:SetTextColor(1, 1, 1, 0.8)
+
+	collectorToggle:SetScript("OnEnter", function(self)
+		if self.glyph then self.glyph:SetTextColor(1, 0.82, 0, 1) end
+	end)
+	collectorToggle:SetScript("OnLeave", function(self)
+		if self.glyph then self.glyph:SetTextColor(1, 1, 1, 0.8) end
+	end)
 
 	-- Start hidden until scan finds buttons
 	collectorToggle:Hide()
@@ -251,17 +273,13 @@ local function applyCollector()
 	if not collectorPanel then
 		createCollector()
 	end
-	-- Refresh border colour from current config
 	if collectorPanel then
 		collectorPanel:SetBackdropBorderColor(unpack(C.Media.Border_Color))
 	end
 	scanButtons()
 end
 
--- ── Event frame ─────────────────────────────────────────────────
--- Fires once on login, then polls config every second so that
--- toggling CollectButtons / Enable in-game picks up changes
--- without a UI reload.
+-- ── Event frame (periodic scan + config watcher) ────────────────
 local eventFrame = CreateFrame("Frame")
 eventFrame:SetScript("OnUpdate", function(self, elapsed)
 	self.elapsed = (self.elapsed or 0) + elapsed
@@ -274,14 +292,12 @@ eventFrame:SetScript("OnUpdate", function(self, elapsed)
 				collectorPanel:Hide()
 				collectorToggle:Hide()
 			end
-			self:SetScript("OnUpdate", nil)
 			return
 		end
 		if not collectorPanel then
 			createCollector()
 		end
-		applyCollector()
-		self:SetScript("OnUpdate", nil)
+		scanButtons()
 	end
 end)
 
@@ -293,6 +309,5 @@ function K.ReleaseMinimapButtons()
 		collectorToggle:Hide()
 		collectorPanel = nil
 		collectorToggle = nil
-		toggleGlyph    = nil
 	end
 end
