@@ -20,6 +20,11 @@ local TIMESTAMP_VALUES = {
 	{ 5, "15:27:32" },
 }
 
+local EDITBOX_VALUES = {
+	{ "above", L_GUI_CHAT_EDITBOX_ABOVE or "Above" },
+	{ "below", L_GUI_CHAT_EDITBOX_BELOW or "Below" },
+}
+
 ns.RegisterPage({
 	key = "Chat",
 	name = "Chat",
@@ -62,6 +67,18 @@ ns.RegisterPage({
 			desc = "How long chat lines stay visible before they start to fade.",
 		}),
 		{ header = "Tabs & Look" },
+		T("EditBoxPosition", L_GUI_CHAT_EDITBOX_POSITION or "Editbox position", {
+			type = "select", width = 120, values = EDITBOX_VALUES, reload = true,
+			desc = "Place chat editbox above or below the chat frame.",
+		}),
+		T("ScrollButton", L_GUI_CHAT_SCROLL_BUTTON or "Scroll to bottom button", {
+			type = "toggle",
+			desc = "Show a button to scroll to bottom when viewing chat history, with flash alert for new messages.",
+		}),
+		T("SocialButton", L_GUI_CHAT_SOCIAL_BUTTON or "Social button", {
+			type = "toggle", reload = true,
+			desc = "Show social (friends) button in the top-left of the chat frame.",
+		}),
 		T("HideTextures", L_GUI_CHAT_HIDE_TEXTURES or "Hide background", {
 			type = "toggle",
 			desc = "Hide chat background.",

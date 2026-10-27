@@ -89,31 +89,59 @@ end
 
 for i = 1, NUM_CHAT_WINDOWS do
 	local cf = _G[format("ChatFrame%d", i)]
-	local button = CreateFrame("Button", format("ButtonCF%d", i), cf)
-	button:SetPoint("BOTTOMRIGHT", -3, 3)
-	button:SetSize(16, 16)
-	button:SetNormalTexture("Interface\\BUTTONS\\UI-GuildButton-PublicNote-Up")
-	button:SetAlpha(0)
+	if cf then
+		local button = CreateFrame("Button", format("ButtonCF%d", i), cf)
+		button:SetPoint("TOPRIGHT", cf, "TOPRIGHT", 2, 2)
+		button:SetSize(16, 16)
+		button:SetFrameLevel(cf:GetFrameLevel() + 5)
+		button:SetAlpha(0.35)
 
-	button:SetScript("OnMouseUp", function(self, btn)
-		if btn == "RightButton" then
-			ToggleFrame(ChatMenu)
-		elseif btn == "MiddleButton" then
-			RandomRoll(1, 100)
-		else
-			Copy(cf)
-		end
-	end)
-	button:HookScript("OnEnter", function()
-		K:UIFrameFadeIn(button, 0.4, button:GetAlpha(), 1)
-	end)
-	button:HookScript("OnLeave", function()
-		K:UIFrameFadeOut(button, 1, button:GetAlpha(), 0)
-	end)
+		button.glyph = K.CreateGlyph(button, "copy", 11, "ARTWORK", "OUTLINE")
+		button.glyph:SetPoint("CENTER")
+		button.glyph:SetTextColor(0.75, 0.75, 0.75)
+
+		button:SetScript("OnMouseUp", function(self, btn)
+			if btn == "RightButton" then
+				ToggleFrame(ChatMenu)
+			elseif btn == "MiddleButton" then
+				RandomRoll(1, 100)
+			else
+				Copy(cf)
+			end
+		end)
+		button:HookScript("OnEnter", function(self)
+			self:SetAlpha(1)
+			if self.glyph then
+				self.glyph:SetTextColor(1, 0.82, 0)
+			end
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+			GameTooltip:SetText(L_CHAT_COPY or "Copy Chat", 1, 1, 1)
+			GameTooltip:AddLine(L_CHAT_COPY_HINT or "|cff00ff00Left Click:|r Copy\n|cff00ff00Right Click:|r Chat Menu\n|cff00ff00Middle Click:|r /roll 1-100", 0.75, 0.75, 0.75)
+			GameTooltip:Show()
+		end)
+		button:HookScript("OnLeave", function(self)
+			self:SetAlpha(0.35)
+			if self.glyph then
+				self.glyph:SetTextColor(0.75, 0.75, 0.75)
+			end
+			GameTooltip:Hide()
+		end)
+		button:HookScript("OnMouseDown", function(self)
+			if self.glyph then
+				self.glyph:SetPoint("CENTER", 1, -1)
+			end
+		end)
+		button:HookScript("OnMouseUp", function(self)
+			if self.glyph then
+				self.glyph:SetPoint("CENTER", 0, 0)
+			end
+		end)
+	end
 end
 
 -- T16: Moved slash command outside loop; added required SLASH_* binding so command is actually registered
 SLASH_COPYCHAT1 = "/copychat"
+SLASH_COPYCHAT2 = "/copy"
 SlashCmdList.COPYCHAT = function()
 	Copy(_G["ChatFrame1"])
 end

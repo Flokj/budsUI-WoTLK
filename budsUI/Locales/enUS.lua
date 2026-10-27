@@ -72,6 +72,8 @@ L_CHAT_BIGCHAT_OFF = "|cffffe02eBig Chat Mode|r: Off"
 L_CHAT_BIGCHAT_ON = "|cffffe02eBig Chat Mode|r: On"
 -- Chat History Localization
 L_CHAT_HISTORY_SEPARATOR = "— messages before the reload —"
+L_CHAT_COPY = "Copy Chat"
+L_CHAT_COPY_HINT = "|cff00ff00Left Click:|r Copy\n|cff00ff00Right Click:|r Chat Menu\n|cff00ff00Middle Click:|r /roll 1-100"
 -- Class Localization
 L_CLASS_HUNTER_CONTENT = "Your pet is content!"
 L_CLASS_HUNTER_HAPPY = "Your pet is happy!"

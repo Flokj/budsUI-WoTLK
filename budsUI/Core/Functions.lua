@@ -95,6 +95,65 @@ K.SkinFont = function(self)
 	self:SetShadowColor(0, 0, 0, 1)
 end
 
+-- Glyph support (FontAwesome Solid 900)
+local glyphFont = [[Interface\AddOns\]] .. (K.Directory or "budsUI") .. [[\Media\Fonts\fa-solid-900.ttf]]
+local glyphCodes = {
+	["angles-down"] = 0xf103,
+	["angles-up"] = 0xf102,
+	["caret-down"] = 0xf0d7,
+	["caret-right"] = 0xf0da,
+	["caret-up"] = 0xf0d8,
+	["check"] = 0xf00c,
+	["chevron-down"] = 0xf078,
+	["chevron-up"] = 0xf077,
+	["circle-check"] = 0xf058,
+	["copy"] = 0xf0c5,
+	["gear"] = 0xf013,
+	["magnifying-glass"] = 0xf002,
+	["rotate"] = 0xf021,
+	["user"] = 0xf007,
+	["user-group"] = 0xf500,
+	["users"] = 0xf0c0,
+	["xmark"] = 0xf00d,
+}
+
+local glyphs = {}
+local function encodeGlyph(code)
+	if code < 0x80 then
+		return string.char(code)
+	elseif code < 0x800 then
+		return string.char(0xC0 + math.floor(code / 0x40), 0x80 + code % 0x40)
+	end
+	return string.char(0xE0 + math.floor(code / 0x1000), 0x80 + math.floor(code / 0x40) % 0x40, 0x80 + code % 0x40)
+end
+
+function K.Glyph(name)
+	local glyph = glyphs[name]
+	if glyph then return glyph end
+	local code = type(name) == "number" and name or glyphCodes[name]
+	if not code then
+		return ""
+	end
+	glyph = encodeGlyph(code)
+	glyphs[name] = glyph
+	return glyph
+end
+
+function K.SetGlyph(region, name, size, outline)
+	if size then
+		local font = (C.Media and C.Media.Glyph_Font) or glyphFont
+		region:SetFont(font, size, outline or "")
+		region:SetTextHeight(size)
+	end
+	region:SetText(name and K.Glyph(name) or "")
+end
+
+function K.CreateGlyph(parent, name, size, layer, outline)
+	local glyph = parent:CreateFontString(nil, layer or "OVERLAY")
+	K.SetGlyph(glyph, name, size, outline)
+	return glyph
+end
+
 K.Comma = function(num)
 	local Left, Number, Right = match(num, "^([^%d]*%d)(%d*)(.-)$")
 
@@ -488,6 +547,9 @@ K.ConfigValidationRules = {
 	["Chat.ClassColorMentionsSpeech"] = {"boolean"},
 	["Chat.SavedHistoryLines"] = {"number", 0, 500},
 	["Chat.SavedCommands"] = {"number", 0, 500},
+	["Chat.ScrollButton"] = {"boolean"},
+	["Chat.SocialButton"] = {"boolean"},
+	["Chat.EditBoxPosition"] = {"string"},
 	
 	-- Minimap settings
 	["Minimap.Enable"] = {"boolean"},

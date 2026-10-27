@@ -14,6 +14,7 @@ C["Media"] = {
 	["Font"] = [[Interface\AddOns\]] .. K.Directory .. [[\Media\Fonts\Normal.ttf]],
 	["Font_Size"] = 12,
 	["Font_Style"] = "OUTLINE",
+	["Glyph_Font"] = [[Interface\AddOns\]] .. K.Directory .. [[\Media\Fonts\fa-solid-900.ttf]],
 	["Glow"] = [[Interface\AddOns\]] .. K.Directory .. [[\Media\Textures\GlowTex.tga]],
 	["Overlay_Color"] = {0/255, 0/255, 0/255, 0.9},
 	["Proc_Sound"] = [[Interface\AddOns\]] .. K.Directory .. [[\Media\Sounds\Proc.ogg]],
@@ -125,6 +126,9 @@ C["Chat"] = {
 	["BubbleMaxWidth"] = 300,
 	["ClassColorMentions"] = true, -- chat: recolor player names mentioned in messages by class color
 	["ClassColorMentionsSpeech"] = true, -- bubbles: same, inside chat bubbles
+	["EditBoxPosition"] = "above", -- "above" or "below"
+	["ScrollButton"] = true, -- scroll to bottom button with flash alert
+	["SocialButton"] = true, -- social button in top-left of chat
 }
 -- Cooldown Options
 C["Cooldown"] = {

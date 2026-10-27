@@ -129,6 +129,7 @@
 	<Script file="Modules\Chat\ChatFrames.lua"/>
 	<Script file="Modules\Chat\ChatTabs.lua"/>
 	<Script file="Modules\Chat\CopyChat.lua"/>
+	<Script file="Modules\Chat\ScrollButton.lua"/>
 	<Script file="Modules\Chat\CopyUrl.lua"/>
 	<Script file="Modules\Chat\Filters.lua"/>
 	<Script file="Modules\Chat\MouseScroll.lua"/>

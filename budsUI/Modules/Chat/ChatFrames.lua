@@ -85,8 +85,111 @@ local function AddMessage(frame, str, ...)
 	end
 end
 
-FriendsMicroButton:Kill()
 ChatFrameMenuButton:Kill()
+
+local function SkinFriendsButton()
+	local button = FriendsMicroButton
+	if not button then return end
+
+	button:GetNormalTexture():SetTexture(nil)
+	button:GetPushedTexture():SetTexture(nil)
+	button:GetHighlightTexture():SetTexture(nil)
+	button:SetSize(16, 16)
+
+	if not button.glyph then
+		button.glyph = K.CreateGlyph(button, "user-group", 11, "ARTWORK", "OUTLINE")
+		button.glyph:SetPoint("CENTER")
+	end
+
+	local function setHover(hovered)
+		local color = hovered and { 1, 0.82, 0 } or { 0.75, 0.75, 0.75 }
+		button.glyph:SetTextColor(color[1], color[2], color[3])
+		button:SetAlpha(hovered and 1 or 0.35)
+	end
+
+	button:HookScript("OnEnter", function() setHover(true) end)
+	button:HookScript("OnLeave", function() setHover(false) end)
+	button:HookScript("OnMouseDown", function() button.glyph:SetPoint("CENTER", 1, -1) end)
+	button:HookScript("OnMouseUp", function() button.glyph:SetPoint("CENTER", 0, 0) end)
+
+	setHover(false)
+
+	if FriendsMicroButtonCount then
+		FriendsMicroButtonCount:Hide()
+		FriendsMicroButtonCount.Show = K.Noop
+	end
+end
+
+local function AttachFriendsButton()
+	local button = FriendsMicroButton
+	if not button then return end
+	if C.Chat.SocialButton == false then
+		button:Hide()
+		return
+	end
+	local chatFrame = (GENERAL_CHAT_DOCK and FCFDock_GetSelectedWindow(GENERAL_CHAT_DOCK)) or ChatFrame1
+	button:SetParent(chatFrame)
+	button:ClearAllPoints()
+	button:SetPoint("TOPLEFT", chatFrame, "TOPLEFT", 0, 2)
+	button:SetFrameLevel(chatFrame:GetFrameLevel() + 5)
+	button:Show()
+end
+
+if C.Chat.SocialButton ~= false then
+	SkinFriendsButton()
+	AttachFriendsButton()
+	hooksecurefunc("FCFDock_SelectWindow", AttachFriendsButton)
+else
+	FriendsMicroButton:Kill()
+end
+
+local editBoxes = {}
+local function PlaceEditBox(editbox)
+	local chat = ChatFrame1
+	editbox:ClearAllPoints()
+	if C.Chat.EditBoxPosition == "below" then
+		editbox:SetPoint("TOPLEFT", chat, "BOTTOMLEFT", -4, -4)
+		editbox:SetPoint("TOPRIGHT", chat, "BOTTOMRIGHT", 4, -4)
+	else
+		editbox:SetPoint("BOTTOMLEFT", chat, "TOPLEFT", -4, 23)
+		editbox:SetPoint("BOTTOMRIGHT", chat, "TOPRIGHT", 4, 23)
+	end
+end
+
+local function UpdateEditBoxBorder(editbox)
+	if not editbox then return end
+	local backdrop = editbox.backdrop
+	if not backdrop then return end
+
+	local chatType = editbox:GetAttribute("chatType")
+	if not chatType then
+		backdrop:SetBackdropBorderColor(unpack(C.Media.Border_Color))
+		return
+	end
+
+	if chatType == "CHANNEL" then
+		local channel = editbox:GetAttribute("channelTarget")
+		local info = channel and channel ~= 0 and ChatTypeInfo[chatType .. channel]
+		if not info then
+			local id = GetChannelName(channel)
+			info = id and id ~= 0 and ChatTypeInfo[chatType .. id]
+		end
+		if info then
+			backdrop:SetBackdropBorderColor(info.r, info.g, info.b)
+		else
+			backdrop:SetBackdropBorderColor(unpack(C.Media.Border_Color))
+		end
+	else
+		local info = ChatTypeInfo[chatType]
+		if info then
+			backdrop:SetBackdropBorderColor(info.r, info.g, info.b)
+		else
+			backdrop:SetBackdropBorderColor(unpack(C.Media.Border_Color))
+		end
+	end
+end
+
+hooksecurefunc("ChatEdit_UpdateHeader", UpdateEditBoxBorder)
 
 -- Set chat style
 local function SetChatStyle(frame)
@@ -129,9 +232,8 @@ local function SetChatStyle(frame)
 	end
 
 	-- Move the chat edit box
-	editbox:ClearAllPoints()
-	editbox:SetPoint("BOTTOMLEFT", ChatFrame1, "TOPLEFT", -4, 23)
-	editbox:SetPoint("BOTTOMRIGHT", ChatFrame1, "TOPRIGHT", 4, 23)
+	PlaceEditBox(editbox)
+	editBoxes[#editBoxes + 1] = editbox
 
 	-- Hide textures if enabled in config
 	if C.Chat.HideTextures == true then
@@ -176,8 +278,16 @@ local function SetChatStyle(frame)
 	editbox:SetAltArrowKeyMode(false)
 	editbox:Hide()
 
-	editbox:HookScript("OnEditFocusGained", function(self) self:Show() end)
-	editbox:HookScript("OnEditFocusLost", function(self) self:Hide() end)
+	editbox:HookScript("OnEditFocusGained", function(self)
+		self:Show()
+		UpdateEditBoxBorder(self)
+	end)
+	editbox:HookScript("OnEditFocusLost", function(self)
+		self:Hide()
+		if self.backdrop then
+			self.backdrop:SetBackdropBorderColor(unpack(C.Media.Border_Color))
+		end
+	end)
 
 	local function OnTextChanged(self)
 		local text = self:GetText()
@@ -207,41 +317,16 @@ local function SetChatStyle(frame)
 
 	tab:HookScript("OnClick", function() editbox:Hide() end)
 
-	if C.Chat.TabsMouseover ~= true then
-		local EditBoxBackground = CreateFrame("Frame", "ChatEditBoxBackground", editbox)
-		EditBoxBackground:SetBackdrop(K.Backdrop)
-		EditBoxBackground:SetBackdropColor(unpack(C.Media.Backdrop_Color))
-		EditBoxBackground:SetBackdropBorderColor(unpack(C.Media.Border_Color))
-		EditBoxBackground:ClearAllPoints()
-		EditBoxBackground:SetPoint("TOPLEFT", editbox, "TOPLEFT", 7, -3)
-		EditBoxBackground:SetPoint("BOTTOMRIGHT", editbox, "BOTTOMRIGHT", -7, 2)
-		EditBoxBackground:SetFrameStrata("LOW")
-		EditBoxBackground:SetFrameLevel(1)
-
-		local function colorize(r, g, b)
-			EditBoxBackground:SetBackdropBorderColor(r, g, b)
-		end
-
-		hooksecurefunc("ChatEdit_UpdateHeader", function()
-			local chatType = editbox:GetAttribute("chatType")
-			if not chatType then return end
-			if chatType == "CHANNEL" then
-				local id = GetChannelName(editbox:GetAttribute("channelTarget"))
-				local info = id and id ~= 0 and ChatTypeInfo[chatType..id]
-				if info then
-					colorize(info.r, info.g, info.b)
-				else
-					colorize(unpack(C.Media.Border_Color))
-				end
-			else
-				local info = ChatTypeInfo[chatType]
-				if info then
-					colorize(info.r, info.g, info.b)
-				else
-					colorize(unpack(C.Media.Border_Color))
-				end
-			end
-		end)
+	if not editbox.backdrop then
+		local backdrop = CreateFrame("Frame", nil, editbox)
+		backdrop:SetBackdrop(K.Backdrop)
+		backdrop:SetBackdropColor(unpack(C.Media.Backdrop_Color))
+		backdrop:SetBackdropBorderColor(unpack(C.Media.Border_Color))
+		backdrop:ClearAllPoints()
+		backdrop:SetPoint("TOPLEFT", editbox, "TOPLEFT", 7, -3)
+		backdrop:SetPoint("BOTTOMRIGHT", editbox, "BOTTOMRIGHT", -7, 2)
+		backdrop:SetFrameLevel(editbox:GetFrameLevel() > 0 and editbox:GetFrameLevel() - 1 or 0)
+		editbox.backdrop = backdrop
 	end
 
 	if frame ~= _G["ChatFrame2"] then
