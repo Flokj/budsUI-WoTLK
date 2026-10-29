@@ -50,11 +50,11 @@ ns.RegisterPage({
 
 		{ header = L_GUI_ICD_UNITS or "Units" },
 		T("Player", L_GUI_ICD_PLAYER or "Player icons", {
-			type = "toggle",
+			type = "toggle", reload = true,
 			enabledBy = "InternalCooldowns.Enable",
 		}),
 		T("PlayerDetached", L_GUI_ICD_PLAYER_DETACHED or "Player icons separately", {
-			type = "toggle",
+			type = "toggle", reload = true,
 			enabledBy = "InternalCooldowns.Player",
 			desc = "Movable separate block above action bars (move via /moveui).",
 		}),
@@ -63,11 +63,11 @@ ns.RegisterPage({
 			enabledBy = "InternalCooldowns.PlayerDetached",
 		}),
 		T("Target", L_GUI_ICD_TARGET or "Target icons", {
-			type = "toggle",
+			type = "toggle", reload = true,
 			enabledBy = "InternalCooldowns.Enable",
 		}),
 		T("Focus", L_GUI_ICD_FOCUS or "Focus icons", {
-			type = "toggle",
+			type = "toggle", reload = true,
 			enabledBy = "InternalCooldowns.Enable",
 		}),
 		T("Size", L_GUI_ICD_SIZE or "Target/Focus icon size", {

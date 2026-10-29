@@ -162,6 +162,7 @@ L_TRAIN_ALL_TOOLTIP_PLURAL = "Train %d skills for %s"
 L_TRAIN_ALL_TOOLTIP_SINGLE = "Train skill for %s"
 -- Popup Localization
 L_POPUP_ARMORY = "|cffffe02eArmory|r"
+L_POPUP_COPY_URL = "Ctrl+C to copy"
 L_POPUP_BOOSTUI = "|cfff02c35WARNING:|r This will optimize your performance by turning down the graphics and tweaking them. Hit accept only if you are having |cfff02c35FPS|r issues!|r"
 L_POPUP_INSTALLUI = "Thank you for choosing |cff388bdbbudsUI|r!|n|nAccept this installation dialog to apply settings."
 L_POPUP_RELOADUI = "Installation is complete. Please click 'Accept' to reload the UI.|n|n|cffffe02eIMPORTANT:|r Type |cff388bdb/buds|r in chat after the loading screen to open the config menu and customize the UI to your liking!|n|nEnjoy |cff388bdbbudsUI|r!"

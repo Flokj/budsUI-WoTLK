@@ -42,6 +42,7 @@ C["ActionBar"] = {
 	["SplitBars"] = false,
 	["StanceBarHide"] = false,
 	["StanceBarHorizontal"] = true,
+	["ClickAnimation"] = true,
 	["TotemButtonSize"] = 34,
 	["TotemButtonSpace"] = 4,
 	["TotemColumns"] = 6,
@@ -216,6 +217,11 @@ C["Misc"] = {
 	["CombatAlertEnterColor"] = { 1, 0.3, 0.3 },
 	["CombatAlertLeaveColor"] = { 0.3, 1, 0.3 },
 	["MicroMenuFade"] = false,
+	["CombatLogFix"] = true,
+	["DeathRecap"] = true,
+	["DeathRecapAutoOpen"] = false,
+	["DeathRecapHeals"] = true,
+	["DeathRecapEntries"] = 8,
 }
 -- Internal Cooldowns Options
 C["InternalCooldowns"] = {
@@ -263,6 +269,28 @@ C["Nameplate"] = {
 	["CastBarName"] = true,
 	["Auras"] = true,
 	["Width"] = 180,
+	["BlacklistEnable"] = true,
+	["Blacklist"] = (function()
+		local list = {
+			"Army of the Dead Ghoul",
+			"Bloodworm",
+			"Crafty Snake",
+			"Dragonmaw War Banner",
+			"Fanged Pit Viper",
+			"Healing Tide Totem",
+			"Mirror Image",
+			"Spirit Wolf",
+			"Treant",
+			"Val'kyr Protector",
+			"Venomous Snake",
+			"Viper",
+		}
+		if GetLocale() == "ruRU" then
+			local ru = { "Войско мертвых", "Кровавый червь", "Гадюка", "Ядовитая змея", "Зеркальное изображение", "Дух волка", "Древень", "Валь'кира-защитница" }
+			for _, n in ipairs(ru) do list[#list + 1] = n end
+		end
+		return list
+	end)(),
 }
 -- PowerBar Options
 C["PowerBar"] = {

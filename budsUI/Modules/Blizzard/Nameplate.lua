@@ -456,12 +456,22 @@ local function RestoreBlacklistShow(frame)
 	frame.hide = false
 end
 
+function K.IsPlateBlacklisted(name)
+	if not C.Nameplate or C.Nameplate.BlacklistEnable == false then
+		return false
+	end
+	if not name or not K.PlateBlacklist then
+		return false
+	end
+	return K.PlateBlacklist[name] == true or K.PlateBlacklist[string.lower(name)] == true
+end
+
 -- Re-assert blacklist concealment whenever Blizzard re-shows a plate, so a
 -- re-drawn stock frame never resurrects the click zone/highlight.
 local function OnPlateShow(frame)
 	if not frame or not frame.hp then return end
 	local name = (frame.hp.oldname and frame.hp.oldname:GetText()) or (frame.hp.name and frame.hp.name:GetText())
-	if (name and K.PlateBlacklist[name]) or frame.hide then
+	if (name and K.IsPlateBlacklisted(name)) or frame.hide then
 		pcall(ApplyBlacklistHide, frame)
 	end
 	UpdateHealerIcon(frame)
@@ -593,7 +603,7 @@ local function UpdateObjects(frame)
 	frame.hp.rcolor, frame.hp.gcolor, frame.hp.bcolor = frame.hp:GetStatusBarColor()
 
 	-- Set the name text
-	if C.Nameplate.NameAbbreviate == true and C.Nameplate.Auras ~= true then
+	if C.Nameplate.NameAbbreviate == true then
 		frame.hp.name:SetText(Abbrev(frame.hp.oldname:GetText()))
 	else
 		frame.hp.name:SetText(frame.hp.oldname:GetText())
@@ -832,7 +842,7 @@ end
 -- which hides by the full unit name).
 local function CheckBlacklist(frame, ...)
 	local name = frame.hp and (frame.hp.oldname and frame.hp.oldname:GetText() or frame.hp.name and frame.hp.name:GetText())
-	if name and K.PlateBlacklist[name] then
+	if name and K.IsPlateBlacklisted(name) then
 		ApplyBlacklistHide(frame)
 	elseif frame.hide then
 		RestoreBlacklistShow(frame)
@@ -1258,6 +1268,26 @@ local function ForEachPlate(functionToRun, ...)
 	return count
 end
 
+local function UpdatePlateBlacklist()
+	if not K.PlateBlacklist then
+		K.PlateBlacklist = {}
+	end
+	wipe(K.PlateBlacklist)
+	if C.Nameplate and C.Nameplate.BlacklistEnable ~= false then
+		local list = C.Nameplate.Blacklist
+		if list then
+			for _, name in ipairs(list) do
+				if name and name ~= "" then
+					K.PlateBlacklist[name] = true
+					K.PlateBlacklist[string.lower(name)] = true
+				end
+			end
+		end
+	end
+	ForEachPlate(CheckBlacklist)
+end
+K.UpdatePlateBlacklist = UpdatePlateBlacklist
+
 -- Optimized version with batch-processing
 local visiblePlates = {}
 local function UpdateVisiblePlates()
@@ -1437,4 +1467,7 @@ function NamePlates:PLAYER_ENTERING_WORLD()
 			SetCVar("ShowNameplates", 0)
 		end
 	end
+	UpdatePlateBlacklist()
 end
+
+UpdatePlateBlacklist()

@@ -295,7 +295,7 @@ local function InitTotemBar()
 	RegisterStateDriver(holder, "visibility", VISIBILITY_SHOWN)
 
 	-- Register mover in budsUI
-	K.CreateMover(holder, "TotemBar", "Totem Bar", { "BOTTOM", UIParent, "BOTTOM", -312, 118 }, 200, 36, "BOTTOMLEFT")
+	K.CreateMover(holder, "TotemBar", "Totem Bar", { "BOTTOM", UIParent, "BOTTOM", -314, 118 }, 200, 36, "BOTTOMLEFT")
 end
 
 local loader = CreateFrame("Frame")

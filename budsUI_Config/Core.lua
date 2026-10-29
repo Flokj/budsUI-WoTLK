@@ -8,6 +8,19 @@ local ADDON_NAME, ns = ...
 local max = math.max
 local tinsert = tinsert
 
+-- Lua 5.1 lower() handles ASCII only; fold Russian search text by codepoint.
+local cyrillicLower = {}
+for byte = 0x90, 0xAF do
+	local upper = string.char(0xD0, byte)
+	cyrillicLower[upper] = byte < 0xA0 and string.char(0xD0, byte + 0x20) or string.char(0xD1, byte - 0x20)
+end
+cyrillicLower[string.char(0xD0, 0x81)] = string.char(0xD1, 0x91)
+local function searchLower(text)
+	-- Do not lower UTF-8 bytes through the system ANSI locale.
+	local lower = text:gsub("[A-Z]", string.lower)
+	return (lower:gsub(string.char(0xD0) .. "[" .. string.char(0x81) .. string.char(0x90) .. "-" .. string.char(0xAF) .. "]", cyrillicLower))
+end
+
 local FRAME_NAME = "budsUIConfigFrame"
 local WIDTH, HEIGHT = 800, 560
 local NAV_WIDTH = 175
@@ -363,7 +376,7 @@ showPage = function(page, tabKey)
 				end
 				btn:ClearAllPoints()
 				btn:SetPoint("LEFT", x, 0)
-				btn:SetText(tab.name or tab.key)
+				btn:SetText(ns.Text(tab.name or tab.key))
 				btn:SetWidth(max(75, btn:GetFontString():GetStringWidth() + 16))
 				btn:Show()
 				if tab.key == page.activeTabKey then
@@ -407,7 +420,7 @@ function ns.PerformSearch(query)
 		end
 		return
 	end
-	local q = string.lower(query)
+	local q = searchLower(query)
 	local results = {}
 	local seen = {}
 
@@ -417,8 +430,10 @@ function ns.PerformSearch(query)
 		for _, entry in ipairs(list) do
 			if not entry.header and not entry.description and not entry.noReset
 					and (entry.group or entry.path or entry.label) then
-				local label = entry.label and string.lower(entry.label) or ""
-				local desc = entry.desc and string.lower(entry.desc) or ""
+				local labelText = entry.userContent and entry.label or ns.Text(entry.label)
+				local descText = entry.userContent and entry.desc or ns.Text(entry.desc)
+				local label = searchLower(labelText or "")
+				local desc = searchLower(descText or "")
 				local group = entry.group and string.lower(entry.group) or ""
 				local opt = entry.option and string.lower(entry.option) or ""
 				if label:find(q, 1, true) or desc:find(q, 1, true)
@@ -430,7 +445,7 @@ function ns.PerformSearch(query)
 						for k, v in pairs(entry) do
 							copy[k] = v
 						end
-						copy.label = "|cff808080[" .. catName .. "]|r " .. (entry.label or "")
+						copy.label = "|cff808080[" .. catName .. "]|r " .. (labelText or "")
 						results[#results + 1] = copy
 					end
 				end
@@ -439,10 +454,10 @@ function ns.PerformSearch(query)
 	end
 
 	for _, page in ipairs(ns.pages) do
-		local catName = page.name or page.key or "Page"
+		local catName = ns.Text(page.name or page.key or "Page")
 		if page.tabs and #page.tabs > 0 then
 			for _, tab in ipairs(page.tabs) do
-				scanSchema(tab.schema, catName .. " > " .. (tab.name or tab.key))
+				scanSchema(tab.schema, catName .. " > " .. ns.Text(tab.name or tab.key))
 			end
 		elseif page.schema then
 			scanSchema(page.schema, catName)
@@ -450,11 +465,11 @@ function ns.PerformSearch(query)
 	end
 
 	local searchSchema = {
-		{ header = "Search Results (" .. #results .. ")" },
+		{ header = format(ns.Text("Search Results (%d)"), #results) },
 	}
 	if #results == 0 then
 		searchSchema[#searchSchema + 1] = {
-			description = "No settings found matching \"" .. query .. "\".",
+			description = format(ns.Text('No settings found matching "%s".'), query),
 		}
 	else
 		for _, item in ipairs(results) do
@@ -477,7 +492,7 @@ end
 -- ---------------------------------------------------------------------------
 
 StaticPopupDialogs["BUDSUI_CONFIG_RESET_PAGE"] = {
-	text = "Reset all %s settings to defaults?",
+	text = ns.Text("Reset all %s settings to defaults?"),
 	button1 = YES,
 	button2 = CANCEL,
 	OnAccept = function(self, page)
@@ -510,7 +525,7 @@ StaticPopupDialogs["BUDSUI_CONFIG_RESET_PAGE"] = {
 }
 
 StaticPopupDialogs["BUDSUI_CONFIG_RESET_ALL"] = {
-	text = "Reset ALL budsUI settings of the active profile to defaults? The UI will be reloaded.",
+	text = ns.Text("Reset ALL budsUI settings of the active profile to defaults? The UI will be reloaded."),
 	button1 = ACCEPT,
 	button2 = CANCEL,
 	OnAccept = function()
@@ -564,7 +579,7 @@ end
 makeButton = function(parent, text, width)
 	local button = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
 	button:SetSize(width or 100, 23)
-	button:SetText(text)
+	button:SetText(ns.Text(text))
 	return button
 end
 
@@ -640,7 +655,7 @@ local function createFrame()
 
 	local searchHint = searchBox:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
 	searchHint:SetPoint("LEFT", 6, 0)
-	searchHint:SetText("Search...")
+	searchHint:SetText(ns.Text("Search..."))
 	frame.searchHint = searchHint
 
 	local clearBtn = CreateFrame("Button", nil, navPanel)
@@ -731,7 +746,7 @@ local function createFrame()
 		label:SetPoint("LEFT", icon, "RIGHT", 4, 0)
 		label:SetPoint("RIGHT", button, "RIGHT", -14, 0)
 		label:SetJustifyH("LEFT")
-		label:SetText(page.name or page.key or "?")
+		label:SetText(ns.Text(page.name or page.key or "?"))
 		button:SetFontString(label)
 		button.label = label
 
@@ -752,8 +767,8 @@ local function createFrame()
 		button:SetScript("OnEnter", function(self)
 			if ns.IsPageModified and ns.IsPageModified(p) then
 				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-				GameTooltip:SetText(p.name or p.key)
-				GameTooltip:AddLine("Has modified settings", 0.35, 0.75, 1.0)
+				GameTooltip:SetText(ns.Text(p.name or p.key))
+				GameTooltip:AddLine(ns.Text("Has modified settings"), 0.35, 0.75, 1.0)
 				GameTooltip:Show()
 			end
 		end)
@@ -816,7 +831,7 @@ local function createFrame()
 	end)
 	apply:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_TOP")
-		GameTooltip:SetText("Most settings apply after a UI reload.")
+		GameTooltip:SetText(ns.Text("Most settings apply after a UI reload."))
 		GameTooltip:Show()
 	end)
 	apply:SetScript("OnLeave", function()
@@ -827,7 +842,7 @@ local function createFrame()
 	defaults:SetPoint("TOPLEFT", rightPanel, "BOTTOMLEFT", 0, -8)
 	defaults:SetScript("OnClick", function()
 		if currentPage then
-			StaticPopup_Show("BUDSUI_CONFIG_RESET_PAGE", currentPage.name, nil, currentPage)
+			StaticPopup_Show("BUDSUI_CONFIG_RESET_PAGE", ns.Text(currentPage.name), nil, currentPage)
 		end
 	end)
 
@@ -977,7 +992,7 @@ do
 		sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
 		sub:SetWidth(420)
 		sub:SetJustifyH("LEFT")
-		sub:SetText("Type /buds to open the configuration window.")
+		sub:SetText(ns.Text("Type /buds to open the configuration window."))
 		local open = makeButton(self, "Open Config", 140)
 		open:SetPoint("TOPLEFT", sub, "BOTTOMLEFT", 0, -12)
 		open:SetScript("OnClick", function()
@@ -985,7 +1000,7 @@ do
 		end)
 		local version = self:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 		version:SetPoint("BOTTOMRIGHT", -16, 16)
-		version:SetText("Version: " .. tostring(K and K.Version or "?"))
+		version:SetText(ns.Text("Version: ") .. tostring(K and K.Version or "?"))
 	end)
 	InterfaceOptions_AddCategory(panel)
 end

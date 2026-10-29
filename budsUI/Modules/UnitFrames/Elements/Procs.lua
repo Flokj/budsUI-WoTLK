@@ -316,6 +316,10 @@ end
 
 local function createPlayerBlock()
 	local cfg = C.InternalCooldowns
+	if not (cfg and cfg.Enable and cfg.Player and cfg.PlayerDetached) then
+		return
+	end
+
 	local size = (cfg and cfg.PlayerSize) or 26
 	local spacing = (cfg and cfg.Spacing) or 2
 	local slots = getSlotCount(cfg)

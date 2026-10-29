@@ -2,7 +2,7 @@
 	<Script file="Core\Init.lua"/>
 
 	<Script file="Locales\enUS.lua"/>
-	<Script file="Locales\deDE.lua"/>
+	<Script file="Locales\ruRU.lua"/>
 
 	<Script file="Config\Settings.lua"/>
 	<Script file="Config\Positions.lua"/>
@@ -63,6 +63,8 @@
 	<Script file="Modules\Misc\SlotItemLevel.lua"/>
 	<Script file="Modules\Misc\SpeedyLoad.lua"/>
 	<Script file="Modules\Misc\WarmaneAHFix.lua"/>
+	<Script file="Modules\Misc\CombatLogFix.lua"/>
+	<Script file="Modules\Misc\DeathRecap.lua"/>
 	<Script file="Modules\Misc\Totems.lua"/>
 	<Script file="Modules\Misc\ThreatMeter.lua"/>
 
@@ -81,7 +83,7 @@
 	<Script file="Modules\ActionBars\Range.lua"/>
 	<Script file="Modules\ActionBars\Others.lua"/>
 	<Script file="Modules\ActionBars\Cooldowns.lua"/>
-	<Script file="Modules\ActionBars\SelfCast.lua"/>
+	<Script file="Modules\ActionBars\ClickAnimation.lua"/>
 
 	<Script file="Modules\Announcements\BadGear.lua"/>
 	<Script file="Modules\Announcements\FeastsAndPortals.lua"/>

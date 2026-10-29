@@ -44,6 +44,10 @@ ns.RegisterPage({
 			type = "toggle",
 			desc = "Show empty action bar buttons.",
 		}),
+		T("ClickAnimation", L_GUI_ACTIONBAR_CLICK_ANIMATION or "Click animation", {
+			type = "toggle",
+			desc = "Show a quick glow animation when clicking action buttons.",
+		}),
 		{ header = "Text" },
 		T("Hotkey", L_GUI_ACTIONBAR_HOTKEY or "Hotkeys", {
 			type = "toggle",

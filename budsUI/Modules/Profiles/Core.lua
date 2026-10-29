@@ -36,8 +36,12 @@ local function MergeProfileIntoC()
 					for option, value in pairs(options) do
 						if C[group][option] ~= nil then
 							if type(value) == "table" and type(C[group][option]) == "table" then
-								for k, v in pairs(value) do
-									C[group][option][k] = v
+								if option == "Blacklist" or #value > 0 then
+									C[group][option] = CopyTable(value)
+								else
+									for k, v in pairs(value) do
+										C[group][option][k] = v
+									end
 								end
 							else
 								C[group][option] = value
@@ -90,7 +94,12 @@ profileMergeFrame:SetScript("OnEvent", function(self, event, addon)
 	
 	-- Ensure a valid profile exists for this character
 	EnsureValidProfile()
-	
+
+	-- Run migrations on SavedVariables (prune legacy dumps, update schema)
+	if K.RunAllMigrations then
+		K.RunAllMigrations()
+	end
+
 	MergeProfileIntoC()
 	self:UnregisterEvent(event)
 end)

@@ -6,7 +6,7 @@
 ## SavedVariables: budsUIData, SavedOptions
 
 Locales\enUS.lua
-Locales\deDE.lua
+Locales\ruRU.lua
 
 Controls.lua
 

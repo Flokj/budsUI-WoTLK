@@ -127,7 +127,7 @@ end
 local function InitializeMap()
 	-- Konflikt-Warnung
 	if IsAddOnLoaded("Mapster") or IsAddOnLoaded("Aurora") then
-		K.Print("|cffff0000budsUI:|r WorldMap-Skin deaktiviert, da Mapster oder Aurora erkannt wurde.")
+		K.Print("|cffff0000WorldMap skin disabled: Mapster or Aurora detected.|r")
 		return
 	end
 

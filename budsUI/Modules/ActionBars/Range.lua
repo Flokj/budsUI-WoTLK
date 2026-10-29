@@ -1,223 +1,142 @@
 local K, C, L, _ = select(2, ...):unpack()
 if C.ActionBar.Enable ~= true then return end
 
+-- Out-of-range / out-of-mana icon tint for the stock action buttons.
+-- FrostAtom-style: one throttled ticker over cached per-button flags, writes
+-- color only on change, repaints instantly on target change. The stock button
+-- OnUpdate is left alive, so Blizzard's own flash still works.
+
 local _G = _G
-local next = next
-local pairs = pairs
+local CreateFrame = CreateFrame
+local GetTime = GetTime
+local UnitExists = UnitExists
+local hooksecurefunc = hooksecurefunc
+
 local UPDATE_DELAY = 0.1
-local ATTACK_BUTTON_FLASH_TIME = ATTACK_BUTTON_FLASH_TIME
+
 local ActionButton_GetPagedID = ActionButton_GetPagedID
-local ActionButton_IsFlashing = ActionButton_IsFlashing
+local GetActionInfo = GetActionInfo
 local ActionHasRange = ActionHasRange
 local IsActionInRange = IsActionInRange
 local IsUsableAction = IsUsableAction
 local HasAction = HasAction
 
---[[ The main thing ]]--
-local tullaRange = CreateFrame("Frame", "tullaRange", UIParent) tullaRange:Hide()
+local COLORS = {
+	OOR      = C.ActionBar.OutOfRange,
+	OOM      = C.ActionBar.OutOfMana,
+	NORMAL   = { 1, 1, 1 },
+	UNUSABLE = { 0.2, 0.2, 0.2 },
+}
 
-function tullaRange:Load()
-	self:SetScript("OnUpdate", self.OnUpdate)
-	self:SetScript("OnHide", self.OnHide)
-	self:SetScript("OnEvent", self.OnEvent)
-	self.elapsed = 0
+local buttons = {}
+local hasTarget = false
 
-	self:RegisterEvent("PLAYER_LOGIN")
-end
-
---[[ Frame Events ]]--
-function tullaRange:OnEvent(event, ...)
-	local action = self[event]
-	if action then
-		action(self, event, ...)
+local function CollectButtons()
+	for i = 1, 12 do
+		buttons[#buttons + 1] = _G["ActionButton" .. i]
+		buttons[#buttons + 1] = _G["BonusActionButton" .. i]
+		buttons[#buttons + 1] = _G["MultiBarBottomLeftButton" .. i]
+		buttons[#buttons + 1] = _G["MultiBarBottomRightButton" .. i]
+		buttons[#buttons + 1] = _G["MultiBarLeftButton" .. i]
+		buttons[#buttons + 1] = _G["MultiBarRightButton" .. i]
 	end
 end
 
-function tullaRange:OnUpdate(elapsed)
-	if self.elapsed < UPDATE_DELAY then
-		self.elapsed = self.elapsed + elapsed
+-- Cache whether the button holds a ranged action, its icon and macro state.
+-- Runs on ActionButton_Update / OnShow / OnHide only, never in the tick loop.
+local function UpdateButtonStatus(button)
+	local action = ActionButton_GetPagedID(button)
+	if action and HasAction(action) and ActionHasRange(action) then
+		button.rangeStatus = true
+		button.rangeIcon = button.rangeIcon or _G[button:GetName() .. "Icon"]
+		button.isMacro = (GetActionInfo(action) == "macro")
 	else
-		self:Update()
+		button.rangeStatus = nil
+		button.rangeIcon = nil
+		button.isMacro = nil
+		button.colorKind = nil
 	end
 end
 
-function tullaRange:OnHide()
-	self.elapsed = 0
-end
-
---[[ Game Events ]]--
-function tullaRange:PLAYER_LOGIN()
-	if not TULLARANGE_COLORS then
-		self:LoadDefaults()
+local function SetButtonColor(button, kind)
+	if button.colorKind == kind then
+		return
 	end
-	self.colors = TULLARANGE_COLORS
-
-	self.buttonsToUpdate = {}
-
-	hooksecurefunc("ActionButton_OnUpdate", self.RegisterButton)
-	hooksecurefunc("ActionButton_UpdateUsable", self.OnUpdateButtonUsable)
-	hooksecurefunc("ActionButton_Update", self.OnButtonUpdate)
-end
-
---[[ Actions ]]--
-function tullaRange:Update()
-	self:UpdateButtons(self.elapsed)
-	self.elapsed = 0
-end
-
-function tullaRange:ForceColorUpdate()
-	for button in pairs(self.buttonsToUpdate) do
-		tullaRange.OnUpdateButtonUsable(button)
+	button.colorKind = kind
+	if kind ~= "UNUSABLE" then
+		local icon = button.rangeIcon
+		if icon then
+			local color = COLORS[kind]
+			icon:SetVertexColor(color[1], color[2], color[3])
+		end
 	end
 end
 
-function tullaRange:UpdateShown()
-	if next(self.buttonsToUpdate) then
-		self:Show()
-	else
-		self:Hide()
-	end
-end
-
-function tullaRange:UpdateButtons(elapsed)
-	if not next(self.buttonsToUpdate) then
-		self:Hide()
+local function UpdateButton(button)
+	local action = ActionButton_GetPagedID(button)
+	if not action or not button.rangeStatus or not button:IsVisible() then
 		return
 	end
 
-	for button in pairs(self.buttonsToUpdate) do
-		self:UpdateButton(button, elapsed)
-	end
-end
-
-function tullaRange:UpdateButton(button, elapsed)
-	tullaRange.UpdateButtonUsable(button)
-	tullaRange.UpdateFlash(button, elapsed)
-end
-
-function tullaRange:UpdateButtonStatus(button)
-	local action = ActionButton_GetPagedID(button)
-	if not(button:IsVisible() and action and HasAction(action) and ActionHasRange(action)) then
-		self.buttonsToUpdate[button] = nil
-	else
-		self.buttonsToUpdate[button] = true
-	end
-	self:UpdateShown()
-end
-
---[[ Button Hooking ]]--
-function tullaRange.RegisterButton(button)
-	button:HookScript("OnShow", tullaRange.OnButtonShow)
-	button:HookScript("OnHide", tullaRange.OnButtonHide)
-	button:SetScript("OnUpdate", nil)
-
-	tullaRange:UpdateButtonStatus(button)
-end
-
-function tullaRange.OnButtonShow(button)
-	tullaRange:UpdateButtonStatus(button)
-end
-
-function tullaRange.OnButtonHide(button)
-	tullaRange:UpdateButtonStatus(button)
-end
-
-function tullaRange.OnUpdateButtonUsable(button)
-	button.tullaRangeColor = nil
-	tullaRange.UpdateButtonUsable(button)
-end
-
-function tullaRange.OnButtonUpdate(button)
-	tullaRange:UpdateButtonStatus(button)
-end
-
---[[ Range Coloring ]]--
-function tullaRange.UpdateButtonUsable(button)
-	local action = ActionButton_GetPagedID(button)
 	local isUsable, notEnoughMana = IsUsableAction(action)
 
-	--usable
 	if isUsable then
-		--but out of range
-		if IsActionInRange(action) == 0 then
-			tullaRange.SetButtonColor(button, "OOR")
-			--in range
+		if (not hasTarget and not button.isMacro) or IsActionInRange(action) ~= 0 then
+			SetButtonColor(button, "NORMAL")
 		else
-			tullaRange.SetButtonColor(button, "NORMAL")
+			SetButtonColor(button, "OOR")
 		end
-		--out of mana
 	elseif notEnoughMana then
-		tullaRange.SetButtonColor(button, "OOM")
-		--unusable
+		SetButtonColor(button, "OOM")
 	else
-		button.tullaRangeColor = "unusuable"
+		SetButtonColor(button, "UNUSABLE")
 	end
 end
 
-function tullaRange.SetButtonColor(button, colorType)
-	if button.tullaRangeColor ~= colorType then
-		button.tullaRangeColor = colorType
-
-		local r, g, b = tullaRange:GetColor(colorType)
-
-		local icon = _G[button:GetName() .. "Icon"]
-		icon:SetVertexColor(r, g, b)
+local function UpdateButtons()
+	for i = 1, #buttons do
+		UpdateButton(buttons[i])
 	end
 end
 
-function tullaRange.UpdateFlash(button, elapsed)
-	if ActionButton_IsFlashing(button) then
-		local flashtime = button.flashtime - elapsed
+local ticker = CreateFrame("Frame")
+ticker:Hide()
+local nextUpdate = 0
+ticker:SetScript("OnUpdate", function()
+	local now = GetTime()
+	if now < nextUpdate then
+		return
+	end
+	nextUpdate = now + UPDATE_DELAY
+	UpdateButtons()
+end)
 
-		if flashtime <= 0 then
-			local overtime = -flashtime
-			if overtime >= ATTACK_BUTTON_FLASH_TIME then
-				overtime = 0
-			end
-			flashtime = ATTACK_BUTTON_FLASH_TIME - overtime
+local function RepaintNow()
+	nextUpdate = 0
+	UpdateButtons()
+end
 
-			local flashTexture = _G[button:GetName() .. "Flash"]
-			if flashTexture:IsShown() then
-				flashTexture:Hide()
-			else
-				flashTexture:Show()
-			end
+local listener = CreateFrame("Frame")
+listener:RegisterEvent("PLAYER_LOGIN")
+listener:RegisterEvent("PLAYER_TARGET_CHANGED")
+listener:RegisterEvent("PLAYER_ENTERING_WORLD")
+
+listener:SetScript("OnEvent", function(self, event)
+	if event == "PLAYER_LOGIN" then
+		CollectButtons()
+		for i = 1, #buttons do
+			local button = buttons[i]
+			button:HookScript("OnShow", function() UpdateButtonStatus(button) end)
+			button:HookScript("OnHide", function() UpdateButtonStatus(button) end)
+			UpdateButtonStatus(button)
 		end
-
-		button.flashtime = flashtime
+		hooksecurefunc("ActionButton_Update", function(button)
+			if button and button:IsVisible() then
+				UpdateButtonStatus(button)
+			end
+		end)
+		ticker:Show()
 	end
-end
-
---[[ Configuration ]]--
-function tullaRange:LoadDefaults()
-	TULLARANGE_COLORS = {
-		["OOR"] = C.ActionBar.OutOfRange,
-		["OOM"] = C.ActionBar.OutOfMana,
-		["NORMAL"] = {1.0, 1.0, 1.0},
-		["UNUSABLE"] = {0.2, 0.2, 0.2},
-	}
-end
-
-function tullaRange:Reset()
-	self:LoadDefaults()
-	self.colors = TULLARANGE_COLORS
-
-	self:ForceColorUpdate()
-end
-
-function tullaRange:SetColor(index, r, g, b)
-	local color = self.colors[index]
-	color[1] = r
-	color[2] = g
-	color[3] = b
-
-	self:ForceColorUpdate()
-end
-
-function tullaRange:GetColor(index)
-	local color = self.colors[index]
-	return color[1], color[2], color[3]
-end
-
---[[ Load The Thing ]]--
-tullaRange:Load()
+	hasTarget = UnitExists("target")
+	RepaintNow()
+end)

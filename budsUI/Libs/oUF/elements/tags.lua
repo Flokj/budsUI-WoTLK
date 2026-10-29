@@ -710,8 +710,6 @@ local function WaiterHandler(handler)
 	end
 
 	UpdateStrings(tempStrings)
-
-	eventWaiters[handler] = nil
 end
 
 local function WaitTimer(handler, delay)
@@ -732,26 +730,23 @@ local function WaitTimer(handler, delay)
 end
 
 local function HandlerEvent(handler, event, unit, updateInfo)
-	handler.eventHappened[event] = true -- so we know what events fired
+	if not ShouldUpdateTag(handler.frame, event, unit) then return end
+	if event == 'UNIT_AURA' and oUF:ShouldSkipAuraUpdate(handler.frame, event, unit, updateInfo, verifyAura) then return end
+
+	handler.eventHappened[event] = true
 
 	local waiter = eventWaiters[handler]
-	if waiter then
-		-- Reset the timer if already waiting
-		waiter.elapsed = 0
+	if not waiter then
+		waiter = WaitTimer(handler, eventTimerThreshold)
+		eventWaiters[handler] = waiter
+	elseif waiter:IsShown() then
+		-- Batch from the first event; a busy combat stream must not starve tags.
 		return
 	end
 
-	-- we only want to show tags on validated units
-	if not ShouldUpdateTag(handler.frame, event, unit) then return end
-
-	-- we only want to let auras trigger an update when they are allowed
-	if event == 'UNIT_AURA' and oUF:ShouldSkipAuraUpdate(handler.frame, event, unit, updateInfo, verifyAura) then return end
-
-	-- Create and start the waiter frame
-	waiter = WaitTimer(handler, eventTimerThreshold)
+	waiter.elapsed = 0
+	waiter.delay = eventTimerThreshold
 	waiter:Show()
-
-	eventWaiters[handler] = waiter
 end
 
 local function GenerateWaiter(handler)

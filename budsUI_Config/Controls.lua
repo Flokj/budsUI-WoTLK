@@ -19,6 +19,8 @@
 --   width       : control width override (string/select/input)
 --   maxLetters  : editbox char limit
 --   values      : select options: {{value, label}, ...} or function() -> list
+--   userContent : labels contain user data; do not translate them
+--   userValues  : select labels contain user data (e.g. profile names)
 --   placeholder : select text shown when value is nil
 --   text        : execute button text (defaults to label)
 --   func        : execute button handler
@@ -49,6 +51,16 @@ local tinsert = tinsert
 
 ns.pages = ns.pages or {}
 ns.creators = ns.creators or {}
+
+-- Translate presentation only; profile keys, enum values and user text stay intact.
+function ns.Text(text)
+	if type(text) ~= "string" or not L_GUI_TEXT then return text end
+	return L_GUI_TEXT[text] or L_GUI_TEXT[(text:gsub("%.+$", ""))] or text
+end
+
+local function entryText(entry, text)
+	return entry.userContent and text or ns.Text(text)
+end
 
 ns.ROW_HEIGHT = 26
 ns.CONTROL_X = 230
@@ -184,8 +196,12 @@ function ns.Set(entry, value)
 			end
 		else
 			if type(value) == "table" and type(P[group][option]) == "table" then
-				for k, v in pairs(value) do
-					P[group][option][k] = v
+				if option == "Blacklist" or #value > 0 then
+					P[group][option] = CopyTable(value)
+				else
+					for k, v in pairs(value) do
+						P[group][option][k] = v
+					end
 				end
 			else
 				P[group][option] = value
@@ -207,8 +223,12 @@ function ns.Set(entry, value)
 			end
 		else
 			if type(value) == "table" and type(C[group][option]) == "table" then
-				for k, v in pairs(value) do
-					C[group][option][k] = v
+				if option == "Blacklist" or #value > 0 then
+					C[group][option] = CopyTable(value)
+				else
+					for k, v in pairs(value) do
+						C[group][option][k] = v
+					end
 				end
 			else
 				C[group][option] = value
@@ -320,7 +340,7 @@ function ns.ResetEntry(entry)
 				P[keys[1]][keys[2]] = nil
 			end
 		end
-		ns.Print("Default will be restored after ReloadUI.")
+		ns.Print(ns.Text("Default will be restored after ReloadUI."))
 		return
 	end
 	ns.Set(entry, copyValue(def))
@@ -328,14 +348,14 @@ end
 
 function ns.FormatDefault(value)
 	if type(value) == "boolean" then
-		return value and "On" or "Off"
+		return ns.Text(value and "On" or "Off")
 	elseif type(value) == "number" then
 		return tostring(floor(value * 100 + 0.5) / 100)
 	elseif type(value) == "table" and type(value[1]) == "number" then
 		local r = floor((value[1] or 0) * 255 + 0.5)
 		local g = floor((value[2] or 0) * 255 + 0.5)
 		local b = floor((value[3] or 0) * 255 + 0.5)
-		return format("|cff%02x%02x%02xthis color|r", r, g, b)
+		return format(ns.Text("|cff%02x%02x%02xthis color|r"), r, g, b)
 	elseif value ~= nil then
 		return tostring(value)
 	end
@@ -357,7 +377,7 @@ end
 
 function ns.Confirm(text, action)
 	ns._confirmAction = action
-	StaticPopup_Show("BUDSUI_CONFIG_CONFIRM", text)
+	StaticPopup_Show("BUDSUI_CONFIG_CONFIRM", ns.Text(text))
 end
 
 StaticPopupDialogs["BUDSUI_CONFIG_CONFIRM"] = {
@@ -402,13 +422,13 @@ end
 
 function ns.FormatValue(entry, value)
 	if entry.zeroText and value == 0 then
-		return entry.zeroText
+		return ns.Text(entry.zeroText)
 	end
 	if entry.percent then
 		return ns.FormatNumber(value * 100, (entry.step or 0.05) * 100) .. "%"
 	end
 	if entry.unit then
-		return ns.FormatNumber(value, entry.step or 1) .. entry.unit
+		return ns.FormatNumber(value, entry.step or 1) .. ns.Text(entry.unit)
 	end
 	return ns.FormatNumber(value, entry.step or 1)
 end
@@ -480,7 +500,7 @@ end
 function ns.CreateButton(parent, text, width, gray, height)
 	local button = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
 	button:SetSize(width or 100, height or 23)
-	button:SetText(text or "")
+	button:SetText(ns.Text(text or ""))
 	if gray then
 		button:SetNormalFontObject("GameFontHighlight")
 	end
@@ -511,17 +531,17 @@ function ns.RowEnter(row)
 	end
 	local parts = {}
 	if entry.desc then
-		local descText = strtrim(tostring(entry.desc)):gsub("%s*%.$", "")
-		local labelText = entry.label and strtrim(tostring(entry.label)):gsub("%s*%.$", "") or nil
+		local descText = strtrim(tostring(entryText(entry, entry.desc))):gsub("%s*%.$", "")
+		local labelText = entry.label and strtrim(tostring(entryText(entry, entry.label))):gsub("%s*%.$", "") or nil
 		if not (labelText and descText == labelText) then
-			parts[#parts + 1] = { entry.desc, NORMAL_FONT_COLOR }
+			parts[#parts + 1] = { entryText(entry, entry.desc), NORMAL_FONT_COLOR }
 		end
 	end
 	if row.problem then
-		parts[#parts + 1] = { row.problem.text, row.problem.color or RED_FONT_COLOR }
+		parts[#parts + 1] = { ns.Text(row.problem.text), row.problem.color or RED_FONT_COLOR }
 	end
 	if entry.reload then
-		parts[#parts + 1] = { "Requires a UI reload (APPLY button below).", { r = 1, g = 0.5, b = 0.25 } }
+		parts[#parts + 1] = { ns.Text("Requires a UI reload (APPLY button below)."), { r = 1, g = 0.5, b = 0.25 } }
 	end
 	if entry.type == "number" and entry.min and entry.max then
 		local rangeEntry = { min = entry.min, max = entry.max, step = entry.step or 1, percent = entry.percent, unit = entry.unit, zeroText = entry.zeroText }
@@ -533,7 +553,7 @@ function ns.RowEnter(row)
 	if row.modified then
 		local def, known = ns.DefaultOf(entry)
 		if known then
-			parts[#parts + 1] = { "Default: " .. (ns.FormatDefault(def) or "?"), GRAY_FONT_COLOR }
+			parts[#parts + 1] = { ns.Text("Default: ") .. (ns.FormatDefault(def) or "?"), GRAY_FONT_COLOR }
 		end
 	end
 	if not entry.desc and #parts == 0 then
@@ -543,7 +563,7 @@ function ns.RowEnter(row)
 	if GameTooltip.ClearLines then
 		GameTooltip:ClearLines()
 	end
-	GameTooltip:SetText(entry.label or "", HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b)
+	GameTooltip:SetText(entryText(entry, entry.label or ""), HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b)
 	for _, part in ipairs(parts) do
 		GameTooltip:AddLine(part[1], part[2].r, part[2].g, part[2].b, true)
 	end
@@ -578,7 +598,7 @@ local function createRow(parent, entry)
 	label:SetPoint("LEFT", LABEL_X + indent, 0)
 	label:SetWidth(CONTROL_X - LABEL_X - 10 - indent)
 	label:SetJustifyH("LEFT")
-	label:SetText(entry.label or entry.header or "")
+	label:SetText(entryText(entry, entry.label or entry.header or ""))
 	row.label = label
 	row:SetHeight(max(ROW_HEIGHT, label:GetStringHeight() + 8))
 
@@ -606,11 +626,11 @@ local function createRow(parent, entry)
 			end
 			local def, known = ns.DefaultOf(entry)
 			if known then
-				GameTooltip:SetText("Default: " .. (ns.FormatDefault(def) or "?"), HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b)
+				GameTooltip:SetText(ns.Text("Default: ") .. (ns.FormatDefault(def) or "?"), HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b)
 			else
-				GameTooltip:SetText(entry.label or "Default", HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b)
+				GameTooltip:SetText(entryText(entry, entry.label or "Default"), HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b)
 			end
-			GameTooltip:AddLine("Click to reset", GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b)
+			GameTooltip:AddLine(ns.Text("Click to reset"), GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b)
 			GameTooltip:Show()
 		end)
 		reset:SetScript("OnLeave", function()
@@ -665,7 +685,7 @@ function creators.header(parent, entry)
 	label:SetTextColor(0x38 / 255, 0x8b / 255, 0xdb / 255)
 	label:SetPoint("BOTTOM", 0, 6)
 	label:SetJustifyH("CENTER")
-	label:SetText(entry.header or "")
+	label:SetText(entryText(entry, entry.header or ""))
 	header.label = label
 
 	local rule = header:CreateTexture(nil, "ARTWORK")
@@ -690,7 +710,7 @@ function creators.description(parent, entry)
 	text:SetPoint("TOPLEFT", LABEL_X, -2)
 	text:SetWidth(500)
 	text:SetJustifyH("LEFT")
-	text:SetText(entry.description or "")
+	text:SetText(entryText(entry, entry.description or ""))
 	holder.label = text
 	holder:SetHeight(text:GetStringHeight() + 8)
 	return holder
@@ -970,11 +990,11 @@ function creators.select(parent, entry)
 		local selected = current()
 		for _, option in ipairs(values) do
 			local info = UIDropDownMenu_CreateInfo()
-			info.text = option[2]
+			info.text = entry.userValues and option[2] or ns.Text(option[2])
 			info.value = option[1]
 			info.checked = option[1] == selected
-			info.tooltipTitle = option[2]
-			info.tooltipText = option.desc or option[3]
+			info.tooltipTitle = info.text
+			info.tooltipText = ns.Text(option.desc or option[3])
 			info.func = function()
 				PlaySound("igMainMenuOptionCheckBoxOn")
 				ns.Set(entry, option[1])
@@ -990,9 +1010,9 @@ function creators.select(parent, entry)
 		local value = current()
 		if optionLabel(values, value) then
 			UIDropDownMenu_SetSelectedValue(dropdown, value)
-			UIDropDownMenu_SetText(dropdown, optionLabel(values, value))
+			UIDropDownMenu_SetText(dropdown, entry.userValues and optionLabel(values, value) or ns.Text(optionLabel(values, value)))
 		else
-			UIDropDownMenu_SetText(dropdown, entry.placeholder or "")
+			UIDropDownMenu_SetText(dropdown, ns.Text(entry.placeholder or ""))
 		end
 	end
 	row.SetEnabled = function(_, enabled)
@@ -1134,7 +1154,7 @@ end
 -- ---------------------------------------------------------------------------
 
 StaticPopupDialogs["BUDSUI_CONFIG_EXPORT"] = {
-	text = "Copy with Ctrl+C, close with Escape.",
+	text = ns.Text("Copy with Ctrl+C, close with Escape."),
 	button1 = CLOSE,
 	hasEditBox = 1,
 	maxLetters = 0,

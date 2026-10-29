@@ -72,6 +72,10 @@ ns.RegisterPage({
 			type = "toggle", advanced = true, reload = true,
 			desc = "Disable certain events during loading screens to drastically improve loading times.",
 		}),
+		T("CombatLogFix", L_GUI_MISC_COMBATLOG_FIX or "Combat log freeze fix", {
+			type = "toggle", advanced = true,
+			desc = "Recovers from client-side combat log buffer stalls after casts in instances, dungeons and arenas (seen on WoW Circle and Warmane).",
+		}),
 		{ header = L_GUI_MISC_COMBAT_ALERT or "Combat alert" },
 		T("CombatAlert", L_GUI_MISC_COMBAT_ALERT or "Combat alert", {
 			type = "toggle",
@@ -129,6 +133,34 @@ ns.RegisterPage({
 		TM("FontSize", L_GUI_THREATMETER_FONTSIZE or "Font size", {
 			type = "number", min = 8, max = 24, step = 1,
 			enabledBy = "ThreatMeter.Enable",
+		}),
+		{ header = L_GUI_MISC_DEATHRECAP or "Death recap" },
+		T("DeathRecap", L_GUI_MISC_DEATHRECAP_ENABLE or "Enable death recap", {
+			type = "toggle",
+			desc = L_GUI_MISC_DEATHRECAP_DESC or "Record the damage you take and list the last hits before death with a chat link. Open with /recap.",
+			apply = function()
+				local K = ns.Engine()
+				if K and K.UpdateDeathRecapConfig then K.UpdateDeathRecapConfig() end
+			end,
+		}),
+		T("DeathRecapAutoOpen", L_GUI_MISC_DEATHRECAP_AUTO or "Auto open in PvP", {
+			type = "toggle", enabledBy = "Misc.DeathRecap",
+			desc = "Show the death recap window right away when you die in arena or battlegrounds.",
+		}),
+		T("DeathRecapHeals", L_GUI_MISC_DEATHRECAP_HEALS or "Show incoming heals", {
+			type = "toggle", enabledBy = "Misc.DeathRecap",
+			desc = "Also list incoming heals you received before death in green.",
+		}),
+		T("DeathRecapEntries", L_GUI_MISC_DEATHRECAP_ENTRIES or "Hits shown", {
+			type = "number", min = 3, max = 10, step = 1, enabledBy = "Misc.DeathRecap",
+			desc = "Number of hits visible at once in the recap window.",
+		}),
+		T("DeathRecapTest", L_GUI_MISC_DEATHRECAP_OPEN or "Open recap window", {
+			type = "execute", text = "Open", noReset = true, enabledBy = "Misc.DeathRecap",
+			func = function()
+				local K = ns.Engine()
+				if K and K.OpenDeathRecap then K.OpenDeathRecap() end
+			end,
 		}),
 	},
 })

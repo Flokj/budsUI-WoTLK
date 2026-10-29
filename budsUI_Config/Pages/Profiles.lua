@@ -41,6 +41,7 @@ ns.RegisterPage({
 			type = "select",
 			width = 220,
 			values = profileValues,
+			userValues = true,
 			get = activeProfile,
 			set = function(name)
 				local K = ns.Engine()
@@ -58,11 +59,11 @@ ns.RegisterPage({
 			noReset = true,
 			validate = function(text)
 				if not text or text == "" then
-					return false, "Enter a profile name."
+					return false, ns.Text("Enter a profile name.")
 				end
 				if _G["budsUIData"] and _G["budsUIData"].Profiles
 						and _G["budsUIData"].Profiles[text] then
-					return false, "A profile with this name already exists."
+					return false, ns.Text("A profile with this name already exists.")
 				end
 				return true
 			end,
@@ -70,7 +71,7 @@ ns.RegisterPage({
 				local K = ns.Engine()
 				if K and K.CreateProfile and K.CreateProfile(text, activeProfile()) then
 					K.SetProfile(text)
-					ns.Print("|cff388bdb" .. text .. "|r created.")
+					ns.Print(format(ns.Text("%s created."), "|cff388bdb" .. text .. "|r"))
 					ReloadUI()
 				end
 			end,
@@ -83,18 +84,18 @@ ns.RegisterPage({
 			noReset = true,
 			validate = function(text)
 				if not text or text == "" or text == activeProfile() then
-					return false, "Enter a different name."
+					return false, ns.Text("Enter a different name.")
 				end
 				if _G["budsUIData"] and _G["budsUIData"].Profiles
 						and _G["budsUIData"].Profiles[text] then
-					return false, "A profile with this name already exists."
+					return false, ns.Text("A profile with this name already exists.")
 				end
 				return true
 			end,
 			func = function(text)
 				local K = ns.Engine()
 				if K and K.RenameProfile and K.RenameProfile(activeProfile(), text) then
-					ns.Print("Profile renamed to |cff388bdb" .. text .. "|r. Reloading...")
+					ns.Print(format(ns.Text("Profile renamed to %s. Reloading..."), "|cff388bdb" .. text .. "|r"))
 					ReloadUI()
 				end
 			end,
@@ -109,7 +110,7 @@ ns.RegisterPage({
 			func = function()
 				local K = ns.Engine()
 				if K and K.SaveProfile and K.SaveProfile() then
-					ns.Print("|cff388bdb" .. activeProfile() .. "|r saved.")
+					ns.Print(format(ns.Text("%s saved."), "|cff388bdb" .. activeProfile() .. "|r"))
 				end
 			end,
 		},
@@ -120,8 +121,7 @@ ns.RegisterPage({
 			width = 220,
 			noReset = true,
 			confirm = function()
-				return "Delete profile |cff388bdb" .. activeProfile()
-					.. "|r? This cannot be undone."
+				return format(ns.Text("Delete profile %s? This cannot be undone."), "|cff388bdb" .. activeProfile() .. "|r")
 			end,
 			func = function()
 				local count = 0
@@ -131,7 +131,7 @@ ns.RegisterPage({
 					end
 				end
 				if count <= 1 then
-					ns.Print("|cffff0000Cannot delete the last profile.|r")
+					ns.Print("|cffff0000" .. ns.Text("Cannot delete the last profile.") .. "|r")
 					return
 				end
 				local K = ns.Engine()
@@ -170,12 +170,12 @@ ns.RegisterPage({
 			label = "Import profile text",
 			type = "custom",
 			noReset = true,
+			desc = "Paste the copied profile text from another character and click the Import button. Enter inserts a line break in the paste field.",
 			build = function(row)
 				local box = CreateFrame("EditBox", nil, row)
 				box:SetAutoFocus(false)
 				box:SetMultiLine(true)
 				box:SetFontObject(GameFontHighlightSmall)
-				box:SetWidth(430)
 				box:SetHeight(70)
 				box:SetMaxLetters(0)
 				box:SetTextInsets(5, 5, 5, 5)
@@ -187,20 +187,20 @@ ns.RegisterPage({
 						box:SetBackdropBorderColor(unpack(C.Media.Border_Color))
 					end
 				end
-				box:SetPoint("LEFT", ns.CONTROL_X + 6, 0)
+				-- The paste box must stay inside the 550 px content area; the old
+				-- fixed 430 px width pushed the Import button past the scroll clip.
+				box:SetPoint("TOPLEFT", row, "TOPLEFT", ns.CONTROL_X + 6, -3)
+				box:SetPoint("TOPRIGHT", row, "TOPRIGHT", -6, -3)
 				box:SetScript("OnEscapePressed", function(self)
 					self:ClearFocus()
 				end)
 				ns.BindRow(box, row)
 				row.ioBox = box
 
-				local import = ns.CreateButton(row, "Import", 100)
-				import:SetPoint("LEFT", box, "RIGHT", 8, 0)
-				ns.BindRow(import, row)
-				import:SetScript("OnClick", function()
+				local function submit()
 					local K2 = ns.Engine()
-					local data = box:GetText()
-					if not K2 or not data or data == "" then
+					local data = strtrim(box:GetText() or "")
+					if not K2 or data == "" then
 						return
 					end
 					local name = activeProfile() .. " (Import)"
@@ -211,19 +211,30 @@ ns.RegisterPage({
 					end
 					if K2.ImportProfile and K2.ImportProfile(name, data) then
 						K2.SetProfile(name)
-						ns.Print("|cff388bdb" .. name .. "|r imported. Reloading...")
+						ns.Print(format(ns.Text("%s imported. Reloading..."), "|cff388bdb" .. name .. "|r"))
 						ReloadUI()
 					else
-						ns.Print("|cffff0000Import failed.|r Invalid data.")
+						ns.Print("|cffff0000" .. ns.Text("Import failed. Invalid data.") .. "|r")
 					end
-				end)
-				row:SetHeight(76)
+				end
+
+				-- Multi-line paste area: Enter adds a line break, the button imports.
+				local import = ns.CreateButton(row, "Import", 100)
+				import:SetPoint("TOPRIGHT", box, "BOTTOMRIGHT", 0, -4)
+				ns.BindRow(import, row)
+				import:SetScript("OnClick", submit)
+				row.importButton = import
+
+				row:SetHeight(104)
 			end,
 			refresh = function(row)
 			end,
 			setEnabled = function(row, enabled)
 				if row.ioBox then
 					ns.SetEditBoxEnabled(row.ioBox, enabled)
+				end
+				if row.importButton then
+					ns.SetControlEnabled(row.importButton, enabled)
 				end
 			end,
 		},
