@@ -50,7 +50,7 @@ ns.RegisterPage({
 		}),
 		T("BGSpam", L_GUI_MISC_HIDE_BG_SPAM or "Hide BG spam", {
 			type = "toggle",
-			desc = "Remove Boss Emote spam during BG.",
+			desc = "Disables all center-screen boss emotes at the event level (Arathi Basin spam, raid emotes).",
 		}),
 		T("AFKCamera", L_GUI_MISC_SPIN_CAMERA or "AFK spin camera", {
 			type = "toggle",

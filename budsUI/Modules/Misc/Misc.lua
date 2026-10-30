@@ -9,7 +9,6 @@ local InCombatLockdown = InCombatLockdown
 local MAX_BATTLEFIELD_QUEUES = MAX_BATTLEFIELD_QUEUES
 local GetBattlefieldStatus = GetBattlefieldStatus
 local UnitIsAFK = UnitIsAFK
-local GetZoneText = GetZoneText
 local GetLFGDungeonRewards = GetLFGDungeonRewards
 local GetLFGDungeonInfo = GetLFGDungeonInfo
 local GetLFGRandomDungeonInfo = GetLFGRandomDungeonInfo
@@ -182,24 +181,9 @@ LFDParentFrame:HookScript("OnShow", function()
 	end
 end)
 
--- Remove Boss Emote spam during BG(ArathiBasin SpamFix by Partha)
+-- Disable Boss Emotes (all zones at once).
 if C.Misc.BGSpam == true then
-	local Fixer = CreateFrame("Frame")
-	local RaidBossEmoteFrame, spamDisabled = RaidBossEmoteFrame
-
-	local function DisableSpam()
-		if GetZoneText() == L_ZONE_ARATHIBASIN then
-			RaidBossEmoteFrame:UnregisterEvent("RAID_BOSS_EMOTE")
-			spamDisabled = true
-		elseif spamDisabled then
-			RaidBossEmoteFrame:RegisterEvent("RAID_BOSS_EMOTE")
-			spamDisabled = false
-		end
-	end
-
-	Fixer:RegisterEvent("PLAYER_ENTERING_WORLD")
-	Fixer:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-	Fixer:SetScript("OnEvent", DisableSpam)
+	RaidBossEmoteFrame:UnregisterEvent("RAID_BOSS_EMOTE")
 end
 
 -- Undress button in auction dress-up frame(by Nefarion)
@@ -285,15 +269,6 @@ ChatFrame_AddMessageEventFilter("CHAT_MSG_LOOT", function(self, event, msg)
 		return true
 	end
 end)
-
---------------------------------------------------
--- Game DBM OFF
-RaidBossEmoteFrame:SetAlpha(0)
---RaidNotice_AddMessage = function() end -- Raid Warning
-
--- Test Hite PP/Bg text
-HK=' '
-local s for i=1,19 do for j=0,1 do s=("PVP_RANK_%d_%d"):format(i,j) _G[s],_G[s.."_FEMALE"]=nil end end
 
 -- Easy Item Destroy 
 local TypeDeleteLine = gsub(DELETE_GOOD_ITEM, "[\r\n]", "@")
