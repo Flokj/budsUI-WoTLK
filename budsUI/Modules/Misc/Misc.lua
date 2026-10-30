@@ -39,27 +39,16 @@ RaidWarningFrame:ClearAllPoints()
 RaidWarningFrame:SetPoint("TOP", UIParent, 0, -130)
 
 -- WorldStateAlwaysUpFrame (BG/arena timer bar), FrostAtomUI-style layout.
--- All re-pointing/sizing of the rows runs synchronously inside a SECURE hook
--- on the Blizzard update, never from an addon-owned timer or at load: an
--- addon-context touch of this frame during combat lockdown taints it, its
--- OnUpdate then writes the tainted WORLDSTATEALWAYSUPFRAME_TIMESINCESTART
--- global and every in-combat RaidGroupFrame_Update (protected
--- RaidGroupButton1..40 SetPoint/Show/Hide) is blocked and counted.
--- The bar's own mover is therefore created out of combat only (see bottom).
+-- Rows are laid out inside a SECURE hook on the Blizzard update; addon-code
+-- touches in combat taint the bar and block protected raid frame updates.
 local WORLD_STATE_WIDTH = 160
 local WORLD_STATE_ROW = 16
 local WORLD_STATE_ICON = 22
 local max = math.max
 
 local function layoutWorldState()
-	-- Combat gate (deliberate deviation from the FrostAtom donor): the
-	-- secure-hook callback still executes as addon code, and touching the
-	-- frame family (SetSize/SetPoint/ClearAllPoints) during combat lockdown
-	-- taints WorldStateAlwaysUpFrame; its OnUpdate then writes the tainted
-	-- WORLDSTATEALWAYSUPFRAME_TIMESINCESTART global (taint-6 seed) and every
-	-- in-combat RaidGroupFrame_Update pass gets blocked. Blizzard re-anchors
-	-- the rows to stock positions on every update anyway, so this layout
-	-- simply re-applies on the first out-of-combat update.
+	-- Taint gate: touches under lockdown seed the taint; Blizzard re-anchors
+	-- rows on each update, so we just re-apply on the first out-of-combat pass.
 	if InCombatLockdown() then return end
 	local shown = 0
 	local previous
@@ -220,12 +209,20 @@ strip:SetScript("OnEvent", function(self)
 end)
 
 --------------------------------------------------
-ZoneTextFrame:UnregisterAllEvents()
-ZoneTextFrame:SetScript("OnShow", function() this:Hide() end)
-ZoneTextFrame:Hide()
-SubZoneTextFrame:UnregisterAllEvents()
-SubZoneTextFrame:SetScript("OnShow", function() this:Hide() end)
-SubZoneTextFrame:Hide()
+-- Hide zone/area text
+local ZONE_EVENTS = { "ZONE_CHANGED", "ZONE_CHANGED_INDOORS", "ZONE_CHANGED_NEW_AREA" }
+
+local function ApplyZoneText()
+	if C.Misc.HideZoneText == true then
+		ZoneTextFrame:UnregisterAllEvents()
+	else
+		for i = 1, #ZONE_EVENTS do
+			ZoneTextFrame:RegisterEvent(ZONE_EVENTS[i])
+		end
+	end
+end
+K.ApplyZoneText = ApplyZoneText
+ApplyZoneText()
 
 --------------------------------------------------
 -- Item/Spell link
@@ -435,12 +432,9 @@ for _, frame in ipairs(fadeFrames) do
 	end)
 end
 
--- Movers (deferred: Core/Movers.lua loads after the modules).
--- WorldState's mover is created out of combat only (InCombatLockdown + regen
--- poll): anchoring the bar from addon code during combat lockdown taints it
--- and spawns the blocked-action cascade (see the world-state block above).
--- K.CreateMover is idempotent, so re-creating micro/bag movers per tick until
--- then is harmless.
+-- Movers (deferred: Core/Movers.lua loads later). WorldState's mover is
+-- created out of combat only: anchoring it under lockdown taints the bar.
+-- K.CreateMover is idempotent, so per-tick re-creation is harmless.
 local moverWait = CreateFrame("Frame")
 moverWait:SetScript("OnUpdate", function()
 	if not K.CreateMover then return end

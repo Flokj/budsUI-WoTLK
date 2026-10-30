@@ -207,6 +207,7 @@ C["Misc"] = {
 	["DurabilityWarning"] = false,
 	["EnhancedMail"] = true,
 	["HatTrick"] = true,
+	["HideZoneText"] = true,
 	["InviteKeyword"] = "inv",
 	["ItemLevel"] = true,
 	["PvPTimer"] = true,

@@ -52,6 +52,14 @@ ns.RegisterPage({
 			type = "toggle",
 			desc = "Disables all center-screen boss emotes at the event level (Arathi Basin spam, raid emotes).",
 		}),
+		T("HideZoneText", L_GUI_MISC_HIDE_ZONE_TEXT or "Hide zone text", {
+			type = "toggle",
+			desc = "Hides the zone and sub-zone announcement banners when changing areas (applies right away).",
+			apply = function()
+				local K = ns.Engine()
+				if K and K.ApplyZoneText then K.ApplyZoneText() end
+			end,
+		}),
 		T("AFKCamera", L_GUI_MISC_SPIN_CAMERA or "AFK spin camera", {
 			type = "toggle",
 			desc = "Spin camera while afk.",
