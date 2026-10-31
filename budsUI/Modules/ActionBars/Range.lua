@@ -2,9 +2,8 @@ local K, C, L, _ = select(2, ...):unpack()
 if C.ActionBar.Enable ~= true then return end
 
 -- Out-of-range / out-of-mana icon tint for the stock action buttons.
--- FrostAtom-style: one throttled ticker over cached per-button flags, writes
--- color only on change, repaints instantly on target change. The stock button
--- OnUpdate is left alive, so Blizzard's own flash still works.
+-- FrostAtom-style: one throttled ticker over cached flags, instant repaint on
+-- target change; an UpdateUsable hook re-asserts tint after stock repaints.
 
 local _G = _G
 local CreateFrame = CreateFrame
@@ -25,7 +24,7 @@ local COLORS = {
 	OOR      = C.ActionBar.OutOfRange,
 	OOM      = C.ActionBar.OutOfMana,
 	NORMAL   = { 1, 1, 1 },
-	UNUSABLE = { 0.2, 0.2, 0.2 },
+	UNUSABLE = { 0.4, 0.4, 0.4 },
 }
 
 local buttons = {}
@@ -63,18 +62,19 @@ local function SetButtonColor(button, kind)
 		return
 	end
 	button.colorKind = kind
-	if kind ~= "UNUSABLE" then
-		local icon = button.rangeIcon
-		if icon then
-			local color = COLORS[kind]
-			icon:SetVertexColor(color[1], color[2], color[3])
-		end
+	local icon = button.rangeIcon
+	if icon then
+		local color = COLORS[kind]
+		icon:SetVertexColor(color[1], color[2], color[3])
 	end
 end
 
-local function UpdateButton(button)
+local function UpdateButton(button, includeHidden)
 	local action = ActionButton_GetPagedID(button)
-	if not action or not button.rangeStatus or not button:IsVisible() then
+	if not action or not button.rangeStatus then
+		return
+	end
+	if not includeHidden and not button:IsVisible() then
 		return
 	end
 
@@ -93,9 +93,9 @@ local function UpdateButton(button)
 	end
 end
 
-local function UpdateButtons()
+local function UpdateButtons(includeHidden)
 	for i = 1, #buttons do
-		UpdateButton(buttons[i])
+		UpdateButton(buttons[i], includeHidden)
 	end
 end
 
@@ -113,7 +113,7 @@ end)
 
 local function RepaintNow()
 	nextUpdate = 0
-	UpdateButtons()
+	UpdateButtons(true)
 end
 
 local listener = CreateFrame("Frame")
@@ -133,6 +133,14 @@ listener:SetScript("OnEvent", function(self, event)
 		hooksecurefunc("ActionButton_Update", function(button)
 			if button and button:IsVisible() then
 				UpdateButtonStatus(button)
+			end
+		end)
+		-- stock UpdateUsable repaints the icon on ACTIONBAR_UPDATE_USABLE;
+		-- re-assert our tint right after it or the cached kind goes stale
+		hooksecurefunc("ActionButton_UpdateUsable", function(button)
+			if button and button.rangeStatus then
+				button.colorKind = nil
+				UpdateButton(button)
 			end
 		end)
 		ticker:Show()
