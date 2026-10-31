@@ -1,6 +1,7 @@
 local K, C, L, _ = select(2, ...):unpack()
 
-if C.PowerBar.Maelstrom ~= true then return end
+-- Shaman-only: the UNIT_AURA handler rescans player buffs on every event
+if C.PowerBar.Maelstrom ~= true or K.Class ~= "SHAMAN" then return end
 
 local MAELSTROM_SPELL_ID = 1153817 -- Ascension
 local MAELSTROM_SPELL_WOTLK = 53817 -- WotLK

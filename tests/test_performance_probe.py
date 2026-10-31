@@ -6,7 +6,7 @@ import unittest
 from lupa.lua51 import LuaRuntime
 
 ROOT = Path(__file__).resolve().parents[1]
-PROBE = ROOT / "budsUI_Perf/Performance.lua"
+PROBE = ROOT.parent / "budsUI_Perf" / "Performance.lua"
 
 
 class ProbeRuntime:
@@ -102,6 +102,43 @@ class PerformanceProbeTests(unittest.TestCase):
         rt.command("stop")
         self.assertIsNotNone(rt.lua.globals().budsUI_PerfDB.report)
 
+    def test_scan_survives_function_unit_field(self):
+        rt = ProbeRuntime()
+        rt.lua.execute("""
+            Test.groupWork = function() end
+            Test.cpu[Test.groupWork], Test.calls[Test.groupWork] = 5, 2
+            local group = CreateFrame('Frame', nil, UIParent)
+            group.unit = function() return 'player' end
+            group.filter = 'HELPFUL'
+            group:SetScript('OnEvent', Test.groupWork)
+        """)
+        rt.command("start")
+        rt.tick(0.1)
+        rt.command("stop")
+        self.assertIsNotNone(rt.lua.globals().budsUI_PerfDB.report)
+
+    def test_event_counts_and_window_cast_tgt_columns(self):
+        rt = ProbeRuntime()
+        rt.command("start")
+        g = rt.lua.globals()
+        g.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "Icy Touch")
+        g.Fire("PLAYER_TARGET_CHANGED")
+        g.Fire("UNIT_SPELLCAST_SENT", "player", "Icy Touch")
+        g.Fire("UNIT_THREAT_LIST_UPDATE", "target")
+        rt.tick(0.02)
+        rt.command("stop")
+        db = g.budsUI_PerfDB
+        self.assertEqual(db.events["UNIT_SPELLCAST_SUCCEEDED"], 1)
+        self.assertEqual(db.events["PLAYER_TARGET_CHANGED"], 1)
+        self.assertEqual(db.events["UNIT_SPELLCAST_SENT"], 1)
+        self.assertEqual(db.events["UNIT_THREAT_LIST_UPDATE"], 1)
+        self.assertEqual(db.windows[1].cast, 1)
+        self.assertEqual(db.windows[1].tgt, 1)
+        self.assertEqual(db.windows[1].thr, 1)
+        self.assertIn("Event counts:", db.report)
+        self.assertIn("UNIT_SPELLCAST_SUCCEEDED 1", db.report)
+        self.assertIn("| CAST | TGT | THR", db.report)
+
     def test_idle_probe_has_no_combat_listener_or_ticker(self):
         rt = ProbeRuntime()
         probe = rt.lua.globals().budsUIPerfDriver
@@ -133,6 +170,8 @@ class PerformanceProbeTests(unittest.TestCase):
         self.assertEqual(len(matched), 1, "One shared script is one CPU sample, not one per frame")
         self.assertEqual(matched[0].ms, 30)
         self.assertEqual(matched[0].calls, 20)
+        self.assertIn("<Frame", matched[0].label, "Anonymous-frame fingerprints must be recorded")
+        self.assertIn("between", matched[0].label, "Creation-order bracket must be recorded")
         self.assertEqual(g.Test.resets, 0, "Do not reset other addons' profiler counters")
 
     def test_frame_gaps_and_event_counts_are_recorded_without_chat_spam(self):

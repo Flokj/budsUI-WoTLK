@@ -14,6 +14,7 @@ local UnitExists, UnitIsDead, UnitIsPlayer, UnitIsVisible = UnitExists, UnitIsDe
 local UnitCanAttack, UnitName, UnitGUID, UnitClass = UnitCanAttack, UnitName, UnitGUID, UnitClass
 local UnitDetailedThreatSituation = UnitDetailedThreatSituation
 local GetNumRaidMembers, GetNumPartyMembers = GetNumRaidMembers, GetNumPartyMembers
+local GetTime = GetTime
 
 local PET_COLOR = { r = 0, g = 0.7, b = 0 }
 
@@ -42,6 +43,7 @@ local function Threat_Init()
 
 	local bars, tList, barList = {}, {}, {}
 	local targeted = false
+	local lastThreat = 0
 
 	local function Truncate(value)
 		if value >= 1e6 then
@@ -177,6 +179,12 @@ local function Threat_Init()
 	local function UpdateThreat()
 		if not targeted then return end
 
+		-- Threat events burst once per AoE/DoT tick on every enemy; one raid
+		-- scan per burst is enough for a display meter (fixes mass-DoT freezes)
+		local now = GetTime()
+		if now - lastThreat < 0.2 then return end
+		lastThreat = now
+
 		if GetNumRaidMembers() > 0 then
 			for i = 1, GetNumRaidMembers() do
 				CheckUnit("raid" .. i)
@@ -196,6 +204,7 @@ local function Threat_Init()
 	local function Reset()
 		wipe(tList)
 		wipe(barList)
+		lastThreat = 0
 		UpdateBars()
 	end
 

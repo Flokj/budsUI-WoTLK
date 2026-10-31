@@ -1502,9 +1502,13 @@ function Stuffing:BAG_CLOSED(id)
 	end
 end
 
+-- Ungated full-button rescan froze frames in combat (bag cooldown events fire
+-- constantly); skip it while the bags are closed, like GET_ITEM_INFO_RECEIVED.
 function Stuffing:BAG_UPDATE_COOLDOWN()
-	for i, v in pairs(self.buttons) do
-		self:SlotUpdate(v)
+	if self.frame and self.frame:IsShown() then
+		for i, v in pairs(self.buttons) do
+			self:SlotUpdate(v)
+		end
 	end
 end
 

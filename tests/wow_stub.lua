@@ -106,6 +106,10 @@ function Frame:SetHighlightTexture(value)
 end
 function Frame:GetHighlightTexture() return self.highlight end
 function Frame:SetFrameStrata(value) self.strata = value end
+function Frame:GetFrameStrata() return self.strata or "MEDIUM" end
+function Frame:GetObjectType() return self.kind end
+function Frame:GetNumChildren() return 0 end
+function Frame:GetNumRegions() return 0 end
 function Frame:SetFrameLevel(value) self.frameLevel = value end
 function Frame:GetFrameLevel() return self.frameLevel or 1 end
 function Frame:SetScript(event, callback) self.scripts[event] = callback end
@@ -120,6 +124,7 @@ end
 function Frame:RegisterEvent(event) self.events[event] = true end
 function Frame:UnregisterEvent(event) self.events[event] = nil end
 function Frame:IsEventRegistered(event) return self.events[event] == true end
+function Frame:IsProtected() return false end
 function Frame:Show()
 	if self.shown then return end
 	self.shown = true
