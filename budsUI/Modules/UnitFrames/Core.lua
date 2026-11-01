@@ -343,58 +343,6 @@ function Module:UpdateRaidGroupLabels()
 end
 
 -- ---------------------------------------------------------------------------
--- Disable the default UI frames we replace.
--- In 3.3.5 there is no compact raid container; the raid groups are plain
--- RaidGroup1..8 headers, hidden here when our raid frames are enabled.
--- ---------------------------------------------------------------------------
-function Module:DisableBlizzardRaid()
-	if InCombatLockdown() then
-		return
-	end
-
-	local hidden = _G.budsUI_HiddenParent
-	if not hidden then
-		hidden = CreateFrame("Frame", "budsUI_HiddenParent", UIParent)
-		hidden:Hide()
-	end
-
-	for i = 1, 8 do
-		local group = _G["RaidGroup" .. i]
-		if group then
-			group:UnregisterAllEvents()
-			group:Hide()
-			group:SetParent(hidden)
-		end
-	end
-end
-
--- The stock raid grid updater (RaidGroupFrame_Update) repositions its 40
--- protected RaidGroupButtonN on every roster event; in combat each call is
--- blocked and counted by the addon manager (the BG blocked-action storm:
--- ~205 blocks per roster event). The grid is dead weight whenever a raid
--- replacement runs - our own frames OR Grid2 (this build's default setup:
--- C.Unitframe.Party/Raid.Enable are false, raid frames come from Grid2).
--- Detect Grid2 via its runtime global, NOT IsAddOnLoaded: this install's
--- addon folders carry version suffixes, so the registered names differ.
--- Neutralize the updater the era-standard way - but only once
--- Blizzard_RaidUI has actually loaded, it is load-on-demand at the first
--- RAID_ROSTER_UPDATE.
-function Module:NeutralizeStockRaidGrid()
-	if self.__raidGridWatched then return end
-	self.__raidGridWatched = true
-
-	local watcher = CreateFrame("Frame")
-	watcher:RegisterEvent("RAID_ROSTER_UPDATE")
-	watcher:RegisterEvent("PLAYER_ENTERING_WORLD")
-	watcher:SetScript("OnEvent", function()
-		if RaidGroupFrame_Update and RaidGroupFrame_Update ~= K.Noop
-			and (C.Unitframe.Party.Enable or C.Unitframe.Raid.Enable or _G.Grid2) then
-			RaidGroupFrame_Update = K.Noop
-		end
-	end)
-end
-
--- ---------------------------------------------------------------------------
 -- Lifecycle (runs at file load; oUF and the config are already up)
 -- ---------------------------------------------------------------------------
 function Module:Init()
@@ -420,14 +368,6 @@ function Module:Init()
 	end
 	oUF:DisableBlizzard("party")
 	oUF:DisableBlizzard("boss")
-
-	if C.Unitframe.Party.Enable or C.Unitframe.Raid.Enable then
-		self:DisableBlizzardRaid()
-	end
-	-- Register the stock-grid watcher regardless of our own frames: the raid
-	-- replacement may be Grid2 (own party/raid disabled, this build's setup),
-	-- which the watcher itself detects at event time.
-	self:NeutralizeStockRaidGrid()
 
 	for _, def in ipairs(Module.UnitDefs) do
 		self:SpawnUnit(def)
