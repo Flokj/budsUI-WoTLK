@@ -97,8 +97,10 @@ C_PVP.GetRunTimeInfo = function()
     local timeSeconds, totalTime
     if ( not IsActiveBattlefieldArena() ) then
         if not C_Map[GetMapInfo()] then return end
+        local timeLeft = C_Map[GetMapInfo()].timeSeconds()
+        if not timeLeft then return end
         totalTime = 120
-        timeSeconds = totalTime - C_Map[GetMapInfo()].timeSeconds()
+        timeSeconds = totalTime - timeLeft
     else
         totalTime = 60
         timeSeconds = totalTime - GetBattlefieldInstanceRunTime() / 1000
