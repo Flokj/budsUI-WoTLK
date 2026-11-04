@@ -659,7 +659,7 @@ function ICD:GetAura(guid, key)
 	end
 	local limit = aura.duration or sources[key].cd
 	if aura.start + limit > GetTime() then
-		return aura.start, aura.duration
+		return aura
 	end
 	list[key] = nil
 end
