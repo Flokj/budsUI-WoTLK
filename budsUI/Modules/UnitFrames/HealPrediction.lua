@@ -8,6 +8,7 @@ if not Module then return end
 local UnitGUID, UnitName = UnitGUID, UnitName
 local UnitExists, UnitCanAssist = UnitExists, UnitCanAssist
 local UnitCastingInfo, UnitHealthMax = UnitCastingInfo, UnitHealthMax
+local UnitIsDeadOrGhost, UnitIsConnected = UnitIsDeadOrGhost, UnitIsConnected
 local GetSpellInfo, GetTime = GetSpellInfo, GetTime
 local pairs, next, wipe, select = pairs, next, wipe, select
 
@@ -816,10 +817,9 @@ local function applyColors(bar)
 	p.ownHeal:SetVertexColor(own[1], own[2], own[3], own[4])
 	local r, g, b = absorbColor[1], absorbColor[2], absorbColor[3]
 	p.absorb:SetVertexColor(r, g, b, absorbColor[4])
-	-- Texture:SetGradientAlpha does not exist on 3.3.5, so the overflow glow
-	-- is a flat vertex-alpha texture on ADD blend (set at creation) instead
-	-- of a horizontal gradient.
-	p.glow:SetVertexColor(r, g, b, 0.55)
+	-- Overflow glow, donor verbatim: horizontal fade toward the bar's right
+	-- edge. SetGradientAlpha is 3.3.5-native (ElvUI 30300 uses it too).
+	p.glow:SetGradientAlpha("HORIZONTAL", r, g, b, 0, r, g, b, 1)
 end
 
 local function onSizeChanged(bar)
@@ -885,6 +885,12 @@ function Prediction.Refresh(bar, guid, unit, showHeal, showAbsorb)
 	end
 	p.guid = guid
 	p.unit = unit
+	-- Donor clears prediction for dead/offline units (setPlaceholder path):
+	-- no heal segments or absorb glow on a frame that cannot be healed.
+	if unit and (UnitIsDeadOrGhost(unit) or not UnitIsConnected(unit)) then
+		Prediction.SetValues(bar, 0, 0, false, 0)
+		return
+	end
 	local incoming, own = 0, 0
 	if showHeal then
 		incoming, own = getIncoming(guid)
