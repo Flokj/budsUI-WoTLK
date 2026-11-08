@@ -77,7 +77,7 @@ end
 -- not be used here. Sizes are FIXED pixels: Frost does not scale the plate
 -- frame, while multiplying by K.NoScaleMult (= 768/screenHeight, ~0.71 on
 -- 1080p) shrinks the border to a barely visible hairline.
-local BORDER_EDGE_SIZE = 10
+local BORDER_EDGE_SIZE = 8
 local BORDER_INSET = 2
 local BORDER_EDGE = "Interface\\Tooltips\\UI-Tooltip-Border"
 -- Frost theme borderColor (default { 0.35, 0.35, 0.35 }).
