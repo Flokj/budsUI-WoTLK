@@ -112,6 +112,8 @@ local CHAT_EVENTS = {
 	"CHAT_MSG_WHISPER",
 	"CHAT_MSG_WHISPER_INFORM",
 	"CHAT_MSG_YELL",
+	"CHAT_MSG_LOOT",
+	"CHAT_MSG_MONEY",
 }
 
 -- ElvUI runs CheckKeyword through its message pipeline; budsUI has no such
