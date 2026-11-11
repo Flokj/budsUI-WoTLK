@@ -268,45 +268,21 @@ ChatFrame_AddMessageEventFilter("CHAT_MSG_LOOT", function(self, event, msg)
 end)
 
 -- Easy Item Destroy 
-local TypeDeleteLine = gsub(DELETE_GOOD_ITEM, "[\r\n]", "@")
-local _, TypeDeleteLine = strsplit("@", TypeDeleteLine, 2)
-TypeDeleteLine = gsub(TypeDeleteLine, "@", "")
-
-StaticPopupDialogs["DELETE_GOOD_ITEM"].OnHyperlinkEnter = function(self, link, text, region, boundsLeft, boundsBottom, boundsWidth, boundsHeight)
-    GameTooltip:SetOwner(self, "ANCHOR_PRESERVE")
-    GameTooltip:ClearAllPoints()
-    local cursorClearance = 30
-    GameTooltip:SetPoint("TOPLEFT", region, "BOTTOMLEFT", boundsLeft, boundsBottom - cursorClearance)
-    GameTooltip:SetHyperlink(link)
+local function fillDeleteConfirmation(which)
+	for i = 1, STATICPOPUP_NUMDIALOGS do
+		local dialog = _G["StaticPopup" .. i]
+		if dialog:IsShown() and dialog.which == which then
+			dialog.editBox:SetText(DELETE_ITEM_CONFIRM_STRING)
+			dialog.editBox:ClearFocus()
+			return
+		end
+	end
 end
 
-StaticPopupDialogs["DELETE_GOOD_ITEM"].OnHyperlinkLeave = function(self)
-    GameTooltip:Hide()
-end
-
-StaticPopupDialogs["DELETE_ITEM"].OnHyperlinkEnter = StaticPopupDialogs["DELETE_GOOD_ITEM"].OnHyperlinkEnter
-StaticPopupDialogs["DELETE_ITEM"].OnHyperlinkLeave = StaticPopupDialogs["DELETE_GOOD_ITEM"].OnHyperlinkLeave
-
-local easyDelFrame = CreateFrame("Frame")
-easyDelFrame:RegisterEvent("DELETE_ITEM_CONFIRM")
-easyDelFrame:SetScript("OnEvent", function()
-    local link = select(3, GetCursorInfo())
-    
-    if StaticPopup1EditBox:IsShown() then
-        StaticPopup1:SetHeight(StaticPopup1:GetHeight() - 10)
-        StaticPopup1EditBox:Hide()
-        StaticPopup1Button1:Enable()
-        if link then
-            StaticPopup1Text:SetText(gsub(StaticPopup1Text:GetText(), TypeDeleteLine, "") .. "\n" .. link)
-        end
-    else
-        StaticPopup1:SetHeight(StaticPopup1:GetHeight() + 40)
-        StaticPopup1EditBox:Hide()
-        StaticPopup1Button1:Enable()
-        if link then
-            StaticPopup1Text:SetText(gsub(StaticPopup1Text:GetText(), TypeDeleteLine, "") .. "\n\n" .. link)
-        end
-    end
+hooksecurefunc("StaticPopup_Show", function(which)
+	if which == "DELETE_GOOD_ITEM" then
+		fillDeleteConfirmation(which)
+	end
 end)
 
 --------------------------------------------------
