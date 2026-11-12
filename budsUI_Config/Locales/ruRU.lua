@@ -67,6 +67,8 @@ L_GUI_BAGS_BUTTON_SIZE = "Размер кнопок"
 L_GUI_BAGS_BUTTON_SPACE = "Расстояние между кнопками"
 L_GUI_BAGS_ENABLE = "Включить сумки"
 L_GUI_BAGS_ITEM_LEVEL = "Уровень предметов в сумках"
+L_GUI_BAGS_ALT_MONEY = "Золото всех персонажей"
+L_GUI_BAGS_CURRENCY = "Закреплённые валюты"
 -- Blizzard
 L_GUI_BLIZZARD = "Blizzard"
 L_GUI_BLIZZARD_ACHIEVEMENTS = "Оформить и переместить окно достижений"
@@ -611,6 +613,8 @@ L_GUI_TEXT = {
 	["Track internal cooldowns of trinket procs, enchants and talents."] = "Отслеживать внутренние кулдауны аксессуаров, зачарований и талантов.",
 	["Use budsUI Player, Target & Focus layout."] = L_GUI_UNITFRAME_ENABLE,
 	["Warlock: hide the Soul Shard bag slots."] = L_GUI_BAGS_HIDE_SOULBAG,
+	["Show the gold of all your characters when hovering the gold in bags."] = "Показывать золото всех персонажей при наведении на золото в сумках.",
+	["Show the currencies pinned in the currency tab along the bottom of the bags."] = "Показывать закреплённые валюты из вкладки валют внизу сумок.",
 	["Which UI error messages (red text) are shown or hidden."] = "Какие сообщения об ошибках показывать или скрывать.",
 	["Which aura block is closer to the frame when both are below."] = "Какой блок эффектов ближе к рамке, когда оба находятся снизу.",
 	["Write all current live settings into the active profile."] = "Сохранить текущие настройки в активном профиле.",

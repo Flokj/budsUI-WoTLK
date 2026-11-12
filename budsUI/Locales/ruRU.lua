@@ -45,6 +45,11 @@ L_BAG_RIGHT_CLICK_SEARCH = "Правая кнопка мыши: поиск."
 L_BAG_STACK_END = "Объединение стопок завершено."
 L_BAG_STACK_MENU = "Объединить стопки"
 L_BAG_STACK_SPECIAL = "Объединить в специальных сумках"
+-- Alt gold tooltip (hover the money in bags)
+L_BAG_ALT_MONEY = "Золото персонажей"
+L_BAG_ALT_MONEY_TOTAL = "Всего"
+L_BAG_ALT_MONEY_CURRENT = "(текущий)"
+L_BAG_ALT_MONEY_NONE = "Другие персонажи ещё не записаны"
 -- Key bindings
 L_BIND_BINDING = "Назначение"
 L_BIND_CLEARED = "Все назначения клавиш удалены для"

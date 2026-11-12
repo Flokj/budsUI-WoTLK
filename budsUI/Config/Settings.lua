@@ -75,10 +75,12 @@ C["Automation"] = {
 }
 -- Bag Options
 C["Bag"] = {
+	["AltMoney"] = true,
 	["BagColumns"] = 10,
 	["BankColumns"] = 17,
 	["ButtonSize"] = 34,
 	["ButtonSpace"] = 4,
+	["Currency"] = true,
 	["Enable"] = true,
 	["HideSoulBag"] = false,
 	["ShowItemLevel"] = true,

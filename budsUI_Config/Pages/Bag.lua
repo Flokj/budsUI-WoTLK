@@ -39,6 +39,18 @@ ns.RegisterPage({
 			type = "toggle",
 			desc = "Show item level on bag items.",
 		}),
+		T("AltMoney", L_GUI_BAGS_ALT_MONEY or "Gold of all characters", {
+			type = "toggle",
+			desc = "Show the gold of all your characters when hovering the gold in bags.",
+		}),
+		T("Currency", L_GUI_BAGS_CURRENCY or "Pinned currencies", {
+			type = "toggle",
+			desc = "Show the currencies pinned in the currency tab along the bottom of the bags.",
+			apply = function()
+				local K = ns.Engine()
+				if K and K.RefreshBagCurrency then K.RefreshBagCurrency() end
+			end,
+		}),
 		T("HideSoulBag", L_GUI_BAGS_HIDE_SOULBAG or "Hide soul bag", {
 			type = "toggle",
 			desc = "Warlock: hide the Soul Shard bag slots.",

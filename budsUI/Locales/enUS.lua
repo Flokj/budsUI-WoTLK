@@ -44,6 +44,11 @@ L_BAG_RIGHT_CLICK_SEARCH = "Right-click to search."
 L_BAG_STACK_END = "Restacking finished."
 L_BAG_STACK_MENU = "Stack"
 L_BAG_STACK_SPECIAL = "Stack Special"
+-- Alt gold tooltip (hover the money in bags)
+L_BAG_ALT_MONEY = "Character gold"
+L_BAG_ALT_MONEY_TOTAL = "Total"
+L_BAG_ALT_MONEY_CURRENT = "(current)"
+L_BAG_ALT_MONEY_NONE = "No other characters recorded yet"
 -- Bindings Localization
 L_BIND_BINDING = "Binding"
 L_BIND_CLEARED = "All keybindings cleared for"

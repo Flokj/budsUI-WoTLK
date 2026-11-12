@@ -46,6 +46,7 @@
 	<Script file="Modules\Misc\AddonListWidgets.lua"/>
 	<Script file="Modules\Misc\AddonList.lua"/>
 	<Script file="Modules\Misc\AlreadyKnown.lua"/>
+	<Script file="Modules\Misc\AltMoney.lua"/>
 	<Script file="Modules\Misc\ArmoryLink.lua"/>
 	<Script file="Modules\Misc\Durability.lua"/>
 	<Script file="Modules\Misc\Filger.lua"/>
@@ -102,6 +103,7 @@
 
 	<Script file="Modules\Blizzard\Achievements.lua"/>
 	<Script file="Modules\Blizzard\Bags.lua"/>
+	<Script file="Modules\Blizzard\BagCurrency.lua"/>
 	<!--Script file="Modules\Blizzard\BlizzBugsSuck.lua"/-->
 	<Script file="Modules\Blizzard\CaptureBar.lua"/>
 	<Script file="Modules\Blizzard\ClassColor.lua"/>

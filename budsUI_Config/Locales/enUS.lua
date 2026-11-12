@@ -58,6 +58,8 @@ L_GUI_BAGS_BUTTON_SIZE = "Buttons size"
 L_GUI_BAGS_BUTTON_SPACE = "Buttons space"
 L_GUI_BAGS_ENABLE = "Enable bags"
 L_GUI_BAGS_ITEM_LEVEL = "Show item level on bag items"
+L_GUI_BAGS_ALT_MONEY = "Gold of all characters"
+L_GUI_BAGS_CURRENCY = "Pinned currencies"
 -- Blizzard Localization
 L_GUI_BLIZZARD = "Blizzard"
 L_GUI_BLIZZARD_ACHIEVEMENTS = "Style & move Achievement frame"
