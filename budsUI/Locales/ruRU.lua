@@ -50,6 +50,10 @@ L_BAG_ALT_MONEY = "Золото персонажей"
 L_BAG_ALT_MONEY_TOTAL = "Всего"
 L_BAG_ALT_MONEY_CURRENT = "(текущий)"
 L_BAG_ALT_MONEY_NONE = "Другие персонажи ещё не записаны"
+-- Profession sidebar (trade skill window)
+L_PROFESSIONS_CURRENT = "Текущая профессия"
+L_PROFESSIONS_SWITCH = "Нажмите, чтобы открыть эту профессию"
+L_PROFESSIONS_COMBAT = "Недоступно в бою"
 -- Key bindings
 L_BIND_BINDING = "Назначение"
 L_BIND_CLEARED = "Все назначения клавиш удалены для"

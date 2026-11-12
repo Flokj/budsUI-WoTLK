@@ -49,6 +49,10 @@ L_BAG_ALT_MONEY = "Character gold"
 L_BAG_ALT_MONEY_TOTAL = "Total"
 L_BAG_ALT_MONEY_CURRENT = "(current)"
 L_BAG_ALT_MONEY_NONE = "No other characters recorded yet"
+-- Profession sidebar (trade skill window)
+L_PROFESSIONS_CURRENT = "Current profession"
+L_PROFESSIONS_SWITCH = "Click to open this profession"
+L_PROFESSIONS_COMBAT = "Not available in combat"
 -- Bindings Localization
 L_BIND_BINDING = "Binding"
 L_BIND_CLEARED = "All keybindings cleared for"

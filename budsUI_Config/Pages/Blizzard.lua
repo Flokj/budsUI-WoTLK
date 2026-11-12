@@ -37,6 +37,14 @@ ns.RegisterPage({
 			type = "toggle",
 			desc = "Enhanced profession window (double-wide, more recipes).",
 		}),
+		T("ProfessionTabs", L_GUI_BLIZZARD_PROFESSION_TABS or "Profession switch tabs", {
+			type = "toggle",
+			desc = "Sidebar with your other professions next to the profession window; click a tab to switch.",
+			apply = function()
+				local K = ns.Engine()
+				if K and K.ApplyProfessionTabs then K.ApplyProfessionTabs() end
+			end,
+		}),
 		T("EnhanceTrainers", L_GUI_BLIZZARD_ENHANCE_TRAINERS or "Enhanced trainers", {
 			type = "toggle",
 			desc = "Enhanced trainer window (double-wide, more skills).",

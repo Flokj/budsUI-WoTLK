@@ -91,6 +91,7 @@ C["Blizzard"] = {
 	["ClassColor"] = true,
 	["Durability"] = true,
 	["EnhanceProfessions"] = true,
+	["ProfessionTabs"] = true,
 	["EnhanceTrainers"] = true,
 	["TrainAllButton"] = true,
 	["MoveAchievements"] = true,
