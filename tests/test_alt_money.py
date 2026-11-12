@@ -111,6 +111,20 @@ class AltMoneyTests(unittest.TestCase):
         self.assertEqual(
             rt.scalar("return budsUIData.CharacterMoney.Realm.Player.copper"), 2000000)
 
+    def test_zero_before_the_purse_arrives_does_not_wipe_a_known_amount(self):
+        # 3.3.5 cores can report 0 at PEW/logout before the server sends the purse;
+        # the recorded amount must survive that.
+        rt = AltMoneyRuntime()
+        rt.lua.execute("Test.money = 0; Fire('PLAYER_LOGOUT')")
+        self.assertEqual(
+            rt.scalar("return budsUIData.CharacterMoney.Realm.Player.copper"), 1234567)
+
+    def test_player_money_zero_records_an_actually_empty_purse(self):
+        rt = AltMoneyRuntime()
+        rt.lua.execute("Test.money = 0; Fire('PLAYER_MONEY')")
+        self.assertEqual(
+            rt.scalar("return budsUIData.CharacterMoney.Realm.Player.copper"), 0)
+
     def test_bags_gold_hover_shows_and_hides_the_tooltip(self):
         rt = AltMoneyRuntime()
         rt.lua.execute(

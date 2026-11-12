@@ -36,7 +36,10 @@ local function GetStore(create)
 	return store
 end
 
-local function SaveMoney()
+-- A zero from PEW/LOGOUT is not trustworthy: on 3.3.5 cores the purse can still
+-- be empty until the server sends it. Only a trusted call (PLAYER_MONEY, or the
+-- bags tooltip where the amount is on screen) may lower a recorded amount.
+local function SaveMoney(trusted)
 	local store = GetStore(true)
 	if not store then return end
 	local realm = store[K.Realm]
@@ -44,7 +47,15 @@ local function SaveMoney()
 		realm = {}
 		store[K.Realm] = realm
 	end
-	realm[K.Name] = { copper = GetMoney() or 0, class = K.Class }
+	local copper = GetMoney() or 0
+	local old = realm[K.Name]
+	if copper == 0 and not trusted and type(old) == "table" then
+		local known = tonumber(old.copper) or 0
+		if known > 0 then
+			copper = known
+		end
+	end
+	realm[K.Name] = { copper = copper, class = K.Class }
 end
 
 local function ForgetMoney(realm, name)
@@ -118,7 +129,8 @@ local function CollectEntries()
 end
 
 local function ShowTooltip(owner)
-	SaveMoney()
+	-- The amount is on screen here, so this save wins over a spurious zero.
+	SaveMoney(true)
 	CollectEntries()
 
 	GameTooltip:SetOwner(owner, "ANCHOR_TOPRIGHT")
@@ -227,10 +239,28 @@ local driver = CreateFrame("Frame", nil, UIParent)
 driver:RegisterEvent("PLAYER_ENTERING_WORLD")
 driver:RegisterEvent("PLAYER_MONEY")
 driver:RegisterEvent("PLAYER_LOGOUT")
+
+-- The purse can arrive after PLAYER_ENTERING_WORLD on 3.3.5 cores, so a login
+-- saves again once the client has had time to receive it.
+local settle
+local function ArmSettle()
+	settle = 0
+	driver:SetScript("OnUpdate", function(self, elapsed)
+		settle = settle + elapsed
+		if settle < 2 then return end
+		self:SetScript("OnUpdate", nil)
+		SaveMoney(true)
+	end)
+end
+
 driver:SetScript("OnEvent", function(_, event)
 	if event == "PLAYER_ENTERING_WORLD" then
 		HookStuffingGold()
 		HookBlizzardMoneyFrames()
+		SaveMoney(false)
+		ArmSettle()
+		return
 	end
-	SaveMoney()
+	-- PLAYER_MONEY is authoritative; LOGOUT may run with an empty purse.
+	SaveMoney(event == "PLAYER_MONEY")
 end)
