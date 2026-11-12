@@ -57,6 +57,8 @@ function CreateFrame(kind, name, parent, template)
 	return object
 end
 function Frame:GetName() return self.name end
+function Frame:SetID(id) self.id = id end
+function Frame:GetID() return self.id or 0 end
 function Frame:GetParent() return self.parent end
 function Frame:SetParent(parent) self.parent = parent end
 function Frame:SetSize(width, height) self.width, self.height = width, height end
@@ -82,6 +84,7 @@ function Frame:SetVertexColor(...) self.color = { ... } end
 function Frame:GetVertexColor() return unpack(self.color) end
 function Frame:SetAlpha(value) self.alpha = value end
 function Frame:SetTexture(value) self.texture = value end
+function Frame:GetTexture() return self.texture end
 function Frame:SetDrawLayer(layer) self.drawLayer = layer end
 function Frame:GetDrawLayer() return self.drawLayer end
 function Frame:SetTexCoord(...) self.texCoord = { ... } end
@@ -98,6 +101,7 @@ function Frame:SetFontObject(value) self.fontObject = value end
 function Frame:SetText(value) self.text = value end
 function Frame:GetText() return self.text or "" end
 function Frame:GetStringHeight() return 12 end
+function Frame:GetStringWidth() return #(self.text or "") * 6 end
 function Frame:SetFormattedText(pattern, ...) self.text = string.format(pattern, ...) end
 function Frame:SetTextColor(...) self.textColor = { ... } end
 function Frame:SetHighlightTexture(value)
@@ -123,6 +127,9 @@ function Frame:HookScript(event, callback)
 end
 function Frame:RegisterEvent(event) self.events[event] = true end
 function Frame:UnregisterEvent(event) self.events[event] = nil end
+function Frame:UnregisterAllEvents()
+	for event in pairs(self.events) do self.events[event] = nil end
+end
 function Frame:IsEventRegistered(event) return self.events[event] == true end
 function Frame:IsProtected() return false end
 function Frame:Show()
@@ -143,6 +150,8 @@ function Frame:HighlightText() self.highlightedText = true end
 function Frame:SetMaxLetters(value) self.maxLetters = value end
 function Frame:SetOwner(...) self.owner = { ... }; self.lines = {} end
 function Frame:AddLine(...) self.lines[#self.lines + 1] = { ... } end
+function Frame:AddDoubleLine(left, right, ...) self.lines[#self.lines + 1] = { left, right, ... } end
+function Frame:IsOwned(owner) return self.owner ~= nil and self.owner[1] == owner end
 function Frame:ClearLines() self.lines = {} end
 function Frame:SetHyperlink(link) self.lastLink = link end
 for _, name in ipairs({
@@ -164,6 +173,7 @@ IsModifiedClick = function() return false end
 ShowUIPanel = function(frame) frame:Show() end
 HideUIPanel = function(frame) frame:Hide() end
 GetLocale = function() return Test.locale end
+IsLoggedIn = function() return Test.loggedIn ~= false end
 GetTime = function() return Test.now end
 UnitGUID = function(unit) return unit == "player" and Test.playerGUID or nil end
 UnitHealth = function() return Test.health end

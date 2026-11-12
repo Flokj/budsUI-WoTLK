@@ -1,9 +1,10 @@
 ## Interface: 30300
 ## Title: |cff388bdbbudsUI Config|r
-## Notes: |cff388bdbbudsUI|r Config GUI
+## Notes: |cff388bdbbudsUI|r Config GUI, bundled with budsUI and loaded on demand (not listed as a separate addon).
 ## Author: Budtender3000
 ## Version: 0.7.1
-## SavedVariables: budsUIData, SavedOptions
+## Dependencies: budsUI
+## LoadOnDemand: 1
 
 Locales\enUS.lua
 Locales\ruRU.lua

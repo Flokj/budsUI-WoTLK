@@ -34,37 +34,95 @@ Engine[1].WoWPatch, Engine[1].WoWBuild, Engine[1].WoWPatchReleaseDate, Engine[1]
 -- Initialize Global Addon Configuration Settings
 if type(SavedOptions) ~= "table" then SavedOptions = {} end
 
--- Soft-Mandatory config check (Warns user if budsUI_Config is disabled)
-local configWarningFrame = CreateFrame("Frame")
-configWarningFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-configWarningFrame:SetScript("OnEvent", function(self, event)
-	if not IsAddOnLoaded("budsUI_Config") then
-		StaticPopupDialogs["BUDSUI_MISSING_CONFIG"] = {
-			text = "|cffff0000WARNING:|r You are running budsUI without the budsUI_Config addon enabled. \n\nbudsUI heavily relies on its Config addon to function properly. Please enable it in the character select screen.",
-			button1 = OKAY,
-			timeout = 0,
-			whileDead = 1,
-			hideOnEscape = false,
-			preferredIndex = 3,
-		}
-		StaticPopup_Show("BUDSUI_MISSING_CONFIG")
+-- budsUI_Config ships as a LoadOnDemand addon (see its .toc) so it does not
+-- appear as a second addon in the list; the main addon loads it here.
+local CONFIG_ADDON = "budsUI_Config"
+
+local function ShowMissingConfigPopup()
+	StaticPopupDialogs["BUDSUI_MISSING_CONFIG"] = {
+		text = "|cffff0000WARNING:|r budsUI could not load its settings module (" .. CONFIG_ADDON .. ").\n\nMake sure the budsUI_Config folder sits next to the budsUI folder in Interface/AddOns, that the module is enabled in the addon list, and that \"Load out of date AddOns\" is checked at the character screen.",
+		button1 = OKAY,
+		timeout = 0,
+		whileDead = 1,
+		hideOnEscape = false,
+		preferredIndex = 3,
+	}
+	StaticPopup_Show("BUDSUI_MISSING_CONFIG")
+end
+
+-- 3.3.5 GetAddOnInfo() is index based, so resolve the index once by name.
+local function ConfigAddonIndex()
+	for i = 1, GetNumAddOns() do
+		if GetAddOnInfo(i) == CONFIG_ADDON then
+			return i
+		end
 	end
-	
-	-- We also use this opportunity to warn legacy users about the v0.7.0 reset once per account
-	if SavedOptions and not SavedOptions.v070ResetWarned then
-		StaticPopupDialogs["BUDSUI_V070_RESET"] = {
-			text = "|cff388bdbbudsUI v0.7.0 Update|r\n\nA new profile system has been implemented! Your previous legacy settings have been reset to ensure a clean slate and maximum performance.\n\nPlease take a moment to reconfigure your UI in the options menu.",
-			button1 = OKAY,
-			timeout = 0,
-			whileDead = 1,
-			hideOnEscape = false,
-			preferredIndex = 3,
-		}
-		StaticPopup_Show("BUDSUI_V070_RESET")
-		SavedOptions.v070ResetWarned = true
+end
+
+local configWarned = false
+local function WarnOnce()
+	if configWarned then return end
+	configWarned = true
+	ShowMissingConfigPopup()
+end
+
+local function LoadConfigAddon()
+	if IsAddOnLoaded(CONFIG_ADDON) then return true end
+	local index = ConfigAddonIndex()
+	if not index then
+		-- The folder is missing: no retry will ever succeed.
+		WarnOnce()
+		return false
 	end
-	
-	self:UnregisterEvent(event)
+	local loaded = LoadAddOn(index)
+	if not loaded then
+		local _, _, _, enabled = GetAddOnInfo(index)
+		if enabled == false then
+			WarnOnce()
+		end
+	end
+	return loaded and true or false
+end
+
+local configLoader = CreateFrame("Frame")
+configLoader:RegisterEvent("ADDON_LOADED")
+configLoader:RegisterEvent("PLAYER_ENTERING_WORLD")
+configLoader:RegisterEvent("PLAYER_REGEN_ENABLED")
+configLoader:SetScript("OnEvent", function(self, event, addon)
+	if event == "ADDON_LOADED" then
+		if addon ~= AddOn then return end
+		-- The config is loaded on demand by the client, so pull it in ourselves.
+		LoadConfigAddon()
+		self:UnregisterEvent("ADDON_LOADED")
+		return
+	end
+
+	if not IsAddOnLoaded(CONFIG_ADDON) then
+		-- Login in combat on some 3.3.5 cores blocks LoadAddOn; retry once we can.
+		LoadConfigAddon()
+	end
+
+	if event == "PLAYER_ENTERING_WORLD" then
+		self:UnregisterEvent("PLAYER_ENTERING_WORLD")
+
+		-- We also use this opportunity to warn legacy users about the v0.7.0 reset once per account
+		if SavedOptions and not SavedOptions.v070ResetWarned then
+			StaticPopupDialogs["BUDSUI_V070_RESET"] = {
+				text = "|cff388bdbbudsUI v0.7.0 Update|r\n\nA new profile system has been implemented! Your previous legacy settings have been reset to ensure a clean slate and maximum performance.\n\nPlease take a moment to reconfigure your UI in the options menu.",
+				button1 = OKAY,
+				timeout = 0,
+				whileDead = 1,
+				hideOnEscape = false,
+				preferredIndex = 3,
+			}
+			StaticPopup_Show("BUDSUI_V070_RESET")
+			SavedOptions.v070ResetWarned = true
+		end
+	end
+
+	if IsAddOnLoaded(CONFIG_ADDON) then
+		self:UnregisterAllEvents()
+	end
 end)
 
 _G.SLASH_RELOADUI1 = "/rl"

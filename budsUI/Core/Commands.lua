@@ -85,7 +85,7 @@ function SlashCmdList.LUAERROR(msg)
 	if(msg == "on") then
 		DisableAllAddOns()
 		EnableAddOn("budsUI")
-		EnableAddOn("budsUI_Config")
+		-- budsUI_Config is LoadOnDemand and is pulled in by budsUI itself.
 		SetCVar("scriptErrors", 1)
 		ReloadUI()
 	elseif(msg == "off") then
@@ -266,3 +266,24 @@ SlashCmdList["BUDSUICLEARERRORS"] = function()
 	K.Print("Error log cleared.")
 end
 SLASH_BUDSUICLEARERRORS1 = "/budsuiclearerrors"
+
+-- budsUI_Config is a LoadOnDemand addon (it must not show up as a second addon
+-- in the list), so its own slash commands only exist once it is loaded. These
+-- handlers keep /buds (and the classic aliases) alive in the meantime and hand
+-- over to the config's handler as soon as it registers itself.
+local function OpenBudsUIConfig()
+	if not IsAddOnLoaded("budsUI_Config") then
+		LoadAddOn("budsUI_Config")
+	end
+	local handler = SlashCmdList.BUDSUICONFIG
+	if handler and handler ~= OpenBudsUIConfig then
+		return handler()
+	end
+end
+
+SlashCmdList.BUDSUICONFIG = OpenBudsUIConfig
+SLASH_BUDSUICONFIG1 = "/buds"
+SLASH_BUDSUICONFIG2 = "/kc"
+SLASH_BUDSUICONFIG3 = "/config"
+SLASH_BUDSUICONFIG4 = "/cfg"
+SLASH_BUDSUICONFIG5 = "/configui"

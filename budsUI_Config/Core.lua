@@ -926,10 +926,12 @@ do
 end
 
 do
-	local menuHook = CreateFrame("Frame")
-	menuHook:RegisterEvent("PLAYER_LOGIN")
-	menuHook:SetScript("OnEvent", function(self)
-		self:UnregisterAllEvents()
+	-- The config is a LoadOnDemand addon: usually loaded before PLAYER_LOGIN, but
+	-- the retry path can bring it in later, after the event has already fired.
+	local installGameMenuButton
+
+	installGameMenuButton = function()
+		if GameMenuBudsUIButton then return end
 		local Menu = GameMenuFrame
 		local Interface = GameMenuButtonUIOptions
 		if not Menu or not Interface then
@@ -972,7 +974,19 @@ do
 			-- Grow the menu to fit the inserted button.
 			Menu:SetHeight(Menu:GetHeight() + button:GetHeight() + 1)
 		end
-	end)
+	end
+
+	-- Loaded before PLAYER_LOGIN in the normal path, later on the retry path.
+	if IsLoggedIn() then
+		installGameMenuButton()
+	else
+		local menuHook = CreateFrame("Frame")
+		menuHook:RegisterEvent("PLAYER_LOGIN")
+		menuHook:SetScript("OnEvent", function(self)
+			self:UnregisterAllEvents()
+			installGameMenuButton()
+		end)
+	end
 end
 
 do

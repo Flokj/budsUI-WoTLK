@@ -7,9 +7,9 @@ Fork of [budsUI by Budtender3000](https://github.com/Budtender3000/budsUI) (orig
 
 ## 🎮 About the Project
 
-**budsUI** combines a clean, pixel-perfect minimalist aesthetic with high performance and deep customizability. The repository includes two addons:
-1. `budsUI` — Core UI framework, modules, and addon skins.
-2. `budsUI_Config` — Graphical in-game configuration interface (`/buds`).
+**budsUI** combines a clean, pixel-perfect minimalist aesthetic with high performance and deep customizability. The repository holds one addon plus its settings module:
+1. `budsUI` — Core UI framework, modules, and addon skins. **This is the only addon that appears in the AddOns list.**
+2. `budsUI_Config` — Graphical in-game configuration interface (`/buds`). It ships as a **LoadOnDemand** addon that depends on `budsUI` and is loaded automatically by the core addon, so the AddOns list stays a single entry.
 
 ### Key Features & Fork Improvements
 
@@ -35,7 +35,7 @@ Fork of [budsUI by Budtender3000](https://github.com/Budtender3000/budsUI) (orig
 2. Verify the folder structure:
    - `World of Warcraft/Interface/AddOns/budsUI/`
    - `World of Warcraft/Interface/AddOns/budsUI_Config/`
-3. Launch World of Warcraft (or reload the interface if the game is running). In the AddOns menu at character selection, ensure both addons are enabled and check **"Load out of date AddOns"**.
+3. Launch World of Warcraft (or reload the interface if the game is running). In the AddOns menu at character selection only `budsUI` is listed — the settings module is loaded on demand by it. Just make sure **"Load out of date AddOns"** is checked.
 4. On your first character login, the interactive **Installation Wizard** will automatically guide you through interface and CVars setup.
 
 ---
