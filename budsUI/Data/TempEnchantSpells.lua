@@ -1,11 +1,7 @@
 local K, C, L, _ = select(2, ...):unpack()
 
--- budsUI TempEnchantSpells (ported from FrostAtomUI Data/TempEnchantSpells.lua).
--- Maps temporary-enchant id (the <enchant> in "item:<id>:<enchant>" links) to
--- the spell id that applied it (poison, shaman weapon imbue, oil, stone...).
--- Used by Modules/Buffs/BuffFrame.lua to show the SPELL icon instead of the
--- weapon icon. Names come from the client through item links, so this stays
--- locale-neutral; the table only resolves enchant ids to bigger display names.
+-- Maps temporary-enchant id (in "item:<id>:<enchant>" links) to the spell id that applied it
+-- (poison, imbue, oil...); BuffFrame.lua shows the SPELL icon instead of the weapon icon.
 
 K.TempEnchantSpells = {
 	[1] = 36754, -- Rockbiter Weapon

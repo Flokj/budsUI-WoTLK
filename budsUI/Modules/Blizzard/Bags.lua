@@ -12,13 +12,7 @@ local GetItemInfo = GetItemInfo
 local GetItemQualityColor = GetItemQualityColor
 local GetContainerNumFreeSlots = GetContainerNumFreeSlots
 
---[[
-A featureless, 'pure' version of Stuffing.
-This version should work on absolutely everything,
-but I've removed pretty much all of the options.
-
-All credits of this bags script is by Stuffing and his author Hungtar.
---]]
+-- A featureless 'pure' Stuffing clone. Credits: Stuffing by Hungtar.
 
 local BAGS_BACKPACK = {0, 1, 2, 3, 4}
 local BAGS_BANK = {-1, 5, 6, 7, 8, 9, 10, 11}
@@ -35,10 +29,7 @@ local SORT_MAX_ITERATIONS = 100
 local FRAME_POOL_MAX_SIZE = 120
 local hide_soulbag = C.Bag.HideSoulBag
 
--- Hide bags options in default interface
--- WoW 3.3.5 Compatibility: InterfaceOptionsDisplayPanelShowFreeBagSpace doesn't exist in 3.3.5
--- This element was added in later WoW versions to show free bag space in the interface options
--- If the element doesn't exist, we gracefully skip hiding it (no functionality impact)
+-- Hide the default free-bag-space option; in 3.3.5 the panel element may not exist, so skip gracefully.
 if InterfaceOptionsDisplayPanelShowFreeBagSpace then
 	InterfaceOptionsDisplayPanelShowFreeBagSpace:Hide()
 end
@@ -332,9 +323,7 @@ function Stuffing:SlotNew(bag, slot)
 		c:SetPoint("BOTTOMRIGHT", 1, 1)
 	end
 
-	-- Frames are recycled through trashButton (e.g. after swapping bags):
-	-- reuse their texts instead of stacking new FontStrings, orphans would
-	-- keep showing the stale ilvl on the cell.
+	-- Frames are recycled via trashButton: reuse texts, no orphan FontStrings with stale ilvl.
 	if ret.frame.ilvl then
 		ret.ilvl = ret.frame.ilvl
 	else

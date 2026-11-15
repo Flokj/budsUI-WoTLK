@@ -74,9 +74,7 @@ local VALUE_BOX_WIDTH = 52
 local RESET_WIDTH = 22
 local HIGHLIGHT_TEXTURE = "Interface\\QuestFrame\\UI-QuestLogTitleHighlight"
 
--- ---------------------------------------------------------------------------
 -- Engine access (lazy so file load order never matters)
--- ---------------------------------------------------------------------------
 
 local function Engine()
 	local addon = _G["budsUI"]
@@ -96,9 +94,7 @@ function ns.LiveConfig()
 	return C
 end
 
--- ---------------------------------------------------------------------------
 -- Page registry
--- ---------------------------------------------------------------------------
 
 function ns.RegisterPage(page)
 	page.name = page.name or page.key or "?"
@@ -110,9 +106,7 @@ function ns.RegisterPage(page)
 	end)
 end
 
--- ---------------------------------------------------------------------------
 -- Value access: group/option/key (budsUIData compatible) or dotted path
--- ---------------------------------------------------------------------------
 
 local function splitPath(path)
 	local keys = {}
@@ -243,9 +237,7 @@ function ns.Set(entry, value)
 	end
 end
 
--- ---------------------------------------------------------------------------
 -- Defaults / modified tracking (pristine snapshot lives in K.ConfigDefaults)
--- ---------------------------------------------------------------------------
 
 local function defaultOf(entry)
 	local K = Engine()
@@ -400,9 +392,7 @@ StaticPopupDialogs["BUDSUI_CONFIG_CONFIRM"] = {
 	preferredIndex = 3,
 }
 
--- ---------------------------------------------------------------------------
 -- Formatting helpers
--- ---------------------------------------------------------------------------
 
 local function roundTo(value, step)
 	if not step or step == 0 then
@@ -443,9 +433,7 @@ function ns.ParseNumber(entry, text)
 	return value
 end
 
--- ---------------------------------------------------------------------------
 -- Small widget helpers (3.3.5-safe, no glyph fonts)
--- ---------------------------------------------------------------------------
 
 local function setTextEnabled(region, enabled)
 	local color = enabled and HIGHLIGHT_FONT_COLOR or GRAY_FONT_COLOR
@@ -512,9 +500,7 @@ local function playCheckSound(check)
 end
 ns.PlayCheckSound = playCheckSound
 
--- ---------------------------------------------------------------------------
 -- Row frame + tooltip + reset affordance
--- ---------------------------------------------------------------------------
 
 local function isChildEntry(entry)
 	if entry.indent ~= nil then
@@ -664,9 +650,7 @@ local function afterChange(row)
 	end
 end
 
--- ---------------------------------------------------------------------------
 -- Creators
--- ---------------------------------------------------------------------------
 
 local creators = ns.creators
 
@@ -1149,9 +1133,7 @@ function creators.custom(parent, entry)
 	return row
 end
 
--- ---------------------------------------------------------------------------
 -- Export popup (Profiles page "Export" action)
--- ---------------------------------------------------------------------------
 
 StaticPopupDialogs["BUDSUI_CONFIG_EXPORT"] = {
 	text = ns.Text("Copy with Ctrl+C, close with Escape."),
@@ -1180,10 +1162,7 @@ function ns.ShowExport(text)
 	StaticPopup_Show("BUDSUI_CONFIG_EXPORT")
 end
 
--- ---------------------------------------------------------------------------
--- Compat aliases (some pages/guides refer to FormNumber instead of
--- FormatNumber; both map to the same implementation).
--- ---------------------------------------------------------------------------
+-- Compat aliases: FormNumber/FormValue -> FormatNumber/FormatValue
 
 ns.FormNumber = ns.FormatNumber
 ns.FormValue = ns.FormatValue

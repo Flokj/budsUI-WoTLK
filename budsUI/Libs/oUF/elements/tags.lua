@@ -552,11 +552,7 @@ local function DisableTimer(timer)
 	frame:Hide()
 end
 
---[[ Tags: frame:UpdateTags()
-Used to update all tags on a frame.
-
-* self - the unit frame from which to update the tags
---]]
+--[[ Tags: frame:UpdateTags() - updates all tags on a frame. --]]
 
 local function Update(self)
 	if not self.__tags then return end
@@ -826,14 +822,7 @@ local function UnregisterTimer(frame, fs)
 	end
 end
 
---[[ Tags: frame:Tag(fs, tagstr, ...)
-Used to register a tag on a unit frame.
-
-* self   - the unit frame on which to register the tag
-* fs     - the font string to display the tag (FontString)
-* ts     - the tag string (string)
-* ...    - additional optional unitID(s) the tag should update for
---]]
+--[[ Tags: frame:Tag(fs, tagstr, ...) - registers a tag on a unit frame. --]]
 
 local taggedFontStrings = {}
 local function Tag(self, fs, ts, arg1, ...)
@@ -918,12 +907,7 @@ local function Tag(self, fs, ts, arg1, ...)
 	self.__tags[fs] = true
 end
 
---[[ Tags: frame:Untag(fs)
-Used to unregister a tag from a unit frame.
-
-* self - the unit frame from which to unregister the tag
-* fs   - the font string holding the tag (FontString)
---]]
+--[[ Tags: frame:Untag(fs) - unregisters a tag from a unit frame. --]]
 
 local function Untag(self, fs)
 	if(not fs or not self.__tags) then return end

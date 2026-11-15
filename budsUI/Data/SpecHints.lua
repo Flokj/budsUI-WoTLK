@@ -1,12 +1,7 @@
 local K, C, L, _ = select(2, ...):unpack()
 
--- Aura spellID -> { class, tree, points } spec hints, ported verbatim from
--- FrostAtomUI's Data/Abilities.lua (SPEC_HINTS). Each row is one talent:
--- tree index, talent points needed to reach it, then the spellIDs of the
--- buffs that talent produces per rank. Flattened into a spellID-keyed table
--- at load; the aura-guesser in Modules/UnitFrames/Elements/SpecIcon.lua
--- reads K.SpecHints to infer a hostile player's spec from visible buffs
--- while in combat (the inspect queue only sends out of combat).
+-- Aura spellID -> {class, tree, points} spec hints (from FrostAtomUI), flattened into spellID-keyed
+-- K.SpecHints; SpecIcon.lua infers the target's spec from visible buffs while in combat.
 
 local SPEC_HINTS_SOURCE = {
 	DEATHKNIGHT = {

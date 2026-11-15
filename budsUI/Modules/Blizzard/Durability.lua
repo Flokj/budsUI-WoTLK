@@ -1,9 +1,7 @@
 local K, C, L, _ = select(2, ...):unpack()
 if C.Blizzard.Durability ~= true then return end
 
--- Worst-slot durability meter (replaces per-slot % on CharacterFrame).
--- A small standalone frame with a budsUI mover; hover shows all slots.
--- Runs on PLAYER_LOGIN so Core (Movers/Border) is fully loaded.
+-- Worst-slot durability meter: standalone frame with a budsUI mover; hover shows all slots (runs on PLAYER_LOGIN).
 
 local CreateFrame, UIParent = CreateFrame, UIParent
 local pairs = pairs

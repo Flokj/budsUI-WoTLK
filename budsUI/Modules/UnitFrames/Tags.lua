@@ -17,10 +17,8 @@ local UnitIsPlayer = UnitIsPlayer
 local UnitReaction = UnitReaction
 local GetQuestGreenRange = GetQuestGreenRange
 
--- Difficulty colour that also works on friendlies. oUF's own [difficulty]
--- only colours attackable units, which left your own pet's level white.
--- (GetCreatureDifficultyColor does not exist on this client, so the
--- thresholds are computed from the player's level directly.)
+-- Difficulty colour that also works on friendlies ([difficulty] only colours attackables;
+-- thresholds computed from player level directly, no GetCreatureDifficultyColor on this client).
 oUF.Tags.Methods["buds:diff"] = function(unit)
 	local level = UnitLevel(unit)
 	if not level or level <= 0 then
@@ -45,13 +43,9 @@ oUF.Tags.Methods["buds:diff"] = function(unit)
 end
 oUF.Tags.Events["buds:diff"] = "UNIT_LEVEL PLAYER_LEVEL_UP"
 
--- ---------------------------------------------------------------------------
 -- Name
--- ---------------------------------------------------------------------------
 
--- Colour prefix for a name. oUF ships [raidcolor], but that only knows about
--- players, so every NPC comes out white. This covers reactions as well, and
--- greys out anyone who has dropped connection.
+-- Name colour prefix: [raidcolor] is players-only; this also covers NPC reactions and greys the disconnected.
 oUF.Tags.Methods["buds:namecolor"] = function(unit)
 	if not C.Unitframe.NameColor then
 		return ""
@@ -84,9 +78,7 @@ oUF.Tags.Methods["buds:namecolor"] = function(unit)
 end
 oUF.Tags.Events["buds:namecolor"] = "UNIT_NAME_UPDATE UNIT_FACTION UNIT_CONNECTION"
 
--- Trim long names to a character count (UTF-8 safe). Every name font string is
--- also width bounded, so the client already ellipsizes on its own; this is the
--- extra cap for players who want short names on wide frames.
+-- Trim long names to a character count (UTF-8 safe); extra cap over the client's own width ellipsis.
 oUF.Tags.Methods["buds:name"] = function(unit)
 	local name = UnitName(unit)
 	if not name then
@@ -101,10 +93,8 @@ oUF.Tags.Methods["buds:name"] = function(unit)
 end
 oUF.Tags.Events["buds:name"] = "UNIT_NAME_UPDATE"
 
--- Hard clip for the tiny target-of-target bar, FrostAtomUI style: the name
--- is cut to a fixed character count with no ellipsis, so the client's
--- automatic "..." never shows (it only appears when the text is long enough
--- to be clipped by the width — here it already fits).
+-- Hard clip for the tiny ToT bar, FrostAtomUI style: fixed character count with
+-- no ellipsis, so the client's automatic "..." never shows.
 oUF.Tags.Methods["buds:nameclip"] = function(unit)
 	local name = UnitName(unit)
 	if not name then
@@ -125,9 +115,7 @@ oUF.Tags.Methods["buds:nameshort"] = function(unit)
 end
 oUF.Tags.Events["buds:nameshort"] = "UNIT_NAME_UPDATE"
 
--- ---------------------------------------------------------------------------
 -- Status
--- ---------------------------------------------------------------------------
 oUF.Tags.Methods["buds:afkdnd"] = function(unit)
 	if UnitIsAFK(unit) then
 		return " |cff999999" .. (CHAT_FLAG_AFK or "<AFK>") .. "|r"

@@ -135,20 +135,4 @@ _G.SlashCmdList.RELOADUI = ReloadUI
 
 budsUI = Engine
 
---[[
--- ** budsUI Engine Documentation ** --
-
-This should be at the top of every file inside of the budsUI AddOn.
-local K, C, L, _ = select(2, ...):unpack()
-You can also do local K, C, _ = select(2, ...):unpack()
-As well as K, _ = select(2, ...):unpack()
-This is going to depend on what you are going to be using in the file.
-
-This is how another addon imports the budsUI engine.
-local K, C, L, _ = budsUI:unpack()
-You can also do local K, C, _ = budsUI:unpack()
-As well as K, _ = select(2, ...):unpack()
-This is going to depend on what you are going to be using in the file.
-
-We put an _ for taint prevention.
-]]
+-- Import budsUI engine: local K, C, L, _ = select(2, ...):unpack() (other addons: budsUI:unpack()); _ prevents taint.

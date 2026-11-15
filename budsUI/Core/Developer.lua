@@ -7,18 +7,7 @@ local format = format
 local GetMouseFocus = GetMouseFocus
 local FrameStackTooltip_Toggle = FrameStackTooltip_Toggle
 
---[[
-	Command to grab frame information when mouseing over a frame
-
-	Frame Name
-	Width
-	Height
-	Strata
-	Level
-	X Offset
-	Y Offset
-	Point
-]]
+-- /frame dumps info (name, width, height, strata, level, offsets, point) of the moused frame.
 
 SLASH_FRAME1 = "/frame"
 SlashCmdList["FRAME"] = function(arg)

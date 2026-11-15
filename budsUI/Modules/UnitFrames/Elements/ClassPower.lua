@@ -19,9 +19,7 @@ local COMBO_COLORS = {
 	{ 0.35, 0.80, 0.45 },
 }
 
--- Spread `count` segments across the holder width. Called from the element's
--- PostUpdate and again whenever the holder resizes, since the real width only
--- exists after the spawn pass.
+-- Spread `count` segments across the holder width; re-run on PostUpdate and holder resize.
 local function LayoutSegments(holder, count)
 	local bars = holder.bars
 	local width = holder:GetWidth()
@@ -52,11 +50,8 @@ local function OnHolderResize(holder)
 	LayoutSegments(holder, holder.count or 1)
 end
 
--- Build the holder plus its segments. Returns the holder and the segment
--- array; the caller wires whichever oUF element drives them.
--- The holder is detached (parented to UIParent with its own mover) so the
--- resource bar can be placed anywhere. By default it sits right above the
--- player frame, where the old attached bar lived.
+-- Build the holder + segments (returns both; the caller wires whichever oUF element drives them).
+-- Holder is detached (UIParent + own mover); by default right above the player frame.
 local function CreateSegmented(self, total, width)
 	local db = C.Unitframe.ClassPower
 	local holder = CreateFrame("Frame", nil, UIParent)

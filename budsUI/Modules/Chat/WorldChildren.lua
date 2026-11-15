@@ -1,9 +1,7 @@
 local K, C, L, _ = select(2, ...):unpack()
 
--- WorldChildren: WorldFrame child scanner (ported 1:1 from FrostAtomUI Core/WorldChildren.lua)
--- 3.3.5: nameplates and chat bubbles are unnamed WorldFrame children; no event
--- announces them, so WorldFrame children are polled. Only the first region
--- tells them apart.
+-- WorldChildren: WorldFrame child scanner (ported from FrostAtomUI). Nameplates and
+-- chat bubbles are unnamed children with no event; poll children, the first region tells them apart.
 
 local WorldChildren = {}
 K.WorldChildren = WorldChildren
@@ -22,9 +20,8 @@ local KIND_BY_TEXTURE = {
 	["Interface\\Tooltips\\ChatBubble-Background"] = "ChatBubble",
 }
 
--- Lowercase fallback: this very addon historically matched via strlower because
--- WoW can return texture paths lowercased. Keep as fallback so a case change
--- can never silently break bubble detection again.
+-- Lowercase fallback: WoW can return lowercased texture paths, so keep the strlower
+-- match so a case change can never silently break bubble detection.
 local KIND_BY_TEXTURE_LOWER = {
 	["interface\\targetingframe\\ui-targetingframe-flash"] = "NamePlate",
 	["interface\\tooltips\\chatbubble-background"] = "ChatBubble",

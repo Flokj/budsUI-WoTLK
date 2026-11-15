@@ -31,13 +31,7 @@ do
 	hooksecurefunc("UIDropDownMenu_CreateFrames", FixMenuFrameLevels)
 end
 
--- UIDropDownMenu taint fix: addon calls to UIDropDownMenu_Initialize taint
--- global variables like UIDROPDOWNMENU_MENU_LEVEL and UIDROPDOWNMENU_OPEN_MENU.
--- Blizzard's RaidFrame code later reads these tainted globals, causing the
--- secure function RaidGroupButton1:SetPoint() to be blocked.
--- Fix: wrap UIDropDownMenu_Initialize entirely — save the globals before the
--- original call runs, then restore them afterwards so tainted writes from
--- inside the original function never persist in the global scope.
+-- Taint fix: run UIDropDownMenu_Initialize through securecall so its global writes aren't attributed to an addon.
 do
 	local orig_UIDropDownMenu_Initialize = UIDropDownMenu_Initialize
 	function UIDropDownMenu_Initialize(frame, initFunction, displayMode, level, menuList)
@@ -53,9 +47,7 @@ do
 	end
 end
 
--- Fix incorrect translations in the German Locale. For whatever reason
--- Blizzard changed the oneletter time abbreviations to be 3 letter in
--- the German Locale.
+-- Fix German Locale: Blizzard made the one-letter time abbreviations 3-letter there.
 if K.Client == "deDE" then
 	MINUTE_ONELETTER_ABBR = "%d m"
 	DAY_ONELETTER_ABBR = "%d d"

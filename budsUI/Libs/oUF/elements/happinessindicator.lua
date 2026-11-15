@@ -1,27 +1,5 @@
---[[
-# Element: HappinessIndicator
-
-Handles the visibility and updating of player pet happiness.
-
-## Widget
-
-HappinessIndicator - A `Texture` used to display the current happiness level.
-The element works by changing the texture's vertex color.
-
-## Notes
-
-A default texture will be applied if the widget is a Texture and doesn't have a texture or a color set.
-
-## Examples
-
-    -- Position and size
-    local HappinessIndicator = self:CreateTexture(nil, 'OVERLAY')
-    HappinessIndicator:SetSize(16, 16)
-    HappinessIndicator:SetPoint('TOPRIGHT', self)
-
-    -- Register it with oUF
-    self.HappinessIndicator = HappinessIndicator
---]]
+--[[ # Element: HappinessIndicator
+Handles the visibility and updating of player pet happiness. ]]
 
 local _, ns = ...
 local oUF = ns.oUF
@@ -34,11 +12,7 @@ local function Update(self, event, unit)
 
 	local element = self.HappinessIndicator
 
-	--[[ Callback: HappinessIndicator:PreUpdate()
-	Called before the element has been updated.
-
-	* self - the ComboPoints element
-	--]]
+	-- Callback: HappinessIndicator:PreUpdate() - called before the element is updated
 	if(element.PreUpdate) then
 		element:PreUpdate()
 	end
@@ -60,27 +34,14 @@ local function Update(self, event, unit)
 		return element:Hide()
 	end
 
-	--[[ Callback: HappinessIndicator:PostUpdate(role)
-	Called after the element has been updated.
-
-	* self      - the ComboPoints element
-	* unit      - the unit for which the update has been triggered (string)
-	* happiness        - the numerical happiness value of the pet (1 = unhappy, 2 = content, 3 = happy) (number)
-	* damagePercentage - damage modifier, happiness affects this (unhappy = 75%, content = 100%, happy = 125%) (number)
-	--]]
+	-- Callback: HappinessIndicator:PostUpdate(unit, happiness, damagePercentage) - called after the element is updated
 	if(element.PostUpdate) then
 		return element:PostUpdate(unit, happiness, damagePercentage)
 	end
 end
 
 local function Path(self, ...)
-	--[[ Override: HappinessIndicator.Override(self, event, ...)
-	Used to completely override the internal update function.
-
-	* self  - the parent object
-	* event - the event triggering the update (string)
-	* ...   - the arguments accompanying the event
-	--]]
+	-- Override: HappinessIndicator.Override(self, event, ...) - override the internal update function
 	return (self.HappinessIndicator.Override or Update) (self, ...)
 end
 

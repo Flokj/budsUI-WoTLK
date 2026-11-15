@@ -1,10 +1,7 @@
 local K, C, L, _ = select(2, ...):unpack()
 
--- BubbleLayer: the bubble capture engine (ported 1:1 from FrostAtomUI Core/BubbleLayer.lua)
--- 1. Registers chat events (CHAT_MSG_SAY etc) -> addPending stores message+sender+guid
--- 2. WorldChildren.Register("ChatBubble", capture) finds bubble frames
--- 3. capture hooks OnShow/OnHide, fires created/shown/hidden callbacks
--- budsUI has no EventMixin, so plain RegisterEvent + SetScript on a frame is used.
+-- BubbleLayer: chat bubble capture engine (ported from FrostAtomUI). Registers chat
+-- events, finds bubbles via WorldChildren, hooks OnShow/OnHide; no EventMixin here, so plain RegisterEvent + SetScript.
 
 local GetCVarBool = GetCVarBool
 local GetTime = GetTime

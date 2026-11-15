@@ -12,9 +12,7 @@ local assert, error, loadstring = assert, error, loadstring
 local setmetatable, rawset, rawget = setmetatable, rawset, rawget
 local next, select, pairs, type, tostring = next, select, pairs, type, tostring
 
--- Global vars/functions that we don't upvalue since they might get hooked, or upgraded
--- List them here for Mikk's FindGlobals script
--- GLOBALS: geterrorhandler
+-- Global vars not upvalued (may be hooked/upgraded) - listed for Mikk's FindGlobals script: GLOBALS: geterrorhandler
 
 local xpcall = xpcall
 
@@ -54,13 +52,8 @@ local Dispatchers = setmetatable({}, {__index=function(self, argCount)
 	return dispatcher
 end})
 
---------------------------------------------------------------------------
--- CallbackHandler:New
---
---   target            - target object to embed public APIs in
---   RegisterName      - name of the callback registration API, default "RegisterCallback"
---   UnregisterName    - name of the callback unregistration API, default "UnregisterCallback"
---   UnregisterAllName - name of the API to unregister all callbacks, default "UnregisterAllCallbacks". false == don't publish this API.
+-- CallbackHandler:New(target, RegisterName, UnregisterName, UnregisterAllName) - embeds the public APIs in target
+-- Names default to RegisterCallback/UnregisterCallback/UnregisterAllCallbacks; false for UnregisterAllName skips that API
 
 function CallbackHandler:New(target, RegisterName, UnregisterName, UnregisterAllName)
 
@@ -105,11 +98,7 @@ function CallbackHandler:New(target, RegisterName, UnregisterName, UnregisterAll
 		end
 	end
 
-	-- Registration of a callback, handles:
-	--   self["method"], leads to self["method"](self, ...)
-	--   self with function ref, leads to functionref(...)
-	--   "addonId" (instead of self) with function ref, leads to functionref(...)
-	-- all with an optional arg, which, if present, gets passed as first argument (after self if present)
+	-- RegisterCallback: self["method"] -> self["method"](self, ...); self/addonId + function ref -> functionref(...); optional arg passed first
 	target[RegisterName] = function(self, eventname, method, ... --[[actually just a single arg]])
 		if type(eventname) ~= "string" then
 			error("Usage: "..RegisterName.."(eventname, method[, arg]): 'eventname' - string expected.", 2)
@@ -229,6 +218,4 @@ function CallbackHandler:New(target, RegisterName, UnregisterName, UnregisterAll
 end
 
 
--- CallbackHandler purposefully does NOT do explicit embedding. Nor does it
--- try to upgrade old implicit embeds since the system is selfcontained and
--- relies on closures to work.
+-- CallbackHandler does no explicit embedding nor implicit-embed upgrades; the system is self-contained and relies on closures

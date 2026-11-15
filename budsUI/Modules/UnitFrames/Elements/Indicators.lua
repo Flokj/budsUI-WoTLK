@@ -12,13 +12,9 @@ local UnitExists = UnitExists
 local UnitGroupRolesAssigned = UnitGroupRolesAssigned
 local UnitIsUnit = UnitIsUnit
 
--- ---------------------------------------------------------------------------
 -- Mouseover and target-select highlight
--- ---------------------------------------------------------------------------
 
--- Show the select texture while this frame's unit is the current target. Runs
--- for every frame on PLAYER_TARGET_CHANGED, so a party member lighting up the
--- moment you target them is handled without a per-unit event.
+-- Show the select texture while the unit is the target; runs on PLAYER_TARGET_CHANGED for every frame.
 local function SelectUpdate(self)
 	local highlight = self.KKUI_Select
 	if not highlight then
@@ -55,10 +51,7 @@ end
 
 oUF:AddElement("KKUI_SelectHighlight", SelectUpdate, SelectEnable, SelectDisable)
 
--- A hover texture shown while the cursor is over the frame, and a select
--- texture shown while the frame's unit is the target. Both sit over the
--- health bar as a flat additive tint: accent for the cursor, gold for the
--- target.
+-- Hover (cursor) and select (target) textures over the health bar as a flat additive tint: accent / gold.
 local function TintOverlay(anchor, sublevel, color, alpha)
 	local tex = anchor:CreateTexture(nil, "OVERLAY", nil, sublevel)
 	tex:SetPoint("TOPLEFT", anchor, "TOPLEFT", -1, 1)
@@ -100,9 +93,7 @@ local function Icon(parent, size, ...)
 	return texture
 end
 
--- ---------------------------------------------------------------------------
 -- Threat on the health border
--- ---------------------------------------------------------------------------
 local function ThreatPostUpdate(element, unit, status, r, g, b)
 	local frame = element.__owner
 	frame.__threatColor = (status and status > 0) and { r, g, b } or nil
@@ -127,9 +118,7 @@ function Build.Threat(self)
 	return proxy
 end
 
--- ---------------------------------------------------------------------------
 -- Dispellable debuff highlight (party / raid)
--- ---------------------------------------------------------------------------
 local function DispelColor(dtype)
 	local c = dtype and DebuffTypeColor[dtype]
 	if c then
@@ -137,9 +126,7 @@ local function DispelColor(dtype)
 	end
 end
 
--- Colour the health border for the first dispellable debuff on the unit.
--- Implemented as a real oUF element so oUF drives it on UNIT_AURA and
--- re-runs it when a header child is handed a new unit.
+-- Colour the health border for the first dispellable debuff; a real oUF element driven on UNIT_AURA.
 local function DispelUpdate(self, _, unit)
 	if unit and unit ~= self.unit then
 		return
@@ -205,22 +192,12 @@ function Build.DispelHighlight(self)
 	self.DispelHighlight = {}
 end
 
--- ---------------------------------------------------------------------------
 -- Indicator sets
--- ---------------------------------------------------------------------------
--- Corners are assigned once, here and in the sets below, so no two icons
--- ever land on the same one:
---   top left     resting, leader, assistant
---   top center   raid marker (double size, reads over the bar middle)
---   bottom left  group role
---   bottom right raid role
--- Text always runs down the middle, so it stays clear of all four.
+-- Corners assigned once: TL resting/leader/assistant, TC raid marker (double), BL group role, BR raid role; text runs down the middle.
 function Build.Indicators(self, size)
 	local health = self.Health
 
-	-- Own raised holder: the marker hangs above the bar, where the name
-	-- strip holder and the border edge (both above health's own layers)
-	-- would otherwise paint over it.
+	-- Own raised holder so the marker hangs above the bar, clear of overlays.
 	local markerSize = size or 24
 	local holder = CreateFrame("Frame", nil, health)
 	holder:SetSize(markerSize, markerSize)
@@ -294,9 +271,7 @@ function Build.GroupIndicators(self)
 	roleText:Hide()
 	self.GroupRoleIndicator = Icon(health, 1, "BOTTOMLEFT", health, "BOTTOMLEFT", 0, 0)
 	self.GroupRoleIndicator:SetAlpha(0)
-	-- oUF's default role updater points the texture at ElvUI's media (our oUF
-	-- copy is verbatim ElvUI-7, so it stays untouched); override it so only
-	-- the letter PostUpdate below runs and that path is never touched.
+	-- Override oUF's default role updater (points at ElvUI media, our oUF copy is verbatim) so only the letter PostUpdate runs.
 	self.GroupRoleIndicator.Override = function(frame)
 		local element = frame.GroupRoleIndicator
 		if element.PostUpdate then

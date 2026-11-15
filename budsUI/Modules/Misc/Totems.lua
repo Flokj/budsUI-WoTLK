@@ -1,9 +1,8 @@
 local K, C, L, _ = select(2, ...):unpack()
 if K.Class ~= "SHAMAN" then return end
 
--- Custom shaman totems with cooldown swipe and CLEU pulse bars (FrostAtomUI-style).
--- Uses independent buttons, right-click DestroyTotem, and proper 3.3.5 slot order.
--- Runs on PLAYER_LOGIN so Core (Movers/Border) is fully loaded.
+-- Custom shaman totems with cooldown swipe + CLEU pulse bars; independent buttons,
+-- right-click DestroyTotem, 3.3.5 slot order. Runs on PLAYER_LOGIN so Core is loaded.
 
 local unpack = unpack
 local pairs = pairs

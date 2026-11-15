@@ -267,10 +267,7 @@ SlashCmdList["BUDSUICLEARERRORS"] = function()
 end
 SLASH_BUDSUICLEARERRORS1 = "/budsuiclearerrors"
 
--- budsUI_Config is a LoadOnDemand addon (it must not show up as a second addon
--- in the list), so its own slash commands only exist once it is loaded. These
--- handlers keep /buds (and the classic aliases) alive in the meantime and hand
--- over to the config's handler as soon as it registers itself.
+-- budsUI_Config is LoadOnDemand; /buds keeps working until its own handlers load.
 local function OpenBudsUIConfig()
 	if not IsAddOnLoaded("budsUI_Config") then
 		LoadAddOn("budsUI_Config")

@@ -672,9 +672,7 @@ local function thirdSpecStore()
 	return budsUIData.CharacterData[key].ThirdSpec
 end
 
--- Fingerprint of the talent content currently loaded into group 2. The realm
--- swaps the third spec into group 2, so this is the only client-side way to tell
--- which server set is mounted there.
+-- Fingerprint of the talent content in group 2: the realm swaps the third spec in, so this is the only client-side way to tell which set is mounted.
 local function thirdFingerprint(cache)
 	if not cache or not cache.numTabs then
 		return nil

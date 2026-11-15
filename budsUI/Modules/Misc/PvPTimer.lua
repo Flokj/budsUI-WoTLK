@@ -1,18 +1,14 @@
 local K, C, L, _ = select(2, ...):unpack()
 if C.Misc.PvPTimer ~= true then return end
 
--- PvP start timer (retail-style): autostart countdown bar + big center
--- numbers on BG/arena start, invite countdown on the battlefield popup.
--- Ported from FriskesUI-WoTLK CollectionAddons/RetailTimer.
--- Test macro: /script RunFakeTestTimer:OnEvent("START_TIMER", 1, 15, 60)
+-- PvP start timer (from FriskesUI-WoTLK RetailTimer): autostart countdown bar + big
+-- center numbers on BG/arena start, invite countdown on the popup. Test: RunFakeTestTimer:OnEvent("START_TIMER", 1, 15, 60)
 
 local ADDON = K.Directory
 local PATH_SOUND = "Interface\\AddOns\\" .. ADDON .. "\\Media\\Sounds\\RetailTimer\\"
 local PATH_TEX = "Interface\\AddOns\\" .. ADDON .. "\\Media\\Textures\\RetailTimer\\"
 
---------------------------------------------------------------------------------
--- Start timer (BG / arena / Wintergrasp)
---------------------------------------------------------------------------------
+-- ===== Start timer (BG / arena / Wintergrasp) =====
 
 local enableSound = true -- sound for big numbers countdown and finish
 
@@ -118,38 +114,38 @@ local timerTypes = {
 }
 
 local chatMessage = {
-    -- Ущелье Песни Войны
+    -- Warsong Gulch
     ["Битва за Ущелье Песни Войны начнется через 30 секунд. Приготовьтесь!"] = timerTypes["30-120"],
     ["Битва за Ущелье Песни Войны начнется через 1 минуту."] = timerTypes["60-120"],
     ["Сражение в Ущелье Песни Войны начнется через 2 минуты."] = timerTypes["120-120"],
-    -- Низина Арати
+    -- Arathi Basin
     ["Битва за Низину Арати начнется через 30 секунд. Приготовьтесь!"] = timerTypes["30-120"],
     ["Битва за Низину Арати начнется через 1 минуту."] = timerTypes["60-120"],
     ["Сражение в Низине Арати начнется через 2 минуты."] = timerTypes["120-120"],
-    -- Око Бури
+    -- Eye of the Storm
     ["Битва за Око Бури начнется через 30 секунд."] = timerTypes["30-120"],
     ["Битва за Око Бури начнется через 1 минуту."] = timerTypes["60-120"],
     ["Сражение в Око Бури начнется через 2 минуты."] = timerTypes["120-120"],
-    -- Альтеракская долина
+    -- Alterac Valley
     ["Сражение на Альтеракской долине начнется через 30 секунд. Приготовьтесь!"] = timerTypes["30-120"],
     ["Сражение на Альтеракской долине начнется через 1 минуту."] = timerTypes["60-120"],
     ["Сражение на Альтеракской долине начнется через 2 минуты."] = timerTypes["120-120"],
     ["30 секунд до начала битвы в Альтеракской долине."] = timerTypes["30-120"],
     ["До начала сражения за Альтеракскую долину остается 1 минута."] = timerTypes["60-120"],
     ["До начала сражения за Альтеракскую долину остается 2 минута."] = timerTypes["120-120"],
-    -- Берег Древних
+    -- Strand of the Ancients
     ["Битва за Берег Древних начнется через 30 секунд. Приготовьтесь!"] = timerTypes["30-120"],
     ["Битва за Берег Древних начнется через 1 минуту."] = timerTypes["60-120"],
     ["Битва за Берег Древних начнется через 2 минуты."] = timerTypes["120-120"],
-    -- Берег древних 2-й раунд
+    -- Strand of the Ancients (round 2)
     ["Второй раунд начнется через 30 секунд. Приготовьтесь!"] = timerTypes["30-60"],
     ["Второй раунд битвы за Берег Древних начнется через 1 минуту."] = timerTypes["60-60"],
-    -- Другие
+    -- Others
     ["Битва начнется через 30 секунд!"] = timerTypes["30-120"],
     ["Битва начнется через 1 минуту."] = timerTypes["60-120"],
     ["Битва начнется через минуту!"] = timerTypes["60-120"],
     ["Битва начнется через 2 минуты."] = timerTypes["120-120"],
-    -- Арена
+    -- Arena
     ["15 секунд до начала боя на арене!"] = timerTypes["15-60"],
     ["30 секунд до начала боя на арене!"] = timerTypes["30-60"],
     ["1 минута до начала боя на арене!"] = timerTypes["60-60"],
@@ -749,9 +745,7 @@ Timer:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL")
 Timer:RegisterEvent("PLAYER_ENTERING_WORLD")
 Timer:SetScript("OnEvent", Timer.OnEvent)
 
---------------------------------------------------------------------------------
--- Invite timer (arena / battleground queue popup)
---------------------------------------------------------------------------------
+-- ===== Invite timer (arena / battleground queue popup) =====
 
 local enableInviteSound = true -- sound on invite
 

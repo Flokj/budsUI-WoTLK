@@ -1,44 +1,4 @@
---[[
-# Element: Runes
-
-Handles the visibility and updating of Death Knight's runes.
-
-## Widget
-
-Runes - An `table` holding `StatusBar`s.
-
-## Sub-Widgets
-
-.bg - A `Texture` used as a background. It will inherit the color of the main StatusBar.
-
-## Notes
-
-A default texture will be applied if the sub-widgets are StatusBars and don't have a texture set.
-
-## Options
-
-.colorSpec - Use `self.colors.runes[specID]` to color the bar based on player's spec. `specID` is defined by the return
-             value of [GetSpecialization](http://wowprogramming.com/docs/api/GetSpecialization) (boolean)
-
-## Sub-Widgets Options
-
-.multiplier - Used to tint the background based on the main widgets R, G and B values. Defaults to 1 (number)[0-1]
-
-## Examples
-
-    local Runes = {}
-    for index = 1, 6 do
-        -- Position and size of the rune bar indicators
-        local Rune = CreateFrame('StatusBar', nil, self)
-        Rune:SetSize(120 / 6, 20)
-        Rune:SetPoint('TOPLEFT', self, 'BOTTOMLEFT', index * 120 / 6, 0)
-
-        Runes[index] = Rune
-    end
-
-    -- Register with oUF
-    self.Runes = Runes
---]]
+--[[ Element: Runes - handles the visibility and updating of Death Knight's runes. ]]
 
 local _, ns = ...
 local oUF = ns.oUF
@@ -111,16 +71,7 @@ local function Update(self, event, runeID)
 		rune:Show()
 	end
 
-	--[[ Callback: Runes:PostUpdate(rune, runeID, start, duration, isReady)
-	Called after the element has been updated.
-
-	* self     - the Runes element
-	* rune     - the updated rune (StatusBar)
-	* runeID   - the index of the updated rune (number)
-	* start    - the value of `GetTime()` when the rune cooldown started (0 for ready) (number)
-	* duration - the duration of the rune's cooldown (number)
-	* isReady  - indicates if the rune is ready for use (boolean)
-	--]]
+	--[[ Callback: Runes:PostUpdate(rune, runeID, start, duration, isReady) - called after the element has been updated. --]]
 	if(element.PostUpdate) then
 		return element:PostUpdate(rune, runeID, start, duration, runeReady)
 	end
@@ -128,23 +79,12 @@ end
 
 local function Path(self, event, ...)
 	local element = self.Runes
-	--[[ Override: Runes.Override(self, event, ...)
-	Used to completely override the internal update function.
-
-	* self  - the parent object
-	* event - the event triggering the update (string)
-	* ...   - the arguments accompanying the event
-	--]]
+	--[[ Override: Runes.Override(self, event, ...) - fully override the internal update function. --]]
 	local UpdateMethod = element.Override or Update
 	if(event == 'RUNE_POWER_UPDATE') then
 		return UpdateMethod(self, event, ...)
 	else
-		--[[ Override: Runes:UpdateType(powerType)
-		Used to completely override the internal function for updating the widgets' colors.
-
-		* self  - the Runes element
-		* index - the index of the updated rune (number)
-		--]]
+		--[[ Override: Runes:UpdateType(powerType) - fully override the rune color update function. --]]
 		local UpdateTypeMethod = element.UpdateType or UpdateType
 		for index = 1, #element do
 			UpdateTypeMethod(self, element, index)
@@ -230,10 +170,7 @@ local function Enable(self, unit)
 		self:RegisterEvent('RUNE_TYPE_UPDATE', UpdateType, true)
 		self:RegisterEvent('PLAYER_ENTERING_WORLD', Path)
 
-		-- oUF leaves the vehicle events registered on the player frame, so
-		-- buffs and such are correctly updated when entering/exiting vehicles.
-		--
-		-- This however makes the code also show/hide the RuneFrame.
+		-- oUF keeps the vehicle events on the player frame, which also makes this show/hide the RuneFrame.
 		RuneFrame.Show = RuneFrame.Hide
 		RuneFrame:Hide()
 

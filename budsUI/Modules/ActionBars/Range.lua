@@ -1,9 +1,8 @@
 local K, C, L, _ = select(2, ...):unpack()
 if C.ActionBar.Enable ~= true then return end
 
--- Out-of-range / out-of-mana icon tint for the stock action buttons.
--- FrostAtom-style: one throttled ticker over cached flags, instant repaint on
--- target change; an UpdateUsable hook re-asserts tint after stock repaints.
+-- Out-of-range / out-of-mana tint: throttled ticker over cached flags, instant
+-- repaint on target change, UpdateUsable hook re-asserts tint after stock repaints.
 
 local _G = _G
 local CreateFrame = CreateFrame

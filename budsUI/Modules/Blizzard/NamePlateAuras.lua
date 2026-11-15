@@ -35,13 +35,7 @@ local OFFSET_Y_HIGHLIGHT = 2
 local TIMER_INTERVAL = 0.1
 local SWEEP_INTERVAL = 10
 
--- Units with a UNIT_AURA event feed (donor EVENT_UNITS: target/focus/arenaX/bossX).
--- Plates bound to these tokens are refreshed purely by UNIT_AURA; every other
--- token is scanned on bind / on the update pass (donor onUnitAdded/onPass).
--- Native Frame:RegisterUnitEvent does NOT exist in 3.3.5 (added in Patch
--- 5.0.4), so this is a plain RegisterEvent("UNIT_AURA") with the handler
--- filtering to EVENT_UNITS. This matches the donor (their RegisterUnitEvent
--- is an EventMixin wrapper over plain RegisterEvent) and ElvUI-7 (30300).
+-- Units with a UNIT_AURA feed; 3.3.5 has no RegisterUnitEvent - plain RegisterEvent filtered by EVENT_UNITS.
 local EVENT_UNITS = {
 	target = true,
 	focus = true,
@@ -286,12 +280,7 @@ local SPELLS_BLACKLIST = ConvertSpellTable(SPELLS_BLACKLIST_BY_ID)
 SPELLS_WHITELIST_BY_ID = nil
 SPELLS_BLACKLIST_BY_ID = nil
 
--- Duration defaults for combat-log auras (seconds by spellID; ported from
--- FrostAtomUI AuraData.lua CC_DURATIONS + DEFENSIVE_DURATIONS). The combat
--- log carries no duration/expiry, so applied auras fall back to these tables
--- (by spellID, then by spell name) or to learned real durations below.
--- Unknown spells are SKIPPED on the CLEU path (donor semantics: no timer, no
--- icon) and picked up by the exact UnitAura scan when a token exists.
+-- Default durations for CLEU auras (by spellID/name); unknown spells are skipped and picked up by the exact scan.
 local DURATION_DEFAULTS_BY_ID = {
 	-- CC
 	[118] = 10, [6770] = 10, [1776] = 4, [2094] = 10, [1833] = 4,
@@ -332,10 +321,7 @@ for _id, _dur in next, DURATION_DEFAULTS_BY_ID do
 	end
 end
 
--- Learned real durations (donor `learned` table): exact scans feed real
--- `duration` values here (max wins, keyed by spellId and by name for 3.3.5
--- where UnitAura has no spellID); combat-log auras prefer them over static
--- defaults. This is donor Data.Duration(spellId, name, learned).
+-- Real durations from exact scans (max wins, by spellId and name); CLEU prefers them over static defaults.
 local learned = {}
 local function learn(spellId, spellName, duration)
 	if type(duration) ~= "number" or duration <= 0 then return end
@@ -352,10 +338,7 @@ local function Duration(spellId, spellName)
 		or (spellId and DURATION_DEFAULTS_BY_ID[spellId]) or durationsByName[spellName]
 end
 
--- Aura classification (donor AuraData.ClassifyDebuff/ClassifyBuff, adapted to
--- the 3.3.5 whitelist/blacklist filter model since donor SpellDB/DRData/
--- LoseControlData do not exist here). Filtering happens here at insert time;
--- everything cached is shown (see kindShown).
+-- Aura classification via the 3.3.5 whitelist/blacklist; filtered on cache insert.
 local KIND_OWN_CC, KIND_CC, KIND_DEFENSIVE = 1, 2, 3
 local KIND_OWN, KIND_PURGE, KIND_OTHER = 4, 5, 6
 
@@ -386,9 +369,7 @@ local function kindShown(kind)
 	return false
 end
 
--- Shared aura cache (donor model): cache[guid] is an ORDERED list of entries
--- {spellId, name, icon, count, duration, expires, kind, debuffType} with
--- set/entry pool reuse. guidPlates[guid] is the single plate bound to a guid.
+-- Global aura cache: cache[guid] is an ordered record list, set/entry pools, guidPlates owns each guid.
 local cache = {}
 local setPool, entryPool = {}, {}
 local dirty = {}
@@ -491,9 +472,7 @@ local function flush()
 	end
 end
 
--- Donor ns.Defer(dirty, flush) equivalent via the prebuilt Core/Scheduler:
--- all changes within one frame collapse into a single flush that redraws ONLY
--- dirty plates. Synchronous fallback if the Scheduler is unavailable.
+-- Like ns.Defer: per-frame changes collapse into one flush of dirty plates only (sync fallback).
 local function deferFlush()
 	if K.Defer then
 		K.Defer(dirty, flush)
@@ -512,9 +491,7 @@ local function isOwn(caster)
 	return caster == "player" or caster == "pet" or caster == "vehicle"
 end
 
--- Authoritative exact scan (donor exactScan): replaces the guid's set wholesale
--- from UnitAura while a token exists, keeping the whitelist/blacklist/isMine
--- filter semantics and the real duration/expirationTime (0 = timeless).
+-- Exact scan (donor exactScan): full rebuild of the guid set from UnitAura.
 local SCAN_FILTERS = { "HELPFUL", "HARMFUL" }
 local function exactScan(unit, guid)
 	if type(guid) ~= "string" or type(unit) ~= "string" then return end
@@ -560,9 +537,7 @@ local function flushScans()
 	end
 end
 
--- Donor syncLive: a plate bound to a live unit token owns exact data, so CLEU
--- estimates for that guid are skipped (UNIT_AURA / deferred scan carries the
--- truth instead). Non-EVENT_UNITS tokens get a deferred exact scan.
+-- syncLive: plates with a live token skip CLEU estimates; other tokens get a deferred exact scan.
 local function syncLive(guid)
 	local plate = guidPlates[guid]
 	local unit = plate and plate.__auraUnit
@@ -662,11 +637,7 @@ local function onUnitDied(dstGUID)
 	end
 end
 
--- Combat-log listener: backbone feed for token-less enemy plates.
--- 3.3.5 CLEU args: (timestamp, subEvent, srcGUID, srcName, srcFlags,
--- dstGUID, dstName, dstFlags, spellId, spellName, spellSchool, auraType, amount?)
--- Best-effort by design: every branch is type-guarded and the whole dispatch
--- runs inside pcall so one malformed event can never break the addon.
+-- CLEU listener: feed for tokenless enemy plates; branches type-guarded and all under pcall.
 local function HandleCombatLogEvent(timestamp, subEvent, srcGUID, srcName, srcFlags, dstGUID, dstName, dstFlags, a1, a2, a3, a4, a5)
 	if subEvent == "SPELL_AURA_APPLIED" or subEvent == "SPELL_AURA_REFRESH" then
 		if type(a1) ~= "number" or type(a2) ~= "string" or type(dstGUID) ~= "string" then return end
@@ -764,9 +735,7 @@ local function StripBaseName(name)
 	return match(name, "^[^%-]+") or name
 end
 
--- Plate-name skips for the guid (token-less) path. The engine still applies
--- the UnitCreatureType/name skips on the token path; this mirrors them where
--- no token exists to query (totems have no token, so match by suffix).
+-- Plate-name skip for the guid path; totems match by suffix.
 local PLATE_AURA_SKIPS = {
 	["Viper"] = true,
 	["Venomous Snake"] = true,
@@ -835,11 +804,7 @@ local function TimerUntilChange(remain)
 	return step
 end
 
--- Debuff-type border colors
--- NOTE: 3.3.5 DebuffTypeColor has only Magic/Curse/Disease/Poison -- there is
--- deliberately NO "none" entry. The combat-log path stores debuffType = "none"
--- (unknown type), so the renderer MUST guard this lookup (see updatePlate);
--- an unguarded unpack(debuffType2colors["none"]) throws and aborts the pass.
+-- Border colors by debuff type; 3.3.5 has no "none" key, so the lookup must be guarded.
 local debuffType2colors = {}
 for k, v in next, DebuffTypeColor do
 	debuffType2colors[k] = {v.r, v.g, v.b}
@@ -888,10 +853,7 @@ end
 
 local function ReleaseIcon(icon)
 	if not icon then return nil end
-	-- Idempotent: container OnHide AND explicit Hide can both fire for the
-	-- same plate hide (Blizzard recycles nameplate frames), so never pool
-	-- the same icon frame twice (that would share one frame between two
-	-- plates and look flaky/missing).
+	-- Idempotent: never pool the same icon twice (OnHide + explicit Hide).
 	if icon.__pooled then return nil end
 	icon.__pooled = true
 	icon.duration = nil
@@ -1017,10 +979,7 @@ end)
 
 local MAX_AURA_ICONS = 8
 
--- Drawing (donor updatePlate-style, dirty-checked): SetSize only when the size
--- changes, no ClearAllPoints per icon unless the slot/size/position moved,
--- texture/border/count only on change. Timer text is NEVER touched here beyond
--- arming (duration/endTime); the 0.1s ticker owns all countdown text.
+-- Rendering with dirty checks: SetSize/points/texture/counter only on change; timers live in the ticker.
 function updatePlate(plate)
 	local guid = plate.__auraGuid
 	local set = guid and cache[guid]
@@ -1029,9 +988,7 @@ function updatePlate(plate)
 		return
 	end
 
-	-- Icons float above the health bar (budsUI plate layout), like the donor
-	-- floats them above the nameplate frame. The container is HIGH strata so
-	-- icons render above the plate even when plate levels shift.
+	-- Icons above the health bar; HIGH-strata container.
 	local anchor = plate.hp or plate
 	if not anchor then
 		hideAll(plate)
@@ -1056,9 +1013,7 @@ function updatePlate(plate)
 		local entry = set[i]
 		local expires = entry.expires
 		if (expires == 0 or expires > now) and kindShown(entry.kind) then
-			-- Big icons: everything from the whitelist (own CC / enemy CC /
-			-- defensive buffs like Deterrence), matching the pre-rewrite
-			-- behaviour where isHighlight covered all whitelist auras.
+			-- Big icons: all whitelisted auras (own/enemy CC, defensive buffs).
 			if entry.kind == KIND_OWN_CC or entry.kind == KIND_CC or entry.kind == KIND_DEFENSIVE then
 				countHighlight = countHighlight + 1
 			else
@@ -1097,9 +1052,7 @@ function updatePlate(plate)
 				px, py = GetPointsByIndex(indexNormal, OFFSET_Y, SIZE, IN_ROW, countNormal)
 				indexNormal = indexNormal + 1
 			end
-			-- Dirty-checked layout: pool reuse is the only reason anchors go
-			-- stale, so ClearAllPoints/SetPoint/SetSize run only when the
-			-- slot, size, or computed x/y actually moved.
+			-- Dirty layout: ClearAllPoints/SetPoint/SetSize only when a slot/size actually moves.
 			if icon._strata ~= "HIGH" then
 				icon:SetFrameStrata("HIGH")
 				icon._strata = "HIGH"
@@ -1131,10 +1084,7 @@ function updatePlate(plate)
 				hasTimers = true
 			end
 
-			-- Guarded color lookup: the combat-log path stores debuffType =
-			-- "none" (unknown type) and 3.3.5 DebuffTypeColor has no "none"
-			-- key. Unknown/"none" renders with NO colored border; the exact
-			-- scan re-colors it once a real UnitAura debuffType is known.
+			-- Guarded color lookup: 3.3.5 has no "none" in DebuffTypeColor, so the border stays uncolored.
 			local borderColor = entry.debuffType and debuffType2colors[entry.debuffType]
 			local borderKey = entry.debuffType or false
 			if icon._borderKey ~= borderKey then
@@ -1187,14 +1137,7 @@ function updatePlate(plate)
 	end
 end
 
--- GUID-or-token entry point (donor UnitAdded/Pass model):
---   * fresh bind with a unit token -> exact UnitAura scan once (covers
---     EVENT_UNITS target-switches where no UNIT_AURA fires), then markDirty
---   * fresh bind with a bare guid  -> paint the combat-log cache via markDirty
---   * steady bind, token NOT in EVENT_UNITS -> exactScan now (donor onUnitAdded/
---     onPass for the rest); steady EVENT_UNITS / steady guid -> nothing, the
---     UNIT_AURA / CLEU / timer ticker drive all future redraws via markDirty.
--- The old "return if not unitID" guard is gone so the cache path works.
+-- guid/token entry point: fresh bind -> exact scan / markDirty; later redraws are driven by UNIT_AURA / CLEU / ticker.
 function K.NamePlateAuras_Update(plate, unitOrGuid)
 	if C.Nameplate.Auras ~= true then return end
 	if not plate or not unitOrGuid then
@@ -1268,13 +1211,8 @@ function K.NamePlateAuras_Hide(plate)
 	end
 end
 
--- Event contour (donor plugin Log + UNIT_AURA + world/pet hooks), plain
--- budsUI-style frames, every dispatch guarded + pcall.
--- 3.3.5 has no native Frame:RegisterUnitEvent (it was added in Patch 5.0.4),
--- so UNIT_AURA is registered via plain RegisterEvent and the handler filters
--- to EVENT_UNITS — this matches both the donor (whose EventMixin:RegisterUnitEvent
--- is its own bus over a plain RegisterEvent) and ElvUI-7 (30300 reference,
--- which uses header:RegisterEvent('UNIT_AURA') + unit filter).
+-- Event outline (LOG + UNIT_AURA, all under pcall); in 3.3.5 UNIT_AURA is registered
+-- as a plain RegisterEvent filtered by EVENT_UNITS.
 local function onUnitAura(unit)
 	if not EVENT_UNITS[unit] then return end
 	local guid = UnitGUID(unit)

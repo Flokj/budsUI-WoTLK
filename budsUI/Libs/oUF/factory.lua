@@ -24,13 +24,7 @@ function factory:PLAYER_LOGIN()
 	table.wipe(queue)
 end
 
---[[ Factory: oUF:Factory(func)
-Used to call a function directly if the current character is logged in and the factory is active. Else the function is
-queued up to be executed at a later time (upon PLAYER_LOGIN by default).
-
-* self - the global oUF object
-* func - function to be executed or delayed (function)
---]]
+--[[ Factory: oUF:Factory(func) - call func now if logged in and active, else queue it until PLAYER_LOGIN. --]]
 function oUF:Factory(func)
 	argcheck(func, 2, 'function')
 
@@ -42,30 +36,17 @@ function oUF:Factory(func)
 	end
 end
 
---[[ Factory: oUF:EnableFactory()
-Used to enable the factory.
-
-* self - the global oUF object
---]]
+--[[ Factory: oUF:EnableFactory() - enable the factory. --]]
 function oUF:EnableFactory()
 	factory.active = true
 end
 
---[[ Factory: oUF:DisableFactory()
-Used to disable the factory.
-
-* self - the global oUF object
---]]
+--[[ Factory: oUF:DisableFactory() - disable the factory. --]]
 function oUF:DisableFactory()
 	factory.active = nil
 end
 
---[[ Factory: oUF:RunFactoryQueue()
-Used to try to execute queued up functions. The current player must be logged in and the factory must be active for
-this to succeed.
-
-* self - the global oUF object
---]]
+--[[ Factory: oUF:RunFactoryQueue() - run queued functions (needs login + active factory). --]]
 function oUF:RunFactoryQueue()
 	factory:PLAYER_LOGIN()
 end

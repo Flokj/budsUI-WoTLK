@@ -45,11 +45,8 @@ local byte = string.byte
 local GUID_PLAYER_BYTE = 48 -- ASCII '0'; exact donor value (FrostAtomUI PlateLayer.lua:16)
 
 local function IsPlayerGUID(guid)
-	-- Player-type guilds have the type byte '0' (ASCII 48) at index 3 in the
-	-- "Player-..." string form. For empty guid ("") byte returns nil → false.
-	-- This is the FrostAtomUI PlateLayer.IsPlayerGUID approach: never call
-	-- GetPlayerInfoByGUID on a guid that isn't a player (monster bubbles carry
-	-- guid="", would error).
+	-- Player guids carry type byte '0' (ASCII 48) at index 3; empty ("") returns nil so
+	-- no invalid GetPlayerInfoByGUID call (monster bubbles carry guid="", would error).
 	return guid ~= nil and byte(guid, 3) == GUID_PLAYER_BYTE
 end
 
@@ -112,9 +109,8 @@ local function onShown(bubble, info)
 	if not bubble.sender then
 		return
 	end
-	-- NOTE: sender/guid matching (takePending) already happened in
-	-- BubbleLayer.onShow before this fires. Do NOT takePending again here:
-	-- the text may already be rewritten below and would no longer match.
+	-- NOTE: takePending already ran in BubbleLayer.onShow; do NOT takePending again
+	-- here -- the text may be rewritten below and would no longer match.
 	local text = bubble.text
 	local message = text:GetText() or ""
 	if find(message, "{", 1, true) then

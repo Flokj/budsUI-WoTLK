@@ -1,11 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
 
--- Profession sidebar: an icon per known crafting profession on the RIGHT side of
--- the open profession window. Clicking a tab casts that profession and the
--- client swaps the window; the current one gets a gold border. 3.3.5 spreads the
--- windows over three hosts: TradeSkillFrame for most professions, CraftFrame
--- (Blizzard_CraftUI) for Enchanting and RuneforgeFrame for Death Knight
--- Runeforging, so the strip follows whichever window is shown.
+-- Profession sidebar: an icon per known crafting profession; clicking casts it and the client swaps the window (follows the window host: TradeSkillFrame/CraftFrame/RuneforgeFrame).
 
 local _G = _G
 local CreateFrame, UIParent = CreateFrame, UIParent
@@ -16,9 +11,7 @@ local BOOKTYPE_SPELL = BOOKTYPE_SPELL or "spell"
 local TAB_SIZE, TAB_GAP, FIRST_Y = 32, 3, -64
 local SELECTED_COLOR = { 1, 0.82, 0 }
 
--- The sheet the stock SpellBookSkillLineTabTemplate draws behind its icon
--- (64x64, offset up and out of the button). It makes the sidebar read as tabs
--- belonging to the window instead of a free-floating icon column.
+-- The stock template's sheet makes the sidebar read as tabs of the window instead of a free-floating icon column.
 local SHEET = "Interface\\SpellBook\\SpellBook-SkillLineTab"
 local HIGHLIGHT = "Interface\\Buttons\\ButtonHilight-Square"
 local CHECKED = "Interface\\Buttons\\CheckButtonHilight"
@@ -63,7 +56,6 @@ local function IsEnabled()
 	return C.Blizzard ~= nil and C.Blizzard.ProfessionTabs == true
 end
 
--- ---------------------------------------------------------------------------
 -- Current profession
 -- ---------------------------------------------------------------------------
 
@@ -101,7 +93,6 @@ local function UpdateCurrent()
 	end
 end
 
--- ---------------------------------------------------------------------------
 -- Tabs
 -- ---------------------------------------------------------------------------
 
@@ -230,7 +221,6 @@ local function Rebuild()
 	return shown
 end
 
--- ---------------------------------------------------------------------------
 -- Host windows
 -- ---------------------------------------------------------------------------
 
@@ -321,7 +311,6 @@ end
 K.RebuildProfessionTabs = Rebuild
 K.ApplyProfessionTabs = ApplyVisibility
 
--- ---------------------------------------------------------------------------
 -- Events
 -- ---------------------------------------------------------------------------
 

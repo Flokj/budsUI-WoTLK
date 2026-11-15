@@ -1,9 +1,8 @@
 local K, C = select(2, ...):unpack()
 if C.Tooltip.Enable ~= true or C.Tooltip.Talents ~= true then return end
 
--- Target talent display originally based on TipTacTalents by Aezay.
--- Talent data and tooltip presentation are separate from the inspect queue,
--- as in FrostAtomUI. Keep budsUI's existing text format and TipTac cache API.
+-- Target talent display (based on TipTacTalents by Aezay): talent data and tooltip
+-- presentation separate from the inspect queue; keep budsUI's text format and TipTac cache API.
 local Inspect = K.Inspect
 local tooltip = GameTooltip
 local talents = CreateFrame("Frame", "TipTacTalents")

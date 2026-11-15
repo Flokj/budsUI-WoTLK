@@ -18,9 +18,7 @@ local ALLOWED_GROUPS = {
 	["Skins"] = true, ["ThreatMeter"] = true, ["Tooltip"] = true, ["Unitframe"] = true,
 }
 
--- ---------------------------------------------------------------------------
--- Delta / Pruning Helper
--- ---------------------------------------------------------------------------
+-- ===== Delta / Pruning Helper =====
 local EPSILON = 0.0001
 local function SameValue(a, b)
 	if type(a) == "number" and type(b) == "number" then

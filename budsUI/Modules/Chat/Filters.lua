@@ -44,14 +44,10 @@ if C.Chat.Filter == true then
 	ERR_CHAT_THROTTLED = ""
 end
 
--- Players spam filter(by Evl, Elv22 and Affli)
--- The ellipsis (which is what ... is called) only allows you to accept an undefined number of extra arguments
--- So local function blahblah(self, event, text, sender) is the same as local function blahblah(self, event, text, sender, ...)
--- If you pass on the arguments in that function, you need to pass the ... along, or it might break the functionality
+-- Player-spam filter (by Evl, Elv22 and Affli). Commented code: keep the ... in the handler signature when forwarding args.
 if C.Chat.Spam == true then
-	-- Repeat spam filter
-	-- T19: Module-local state replaces frame pollution (Blizzard frames should not be mutated)
-	-- T20: Removed dead `lastMessage` variable (was set but never read independently)
+	-- Repeat spam filter; T19: module-local state replaces frame pollution (no Blizzard
+	-- frame mutation); T20: dropped the dead `lastMessage` variable.
 	local repeatState = {}
 	local function repeatMessageFilter(self, event, text, sender)
 		if sender == K.Name or UnitIsInMyGuild(sender) then return end
@@ -85,12 +81,7 @@ if C.Chat.Spam == true then
 	ChatFrame_AddMessageEventFilter("CHAT_MSG_YELL", tradeFilter)
 end
 
--- ═══════════════════════════════════════════════════════════════
---  Battleground / arena announcements filter (ported from FrostAtomUI)
---  Kills CAMPAIGN-spam ([BG Queue Announcer] / server adverts),
---  arena-result spam, and battleground player join/leave
---  notifications while inside a BG.
--- ═══════════════════════════════════════════════════════════════
+-- ===== Battleground / arena announcements filter (ported from FrostAtomUI) =====
 if C.Chat.Filter == true then
 	local IsInInstance = IsInInstance
 	local GetTime = GetTime

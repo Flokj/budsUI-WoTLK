@@ -17,9 +17,7 @@ do
 	end
 end
 
--- Polyfill FontString:WrapText() for Ascension's custom FrameXML
--- Ascension_CharacterFrame uses WrapText() which is a Retail-only API.
--- In WotLK 3.3.5a the equivalent is SetWordWrap().
+-- Polyfill FontString:WrapText() (Retail-only API used by Ascension) with SetWordWrap() for 3.3.5a.
 do
 	local holder = CreateFrame("Frame")
 	local tmp = holder:CreateFontString()

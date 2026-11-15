@@ -1206,9 +1206,7 @@ local function Initialize()
 	SpellbookMicroButton:SetScript("OnClick", toggle)
 	hooksecurefunc("UpdateMicroButtons", setMicroButtonState)
 
-	-- budsUI has no K.WatchConfig; the in-window checkboxes write the
-	-- secure attributes directly and sync back to C.Blizzard in onRender,
-	-- so no external config watcher is needed here.
+	-- budsUI has no K.WatchConfig: in-window checkboxes write the secure attributes directly and sync to C.Blizzard in onRender.
 
 	updateBindings()
 	layout()

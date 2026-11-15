@@ -154,9 +154,7 @@ local function runDeferred()
 	end
 end
 
--- Wrapped in K.SafeOnUpdate so an error in the dispatch bookkeeping itself
--- stops (rather than spams) the ticker; per-callback errors are already
--- contained by SafeCall above.
+-- In K.SafeOnUpdate: a dispatch error stops (not spams) the ticker; callback errors are caught by SafeCall.
 frame:SetScript("OnUpdate", K.SafeOnUpdate(function(self)
 	local now = GetTime()
 	if deferredCount > 0 then

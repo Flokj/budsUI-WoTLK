@@ -7,9 +7,7 @@ local IsControlKeyDown = IsControlKeyDown
 local GetNumCompanions = GetNumCompanions
 local GetCompanionInfo = GetCompanionInfo
 
--- Universal Mount macro(by Monolit)
--- /cancelform [noform:4]
--- /run Mountz("your_ground_mount","your_flying_mount")
+-- Universal mount macro (by Monolit): /cancelform [noform:4] + /run Mountz("ground","flying")
 function Mountz(groundmount, flyingmount)
 	local flyablex, nofly
 	local num = GetNumCompanions("MOUNT")

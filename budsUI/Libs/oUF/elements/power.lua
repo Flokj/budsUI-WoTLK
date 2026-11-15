@@ -1,86 +1,4 @@
---[[
-# Element: Power Bar
-
-Handles the updating of a status bar that displays the unit's power.
-
-## Widget
-
-Power - A `StatusBar` used to represent the unit's power.
-
-## Sub-Widgets
-
-.bg - A `Texture` used as a background. It will inherit the color of the main StatusBar.
-
-## Notes
-
-A default texture will be applied if the widget is a StatusBar and doesn't have a texture or a color set.
-
-## Options
-
-.frequentUpdates - Indicates whether to use OnUpdate script instead of UNIT_POWER to update the bar. Only valid for the
-                   player and pet units (boolean)
-.smoothGradient  - 9 color values to be used with the .colorSmooth option (table)
-
-The following options are listed by priority. The first check that returns true decides the color of the bar.
-
-.colorTapping      - Use `self.colors.tapping` to color the bar if the unit isn't tapped by the player (boolean)
-.colorDisconnected - Use `self.colors.disconnected` to color the bar if the unit is offline (boolean)
-.colorHappiness    - Use `self.colors.happiness` to color the bar if the unit is pet based on pet happiness (boolean)
-.colorPower        - Use `self.colors.power[token]` to color the bar based on the unit's power type. This method will
-                     fall-back to `:GetAlternativeColor()` if it can't find a color matching the token. If this function
-                     isn't defined, then it will attempt to color based upon the alternative power colors returned by
-                     [UnitPowerType](http://wowprogramming.com/docs/api/UnitPowerType). Finally, if these aren't
-                     defined, then it will attempt to color the bar based upon `self.colors.power[type]` (boolean)
-.colorClass        - Use `self.colors.class[class]` to color the bar based on unit class. `class` is defined by the
-                     second return of [UnitClass](http://wowprogramming.com/docs/api/UnitClass) (boolean)
-.colorClassNPC     - Use `self.colors.class[class]` to color the bar if the unit is a NPC (boolean)
-.colorClassPet     - Use `self.colors.class[class]` to color the bar if the unit is player controlled, but not a player
-                     (boolean)
-.colorReaction     - Use `self.colors.reaction[reaction]` to color the bar based on the player's reaction towards the
-                     unit. `reaction` is defined by the return value of
-                     [UnitReaction](http://wowprogramming.com/docs/api/UnitReaction) (boolean)
-.colorSmooth       - Use `smoothGradient` if present or `self.colors.smooth` to color the bar with a smooth gradient
-                     based on the player's current power percentage (boolean)
-
-## Sub-Widget Options
-
-.multiplier - A multiplier used to tint the background based on the main widgets R, G and B values. Defaults to 1
-              (number)[0-1]
-
-## Attributes
-
-.disconnected - Indicates whether the unit is disconnected (boolean)
-.tapped       - Indicates whether the unit is tapped by the player (boolean)
-
-## Examples
-
-    -- Position and size
-    local Power = CreateFrame('StatusBar', nil, self)
-    Power:SetHeight(20)
-    Power:SetPoint('BOTTOM')
-    Power:SetPoint('LEFT')
-    Power:SetPoint('RIGHT')
-
-    -- Add a background
-    local Background = Power:CreateTexture(nil, 'BACKGROUND')
-    Background:SetAllPoints(Power)
-    Background:SetTexture(1, 1, 1, .5)
-
-    -- Options
-    Power.frequentUpdates = true
-    Power.colorTapping = true
-    Power.colorDisconnected = true
-    Power.colorPower = true
-    Power.colorClass = true
-    Power.colorReaction = true
-
-    -- Make the background darker.
-    Background.multiplier = .5
-
-    -- Register it with oUF
-	Power.bg = Background
-    self.Power = Power
---]]
+--[[ Element: Power Bar - handles the updating of a status bar that displays the unit's power. ]]
 
 local _, ns = ...
 local oUF = ns.oUF
@@ -156,13 +74,7 @@ local function UpdateColor(self, event, unit)
 end
 
 local function ColorPath(self, ...)
-	--[[ Override: Power.UpdateColor(self, event, unit)
-	Used to completely override the internal function for updating the widgets' colors.
-
-	* self  - the parent object
-	* event - the event triggering the update (string)
-	* unit  - the unit accompanying the event (string)
-	--]]
+	--[[ Override: Power.UpdateColor(self, event, unit) - fully override the widgets' color update function. --]]
 	(self.Power.UpdateColor or UpdateColor) (self, ...)
 end
 
@@ -170,12 +82,7 @@ local function Update(self, event, unit)
 	if(self.unit ~= unit) then return end
 	local element = self.Power
 
-	--[[ Callback: Power:PreUpdate(unit)
-	Called before the element has been updated.
-
-	* self - the Power element
-	* unit - the unit for which the update has been triggered (string)
-	--]]
+	--[[ Callback: Power:PreUpdate(unit) - called before the element has been updated. --]]
 	if(element.PreUpdate) then
 		element:PreUpdate(unit)
 	end
@@ -198,28 +105,14 @@ local function Update(self, event, unit)
 	element.max = max
 	element.disconnected = disconnected
 
-	--[[ Callback: Power:PostUpdate(unit, cur, max)
-	Called after the element has been updated.
-
-	* self - the Power element
-	* unit - the unit for which the update has been triggered (string)
-	* cur  - the unit's current power value (number)
-	* max  - the unit's maximum possible power value (number)
-	--]]
+	--[[ Callback: Power:PostUpdate(unit, cur, max) - called after the element has been updated. --]]
 	if(element.PostUpdate) then
 		element:PostUpdate(unit, cur, max)
 	end
 end
 
 local function Path(self, ...)
-	--[[ Override: Power.Override(self, event, unit, ...)
-	Used to completely override the internal update function.
-
-	* self  - the parent object
-	* event - the event triggering the update (string)
-	* unit  - the unit accompanying the event (string)
-	* ...   - the arguments accompanying the event
-	--]]
+	--[[ Override: Power.Override(self, event, unit, ...) - fully override the internal update function. --]]
 	(self.Power.Override or Update) (self, ...);
 
 	ColorPath(self, ...)
@@ -229,12 +122,7 @@ local function ForceUpdate(element)
 	Path(element.__owner, 'ForceUpdate', element.__owner.unit)
 end
 
---[[ Power:SetColorDisconnected(state)
-Used to toggle coloring if the unit is offline.
-
-* self  - the Power element
-* state - the desired state (boolean)
---]]
+--[[ Power:SetColorDisconnected(state) - toggles coloring if the unit is offline. --]]
 local function SetColorDisconnected(element, state)
 	if(element.colorDisconnected ~= state) then
 		element.colorDisconnected = state
@@ -246,12 +134,7 @@ local function SetColorDisconnected(element, state)
 	end
 end
 
---[[ Power:SetColorTapping(state)
-Used to toggle coloring if the unit isn't tapped by the player.
-
-* self  - the Power element
-* state - the desired state (boolean)
---]]
+--[[ Power:SetColorTapping(state) - toggles coloring if the unit isn't tapped by the player. --]]
 local function SetColorTapping(element, state)
 	if(element.colorTapping ~= state) then
 		element.colorTapping = state
@@ -263,12 +146,7 @@ local function SetColorTapping(element, state)
 	end
 end
 
---[[ Power:SetColorThreat(state)
-Used to toggle coloring by the unit's threat status.
-
-* self  - the Power element
-* state - the desired state (boolean)
---]]
+--[[ Power:SetColorThreat(state) - toggles coloring by the unit's threat status. --]]
 local function SetColorThreat(element, state)
 	if(element.colorThreat ~= state) then
 		element.colorThreat = state
@@ -280,12 +158,7 @@ local function SetColorThreat(element, state)
 	end
 end
 
---[[ Power:SetColorHappiness(state)
-Used to toggle coloring by the unit's happiness status.
-
-* self  - the Power element
-* state - the desired state (boolean)
---]]
+--[[ Power:SetColorHappiness(state) - toggles coloring by the unit's happiness status. --]]
 local function SetColorHappiness(element, state)
 	if(element.colorHappiness ~= state) then
 		element.colorHappiness = state
@@ -311,12 +184,7 @@ local function onPowerUpdate(self)
 	end
 end
 
---[[ Power:SetFrequentUpdates(state)
-Used to toggle frequent updates.
-
-* self  - the Power element
-* state - the desired state (boolean)
---]]
+--[[ Power:SetFrequentUpdates(state) - toggles frequent updates. --]]
 local function SetFrequentUpdates(element, state)
 	--if(not unit or (unit ~= 'player' and unit ~= 'pet')) then return end
 

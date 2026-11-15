@@ -114,9 +114,7 @@ local function CreateChatbar()
 		end
 		prev = bu
 
-		-- NOTE: never touch OnClick on macro buttons -- SetScript would replace
-		-- the SecureActionButtonTemplate's own click handler and the macro
-		-- would stop firing.
+		-- NOTE: never touch OnClick on macro buttons -- it would replace the secure template's handler and break the macro.
 		if macro then
 			-- Macro buttons (Roll, CombatLog): executed by the secure template,
 			-- works in combat, exactly like the old implementation.

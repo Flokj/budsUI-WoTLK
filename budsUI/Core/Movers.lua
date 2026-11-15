@@ -1,14 +1,7 @@
 local K, C, L, _ = select(2, ...):unpack()
 
---[[ budsUI Movers (WotLK 3.3.5 port of the KkthnxUI placement system)
-	- Mover = anchor frame, widget anchors TO the mover (not an overlay).
-	- Drag with snapping to screen centre/edges + other movers, live guides,
-	  live coords, optional grid, arrow-key nudge, per-mover popup (X/Y +
-	  anchor picker), Move UI panel, per-mover + reset-all, slash commands.
-	- WotLK-safe: no C_Timer, no SetPropagateKeyboardInput, no retail skins.
-	- Back-compat: old saves C.MoverPositions[name] = {ap,"UIParent",rp,x,y}
-	  keep working; K.MoverFrames table keeps working (Chatbar tinsert etc).
-]]
+-- budsUI Movers (WotLK 3.3.5 port of KkthnxUI): drag with snapping, guides, grid, nudge,
+-- popup/panel, slash commands; WotLK-safe; keeps old C.MoverPositions saves working.
 
 local _G = _G
 local pairs, ipairs, select, tinsert, tremove = pairs, ipairs, select, table.insert, table.remove
@@ -64,11 +57,7 @@ local THEME = {
 	rest = { 0.18, 0.71, 1, 1 }, -- budsUI blue, matches the old mover
 }
 
--- ---------------------------------------------------------------------------
--- Widget skins (Kkthnx-style look, budsUI primitives, WotLK-safe).
--- No gradients (Texture:SetGradient/CreateColor), no SetAtlas, no SetRotation:
--- flat fills + borders + fonts only.
--- ---------------------------------------------------------------------------
+-- Widget skins: flat fills + borders + fonts only (no gradients/atlas/rotation).
 
 local BTN_BG = { 0.09, 0.114, 0.149, 0.95 }
 local BTN_BG_HOVER = { 0.16, 0.24, 0.36, 1 }
@@ -195,9 +184,7 @@ local function AddTopLine(frame)
 	top:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -2, -2)
 end
 
--- ---------------------------------------------------------------------------
--- Storage (live C.MoverPositions + persistent profile copy, like the old code)
--- ---------------------------------------------------------------------------
+-- Storage: live C.MoverPositions + persistent profile copy
 
 local function GetProfile()
 	local activeProfile = K.GetActiveProfile and K.GetActiveProfile()
@@ -245,10 +232,8 @@ local function OffsetFor(mover, point)
 	return RoundNum(mx - ux), RoundNum(my - uy)
 end
 
--- Read a saved position. Shapes:
---   new:    { point = "TOP", x = 0, y = -80 }
---   legacy: { "TOP", "UIParent", "TOP", 0, -80 }
---   ancient:{ x, y } (bare pair = CENTER anchor)
+-- Read a saved position. Shapes: new {point,x,y}, legacy {"TOP","UIParent","TOP",x,y},
+-- ancient {x,y} (bare pair = CENTER anchor).
 local function SavedFor(mover)
 	local saved = C.MoverPositions and C.MoverPositions[mover.moverKey]
 	if not saved then return end
@@ -321,9 +306,7 @@ local function SetAnchorPoint(mover, point)
 	ApplyOffset(mover, x, y, point)
 end
 
--- ---------------------------------------------------------------------------
 -- Guides and grid
--- ---------------------------------------------------------------------------
 
 local guideV, guideH
 local function Guides()
@@ -389,9 +372,7 @@ function K.ToggleMoverGrid(show)
 	if show then g:Show() else g:Hide() end
 end
 
--- ---------------------------------------------------------------------------
 -- Snapping
--- ---------------------------------------------------------------------------
 
 local function SnapTargets(self)
 	local ux, uy = UIParent:GetCenter()
@@ -433,9 +414,7 @@ local function SnapAxis(value, half, targets)
 	return value, bestLine
 end
 
--- ---------------------------------------------------------------------------
 -- Dragging
--- ---------------------------------------------------------------------------
 
 local function OnMoveUpdate(self)
 	local scale = self:GetEffectiveScale()
@@ -522,16 +501,10 @@ local function OnKeyDown(self, key)
 	NotifyPopup(self)
 end
 
--- ---------------------------------------------------------------------------
 -- Factory
--- ---------------------------------------------------------------------------
 
--- Frames queued for anchoring onto their mover while in combat lockdown:
--- a combat-time SetPoint on a protected frame is blocked outright, and on
--- sensitive Blizzard frames it taints them (the world-state taint seed),
--- so the re-anchor waits for PLAYER_REGEN_ENABLED. Unlike FrostAtom's
--- Register() we do NOT gate on IsProtected() - the seed frame there was
--- NOT protected, only combat-sensitive.
+-- Frames queued for anchoring while in combat lockdown (SetPoint blocked/taints);
+-- re-anchor on PLAYER_REGEN_ENABLED, no IsProtected() gate (FrostAtom seed wasn't protected).
 local pendingAnchors = {}
 local anchorFlusher = CreateFrame("Frame")
 anchorFlusher:SetScript("OnEvent", function(self)
@@ -760,9 +733,7 @@ function K.FlashMover(key)
 	end)
 end
 
--- ---------------------------------------------------------------------------
 -- Per-mover popup: name, X/Y inputs, anchor picker, nudge pad
--- ---------------------------------------------------------------------------
 
 local popup, popupTarget
 
@@ -919,9 +890,7 @@ local function OpenPopup(mover)
 end
 K.OpenMoverPopup = OpenPopup
 
--- ---------------------------------------------------------------------------
 -- Edit mode + panel
--- ---------------------------------------------------------------------------
 
 local function BuildPanel()
 	if panel then return panel end
@@ -1026,9 +995,7 @@ function K.ResetMovers()
 	K.Print(T("Frame positions reset."))
 end
 
--- ---------------------------------------------------------------------------
 -- Legacy slash commands (kept): /moveui /mui /mm /mmm [+ reset]
--- ---------------------------------------------------------------------------
 
 local placed = {
 	"Butsu",
@@ -1058,10 +1025,7 @@ SLASH_MOVING2 = "/mui"
 SLASH_MOVING3 = "/mm"
 SLASH_MOVING4 = "/mmm"
 
--- ---------------------------------------------------------------------------
--- Restore on login. Movers first, then legacy direct-position entries
--- (e.g. WorldMapFrame) that have no mover.
--- ---------------------------------------------------------------------------
+-- Restore on login: movers first, then legacy direct-position entries (e.g. WorldMapFrame)
 
 local restoreFrame = CreateFrame("Frame")
 restoreFrame:RegisterEvent("PLAYER_ENTERING_WORLD")

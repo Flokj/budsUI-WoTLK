@@ -1,26 +1,5 @@
---[[
-# Element: Raid Role Indicator
-
-Handles the visibility and updating of an indicator based on the unit's raid assignment (main tank or main assist).
-
-## Widget
-
-RaidRoleIndicator - A `Texture` representing the unit's raid assignment.
-
-## Notes
-
-This element updates by changing the texture.
-
-## Examples
-
-    -- Position and size
-    local RaidRoleIndicator = self:CreateTexture(nil, 'OVERLAY')
-    RaidRoleIndicator:SetSize(16, 16)
-    RaidRoleIndicator:SetPoint('TOPLEFT')
-
-    -- Register it with oUF
-    self.RaidRoleIndicator = RaidRoleIndicator
---]]
+--[[ # Element: Raid Role Indicator
+Handles indicator visibility and updating based on the unit's raid assignment (main tank or main assist). ]]
 
 local _, ns = ...
 local oUF = ns.oUF
@@ -32,11 +11,7 @@ local function Update(self, event)
 	local element = self.RaidRoleIndicator
 	local unit = self.unit
 
-	--[[ Callback: RaidRoleIndicator:PreUpdate()
-	Called before the element has been updated.
-
-	* self - the RaidRoleIndicator element
-	--]]
+	-- Callback: RaidRoleIndicator:PreUpdate() - called before the element is updated
 	if(element.PreUpdate) then
 		element:PreUpdate()
 	end
@@ -62,25 +37,14 @@ local function Update(self, event)
 		element:Hide()
 	end
 
-	--[[ Callback: RaidRoleIndicator:PostUpdate(role)
-	Called after the element has been updated.
-
-	* self - the RaidRoleIndicator element
-	* role - the unit's raid assignment (string?)['MAINTANK', 'MAINASSIST']
-	--]]
+	-- Callback: RaidRoleIndicator:PostUpdate(role) - called after the element is updated
 	if(element.PostUpdate) then
 		return element:PostUpdate(role)
 	end
 end
 
 local function Path(self, ...)
-	--[[ Override: RaidRoleIndicator.Override(self, event, ...)
-	Used to completely override the internal update function.
-
-	* self  - the parent object
-	* event - the event triggering the update (string)
-	* ...   - the arguments accompanying the event
-	--]]
+	-- Override: RaidRoleIndicator.Override(self, event, ...) - override the internal update function
 	return (self.RaidRoleIndicator.Override or Update)(self, ...)
 end
 

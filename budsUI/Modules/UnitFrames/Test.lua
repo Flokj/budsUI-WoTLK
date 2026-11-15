@@ -33,9 +33,7 @@ local function AfterNextFrame(func)
 	end)
 end
 
--- ---------------------------------------------------------------------------
 -- Force a single frame
--- ---------------------------------------------------------------------------
 
 -- Point a frame at the player, keep it shown through a forced unit watch, and
 -- refresh its elements so it fills with live data.
@@ -72,9 +70,7 @@ local function UnforceFrame(frame)
 	end
 end
 
--- ---------------------------------------------------------------------------
 -- Group headers
--- ---------------------------------------------------------------------------
 local function ForEachChild(header, func)
 	local i = 1
 	local child = header:GetAttribute("child" .. i)
@@ -85,14 +81,8 @@ local function ForEachChild(header, func)
 	end
 end
 
--- ---------------------------------------------------------------------------
--- Solo group previews (ElvUI-style). Secure headers only spawn children for
--- real units, so solo there would be a single player frame per header. A few
--- spare single-unit frames in the group style stand in for the missing
--- members: forced onto the player's data, laid out from the header's own
--- child geometry, hidden again on the way out. Grouped they stay hidden and
--- the real members show.
--- ---------------------------------------------------------------------------
+-- Solo group previews (ElvUI-style): secure headers only spawn children for real
+-- units, so spare group-style frames stand in, forced to the player and hidden on exit.
 local previewCache = {}
 
 local function HidePreviews(list)
@@ -170,9 +160,7 @@ local function ForceHeader(header, style, unitPrefix, extra)
 	header.__cfgStart = header:GetAttribute("startingIndex")
 	header:SetAttribute("startingIndex", 1)
 
-	-- Grouped: the header already shows the real members, leave it alone.
-	-- Solo: no group units exist, so let the header show the player child
-	-- and stand spare single frames in for the missing members.
+	-- Grouped: the header already shows the real members; solo: show the player child plus spare frames.
 	local solo = GetNumPartyMembers() == 0 and GetNumRaidMembers() == 0
 	if solo then
 		header:SetAttribute("showSolo", true)
@@ -220,9 +208,7 @@ local function PartyVisibility()
 	return visibility
 end
 
--- ---------------------------------------------------------------------------
 -- Enter / exit
--- ---------------------------------------------------------------------------
 function Module:EnterConfigMode()
 	if InCombatLockdown() then
 		return

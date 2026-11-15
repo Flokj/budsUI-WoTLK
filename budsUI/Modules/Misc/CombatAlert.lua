@@ -1,11 +1,7 @@
 local K, C, L, _ = select(2, ...):unpack()
 
--- Combat alert, ported from FrostAtomUI (Modules/Alerts/CombatAlert.lua):
--- a short centered message when entering / leaving combat, with a hold time
--- then a fade-out. Text and colors come from C.Misc.CombatAlert*; the frame
--- is movable via the "CombatAlert" mover. budsuICombatAlertTest() is exposed
--- for the config Test button. The master toggle is read live at event time,
--- so it applies without a reload (the frame is tiny even when disabled).
+-- Combat alert (from FrostAtomUI): centered message on entering/leaving combat with
+-- hold + fade; colors from C.Misc.CombatAlert*, movable mover, toggle read live at event time.
 
 local CreateFrame = CreateFrame
 

@@ -88,12 +88,8 @@ local function dominantTree(inspect)
 	return best
 end
 
--- ---------------------------------------------------------------------------
--- Aura-guesser (ported from FrostAtomUI's Talents module): infers specs of
--- hostile players from their visible buffs. The inspect queue only sends
--- out of combat, so in PvP this is the only in-combat source. Scans just
--- target/focus/arena1-5, every unique hint is processed once per GUID.
--- ---------------------------------------------------------------------------
+-- Aura-guesser (ported from FrostAtomUI's Talents module): infers specs of hostile players
+-- from visible buffs; scans target/focus/arena1-5, each unique hint processed once per GUID.
 
 local NUM_TREES = 3
 local POINTS_PER_TIER = 5
@@ -234,14 +230,10 @@ local function updateFrame(frame)
 			icon:Hide()
 			return
 		end
-		-- Exact spec from the inspect queue first, confident aura guess
-		-- second (the only source while in combat: the inspect queue only
-		-- sends out of combat).
+		-- Exact spec from the inspect queue first, confident aura guess second (in-combat source).
 		spec = specs[guid] or guessSpec(guid)
 		if not spec then
-			-- Not cached yet: queue an inspect. The reply fills specs[] and
-			-- refreshes this frame; the manager throttles sends (1.5s
-			-- interval, urgent lane) and only fires out of combat / in range.
+			-- Not cached: queue an inspect; the manager throttles sends and fires out of combat / in range.
 			if K.Inspect and K.Inspect.Request then
 				K.Inspect:Request(unit, nil, true)
 			end
@@ -275,9 +267,7 @@ repaintGuid = function(guid)
 	end
 end
 
--- Inspect replies: read the inspected tabs while the data window is open,
--- store the spec by GUID (cross-realm BGs reuse names, GUIDs do not), then
--- repaint whichever frame shows that unit.
+-- Inspect replies: read inspected tabs, store spec by GUID (cross-realm names collide), repaint that frame.
 if K.Inspect and K.Inspect.RegisterTalentCallback then
 	K.Inspect:RegisterTalentCallback(function(guid)
 		local spec = dominantTree(true)

@@ -13,9 +13,7 @@ local function CropPortrait(element)
 	element:SetTexCoord(0.15, 0.85, 0.15, 0.85)
 end
 
--- side is "left" or "right", relative to the unit frame. Standalone units get
--- their square width set later from the real frame height, header children
--- (party) have no such pass, so they pass an explicit width here.
+-- side ("left"/"right") relative to the frame; standalone units set square width from real height, header children pass theirs.
 function Build.Portrait(self, side, width)
 	if not C.Unitframe.Portrait then
 		return

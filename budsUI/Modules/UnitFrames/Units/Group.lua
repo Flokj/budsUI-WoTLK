@@ -7,9 +7,7 @@ local Build = Module.Build
 
 local UnitPowerType = UnitPowerType
 
--- Anchor the raid health bar: it fills from the top down to the power bar
--- when power is shown, or to the frame bottom when it is not, so a hidden
--- power bar never leaves a dead gap.
+-- Anchor raid health: fills down to the power bar when shown, else to the frame bottom.
 local function RaidHealthFill(self, powerShown)
 	local health, power = self.Health, self.Power
 	local gap = self.__raidGap or 0
@@ -25,9 +23,7 @@ local function RaidHealthFill(self, powerShown)
 	end
 end
 
--- Mana-only mode: show the power bar for mana users and let health fill for
--- the rest. Fires from oUF's power PostUpdate, so it tracks form and unit
--- changes. Power type 0 is mana.
+-- Mana-only mode: power shows for mana users (type 0), health fills the rest; driven by power PostUpdate.
 local function ManaPowerPostUpdate(power, unit, cur, max)
 	local self = power.__owner
 	if not self then

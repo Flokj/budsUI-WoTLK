@@ -1,32 +1,5 @@
---[[
-# Element: Threat Indicator
-
-Handles the visibility and updating of an indicator based on the unit's current threat level.
-
-## Widget
-
-ThreatIndicator - A `Texture` used to display the current threat level.
-The element works by changing the texture's vertex color.
-
-## Notes
-
-A default texture will be applied if the widget is a Texture and doesn't have a texture or a color set.
-
-## Options
-
-.feedbackUnit - The unit whose threat situation is being requested. If defined, it'll be passed as the first argument to
-                [GetThreatStatusColor](http://wowprogramming.com/docs/api/UnitThreatSituation).
-
-## Examples
-
-    -- Position and size
-    local ThreatIndicator = self:CreateTexture(nil, 'OVERLAY')
-    ThreatIndicator:SetSize(16, 16)
-    ThreatIndicator:SetPoint('TOPRIGHT', self)
-
-    -- Register it with oUF
-    self.ThreatIndicator = ThreatIndicator
---]]
+--[[ # Element: Threat Indicator
+Handles indicator visibility and updating based on the unit's current threat level. ]]
 
 local _, ns = ...
 local oUF = ns.oUF
@@ -40,12 +13,7 @@ local function Update(self, event, unit)
 	if(unit ~= self.unit) then return end
 
 	local element = self.ThreatIndicator
-	--[[ Callback: ThreatIndicator:PreUpdate(unit)
-	Called before the element has been updated.
-
-	* self - the ThreatIndicator element
-	* unit - the unit for which the update has been triggered (string)
-	--]]
+	-- Callback: ThreatIndicator:PreUpdate(unit) - called before the element is updated
 	if(element.PreUpdate) then element:PreUpdate(unit) end
 
 	local feedbackUnit = element.feedbackUnit
@@ -75,29 +43,14 @@ local function Update(self, event, unit)
 		element:Hide()
 	end
 
-	--[[ Callback: ThreatIndicator:PostUpdate(unit, status, r, g, b)
-	Called after the element has been updated.
-
-	* self   - the ThreatIndicator element
-	* unit   - the unit for which the update has been triggered (string)
-	* status - the unit's threat status (see [UnitThreatSituation](https://warcraft.wiki.gg/wiki/API_UnitThreatSituation))
-	* r      - the red color component based on the unit's threat status (number?)[0-1]
-	* g      - the green color component based on the unit's threat status (number?)[0-1]
-	* b      - the blue color component based on the unit's threat status (number?)[0-1]
-	--]]
+	-- Callback: ThreatIndicator:PostUpdate(unit, status, r, g, b) - called after the element is updated
 	if(element.PostUpdate) then
 		return element:PostUpdate(unit, status, r, g, b)
 	end
 end
 
 local function Path(self, ...)
-	--[[ Override: ThreatIndicator.Override(self, event, ...)
-	Used to completely override the internal update function.
-
-	* self  - the parent object
-	* event - the event triggering the update (string)
-	* ...   - the arguments accompanying the event
-	--]]
+	-- Override: ThreatIndicator.Override(self, event, ...) - override the internal update function
 	return (self.ThreatIndicator.Override or Update) (self, ...)
 end
 

@@ -17,25 +17,18 @@ local function NewText(parent, size)
 end
 Module.NewText = NewText
 
--- A centered label on a shade strip that spans the anchor's width and sits
--- just above it. Shared by the name (over the health bar) and the level
--- (over the portrait) so both are laid out and sized identically. Returns
--- the font string, the strip is attached as text.BG.
+-- Centered label on a shade strip spanning the anchor's width, just above it.
+-- Shared by name (health) and level (portrait); strip attaches as text.BG.
 function Module.GradientLabel(self, anchor, size, yOffset)
 	size = size or 12
 
-	-- The holder always exists, even with the strip itself transparent: the
-	-- upward stack (debuffs and friends) anchors to it, so their position
-	-- derives from the bar geometry in both modes. Anchoring to the bare
-	-- font string instead collapses the rect while the name is empty and
-	-- glues everything above it straight onto the name text.
+	-- The holder always exists (even transparent): the upward stack anchors to it,
+	-- so their position derives from the bar geometry instead of the bare font string.
 	local shade = K.CreateTextShade(self, "BACKGROUND", -2)
 	local height = size + 6
 	local bottom = (yOffset or 6) - 3
 
-	-- Span the anchor width and sit above it at a fixed height. Sizing from
-	-- the name fontstring instead collapsed the strip to nothing on any frame
-	-- whose name had not populated yet.
+	-- Span the anchor width at a fixed height; sizing from the name fontstring collapsed when empty.
 	local holder = shade.Holder
 	holder:SetPoint("LEFT", anchor, "LEFT", 0, 0)
 	holder:SetPoint("RIGHT", anchor, "RIGHT", 0, 0)
@@ -49,9 +42,7 @@ function Module.GradientLabel(self, anchor, size, yOffset)
 	end
 	shade:Show()
 
-	-- The text lives on the holder, not on the unit frame: the holder is a
-	-- child frame, and child frames always draw above their parent's own
-	-- regions, so a parented-to-self label would end up under the strip.
+	-- Text lives on the holder (a child frame draws above its parent), else it ends up under the strip.
 	local text = NewText(holder, size)
 	text:SetJustifyH("CENTER")
 	text:SetPoint("BOTTOM", anchor, "TOP", 0, yOffset or 6)
@@ -60,9 +51,7 @@ function Module.GradientLabel(self, anchor, size, yOffset)
 	return text
 end
 
--- ---------------------------------------------------------------------------
 -- Name
--- ---------------------------------------------------------------------------
 
 -- Name above the health bar. Pushed onto the upward stack so it always sits
 -- directly on top of health with nothing overlapping it.
@@ -80,9 +69,7 @@ function Build.Name(self, size, withLevel)
 	return name
 end
 
--- Name on the health bar itself. Group and companion frames use this: they
--- are laid out by a header or packed tight, so nothing may spill outside the
--- frame.
+-- Name on the health bar (group/companion frames): nothing may spill outside the frame.
 function Build.NameCenter(self, size, yOffset, tag, rightPad)
 	local name = NewText(self.Health, size or 11)
 	name:SetJustifyH(rightPad and "LEFT" or "CENTER")
@@ -93,9 +80,7 @@ function Build.NameCenter(self, size, yOffset, tag, rightPad)
 	return name
 end
 
--- ---------------------------------------------------------------------------
 -- Bar values
--- ---------------------------------------------------------------------------
 
 local function HealthColorHex(pct)
 	local r, g, b
@@ -111,9 +96,7 @@ local function HealthColorHex(pct)
 	return K.RGBToHex(r, g, b)
 end
 
--- Main units read as the current value, with the threshold-coloured percent
--- appended past full health. Everyone else (pet, boss, focustarget, ...) gets
--- just the coloured percent, like KkthnxUI.
+-- Main units show value + threshold-coloured percent; others just the coloured percent (KkthnxUI style).
 local function IsMainUnit(unit)
 	return unit == "player" or unit == "target" or unit == "focus" or (unit and unit:sub(1, 5) == "party")
 end

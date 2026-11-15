@@ -7,17 +7,13 @@ local Build = Module.Build
 
 local CreateFrame = CreateFrame
 
--- Blizzard's own cast colour language, tuned to sit in our palette: a warm
--- gold for a normal cast, silver grey for one you cannot interrupt (paired
--- with the shield), and red when a cast is interrupted or fails.
+-- Cast colours: gold normal, silver uninterruptible, red on interrupt/fail.
 local CAST_COLOR = { 0.85, 0.65, 0.13 } -- normal (gold / yellow)
 local NOINTERRUPT_COLOR = { 0.6, 0.6, 0.65 } -- cannot interrupt (silver)
 local FAIL_COLOR = { 0.85, 0.25, 0.25 } -- interrupted / failed (red)
 local TICK_COLOR = { 0, 0, 0, 0.4 } -- channel tick marks
 
--- Channeled spells and their tick counts (3.3.5, cf. ElvUI-7 ChannelTicks).
--- Keyed by spell ID here, resolved to localized names below since oUF only
--- hands us the spell name on channel start.
+-- Channeled spell tick counts (3.3.5, cf. ElvUI-7 ChannelTicks); resolved to localized names below.
 local CHANNEL_TICKS_BY_ID = {
 	-- Warlock
 	[1120] = 5, -- Drain Soul
@@ -96,9 +92,7 @@ local function ShowChannelTicks(cast)
 	end
 end
 
--- ---------------------------------------------------------------------------
 -- Callbacks
--- ---------------------------------------------------------------------------
 
 -- Colour the whole bar by interruptibility and drive the shield.
 local function OnCastStart(self, unit)
@@ -150,13 +144,9 @@ local function CustomDelayText(self, duration)
 	self.Time:SetFormattedText("%.1f|cffff5555%s%.1f|r", duration, self.channeling and "-" or "+", self.delay)
 end
 
--- ---------------------------------------------------------------------------
 -- Construction
--- ---------------------------------------------------------------------------
 
--- Parented to the bar rather than the holder so oUF hiding the bar takes the
--- icon with it. Sticking out past the bar's edge is fine, children are not
--- clipped to their parent.
+-- Parented to the bar so hiding it takes the icon along; children are never clipped.
 local function AddIcon(cast, size, side)
 	local holder = CreateFrame("Frame", nil, cast)
 	holder:SetSize(size, size)
@@ -178,11 +168,7 @@ local function AddIcon(cast, size, side)
 	return holder
 end
 
--- opts:
---   width, height   bar size
---   iconSide        "left" (default) or "right"
---   latency         show the latency safe zone (player only)
---   parent          frame the bar lives on, defaults to the unit frame
+-- opts: width/height (bar size), iconSide ("left"/"right"), latency safe zone, parent frame.
 local function CreateBar(self, opts)
 	local db = C.Unitframe.Castbar
 	local parent = opts.parent or self
@@ -250,9 +236,7 @@ local function CreateBar(self, opts)
 	return cast
 end
 
--- A free floating castbar: the bar and its icon live inside a holder parented
--- to UIParent, which is what the mover grabs. Detaching from the unit frame
--- also means the bar keeps its own alpha and visibility.
+-- Floating castbar: bar + icon live in a UIParent holder (what the mover grabs); keeps own alpha/visibility.
 function Build.DetachedCastbar(self, key, label, width, height, point, iconSide)
 	local db = C.Unitframe.Castbar
 	if not db.Enable then
@@ -279,12 +263,8 @@ function Build.DetachedCastbar(self, key, label, width, height, point, iconSide)
 
 	cast.Holder = holder
 
-	-- Drop a target mid cast and no stop event ever arrives, because the unit
-	-- is simply gone rather than finishing or being interrupted. The bar's
-	-- OnUpdate would keep running with the cast still flagged in progress, and
-	-- a detached bar sits on UIParent where nothing hides it, ticking forever.
-	-- Hiding the bar stops that OnUpdate dead; the next cast start shows it
-	-- again.
+	-- Dropping a target mid cast never fires a stop event, so a detached bar's OnUpdate
+	-- would tick forever; hiding it with the frame stops that dead (next cast shows it).
 	self:HookScript("OnHide", function()
 		cast:Hide()
 	end)

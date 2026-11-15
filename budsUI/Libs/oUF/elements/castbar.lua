@@ -1,89 +1,4 @@
---[[
-# Element: Castbar
-
-Handles the visibility and updating of spell castbars.
-
-## Widget
-
-Castbar - A `StatusBar` to represent spell cast/channel progress.
-
-## Sub-Widgets
-
-.Icon     - A `Texture` to represent spell icon.
-.SafeZone - A `Texture` to represent latency.
-.Shield   - A `Texture` to represent if it's possible to interrupt or spell steal.
-.Spark    - A `Texture` to represent the castbar's edge.
-.Text     - A `FontString` to represent spell name.
-.Time     - A `FontString` to represent spell duration.
-
-## Notes
-
-A default texture will be applied to the StatusBar and Texture widgets if they don't have a texture or a color set.
-
-## Options
-
-.timeToHold      - Indicates for how many seconds the castbar should be visible after a _FAILED or _INTERRUPTED
-                   event. Defaults to 0 (number)
-.hideTradeSkills - Makes the element ignore casts related to crafting professions (boolean)
-
-## Attributes
-
-.castID           - A globally unique identifier of the currently cast spell (string?)
-.casting          - Indicates whether the current spell is an ordinary cast (boolean)
-.channeling       - Indicates whether the current spell is a channeled cast (boolean)
-.notInterruptible - Indicates whether the current spell is interruptible (boolean)
-
-## Examples
-
-    -- Position and size
-    local Castbar = CreateFrame('StatusBar', nil, self)
-    Castbar:SetSize(20, 20)
-    Castbar:SetPoint('TOP')
-    Castbar:SetPoint('LEFT')
-    Castbar:SetPoint('RIGHT')
-
-    -- Add a background
-    local Background = Castbar:CreateTexture(nil, 'BACKGROUND')
-    Background:SetAllPoints(Castbar)
-    Background:SetTexture(1, 1, 1, .5)
-
-    -- Add a spark
-    local Spark = Castbar:CreateTexture(nil, 'OVERLAY')
-    Spark:SetSize(20, 20)
-    Spark:SetBlendMode('ADD')
-    Spark:SetPoint('CENTER', Castbar:GetStatusBarTexture(), 'RIGHT', 0, 0)
-
-    -- Add a timer
-    local Time = Castbar:CreateFontString(nil, 'OVERLAY', 'GameFontNormalSmall')
-    Time:SetPoint('RIGHT', Castbar)
-
-    -- Add spell text
-    local Text = Castbar:CreateFontString(nil, 'OVERLAY', 'GameFontNormalSmall')
-    Text:SetPoint('LEFT', Castbar)
-
-    -- Add spell icon
-    local Icon = Castbar:CreateTexture(nil, 'OVERLAY')
-    Icon:SetSize(20, 20)
-    Icon:SetPoint('TOPLEFT', Castbar, 'TOPLEFT')
-
-    -- Add Shield
-    local Shield = Castbar:CreateTexture(nil, 'OVERLAY')
-    Shield:SetSize(20, 20)
-    Shield:SetPoint('CENTER', Castbar)
-
-    -- Add safezone
-    local SafeZone = Castbar:CreateTexture(nil, 'OVERLAY')
-
-    -- Register it with oUF
-    Castbar.bg = Background
-    Castbar.Spark = Spark
-    Castbar.Time = Time
-    Castbar.Text = Text
-    Castbar.Icon = Icon
-    Castbar.Shield = Shield
-    Castbar.SafeZone = SafeZone
-    self.Castbar = Castbar
---]]
+--[[ Element: Castbar - handles the visibility and updating of spell castbars. ]]
 
 local _, ns = ...
 local oUF = ns.oUF
@@ -191,12 +106,7 @@ local function CastStart(self, event, unit)
 		safeZone[isHoriz and 'SetWidth' or 'SetHeight'](safeZone, element[isHoriz and 'GetWidth' or 'GetHeight'](element) * ratio)
 	end
 
-	--[[ Callback: Castbar:PostCastStart(unit)
-	Called after the element has been updated upon a spell cast start.
-
-	* self - the Castbar widget
-	* unit - the unit for which the update has been triggered (string)
-	--]]
+	--[[ Callback: Castbar:PostCastStart(unit) - called after the element has been updated upon a spell cast start. --]]
 	if(element.PostCastStart) then
 		element:PostCastStart(unit)
 	end
@@ -246,12 +156,7 @@ local function CastUpdate(self, event, unit, _, _, castID)
 	element:SetMinMaxValues(0, element.max)
 	element:SetValue(element.duration)
 
-	--[[ Callback: Castbar:PostCastUpdate(unit)
-	Called after the element has been updated when a spell cast has been updated.
-
-	* self - the Castbar widget
-	* unit - the unit that the update has been triggered (string)
-	--]]
+	--[[ Callback: Castbar:PostCastUpdate(unit) - called after the element has been updated when a cast has been updated. --]]
 	if(element.PostCastUpdate) then
 		return element:PostCastUpdate(unit)
 	end
@@ -275,12 +180,7 @@ local function CastStop(self, event, unit, _, _, castID)
 
 	resetAttributes(element)
 
-	--[[ Callback: Castbar:PostCastStop(unit)
-	Called after the element has been updated when a spell cast has stopped.
-
-	* self    - the Castbar widget
-	* unit    - the unit for which the update has been triggered (string)
-	--]]
+	--[[ Callback: Castbar:PostCastStop(unit) - called after the element has been updated when a cast has stopped. --]]
 	if(element.PostCastStop) then
 		return element:PostCastStop(unit)
 	end
@@ -312,12 +212,7 @@ local function CastFail(self, event, unit, _, _, castID)
 	resetAttributes(element)
 	element:SetValue(element.max)
 
-	--[[ Callback: Castbar:PostCastFail(unit)
-	Called after the element has been updated upon a failed spell cast.
-
-	* self    - the Castbar widget
-	* unit    - the unit for which the update has been triggered (string)
-	--]]
+	--[[ Callback: Castbar:PostCastFail(unit) - called after the element has been updated upon a failed spell cast. --]]
 	if(element.PostCastFail) then
 		return element:PostCastFail(unit)
 	end
@@ -333,12 +228,7 @@ local function CastInterruptible(self, event, unit)
 
 	if(element.Shield) then if element.notInterruptible then element.Shield:Show() end end
 
-	--[[ Callback: Castbar:PostCastInterruptible(unit)
-	Called after the element has been updated when a spell cast has become interruptible or uninterruptible.
-
-	* self - the Castbar widget
-	* unit - the unit for which the update has been triggered (string)
-	--]]
+	--[[ Callback: Castbar:PostCastInterruptible(unit) - called after the element has been updated when a cast becomes (un)interruptible. --]]
 	if(element.PostCastInterruptible) then
 		return element:PostCastInterruptible(unit)
 	end

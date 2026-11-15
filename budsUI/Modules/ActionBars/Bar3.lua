@@ -19,9 +19,8 @@ MultiBarLeft:SetParent(bar)
 
 for i = 1, 12 do
 	local b = _G["MultiBarLeftButton"..i]
-	-- NOTE: do not reparent the buttons themselves (3.3.5 resolves their
-	-- action slots via the direct parent, they mirror the main bar);
-	-- moving/hiding propagates through MultiBarLeft -> holder anyway.
+	-- NOTE: do not reparent the buttons (3.3.5 resolves slots via the direct
+	-- parent); moving/hiding propagates through MultiBarLeft -> holder anyway.
 	b:ClearAllPoints()
 	local x, y = square(i)
 	b:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", x + (TOTALSIZE * 1.5), y)

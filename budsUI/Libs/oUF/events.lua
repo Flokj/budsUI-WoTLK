@@ -82,21 +82,9 @@ local event_metatable = {
 	end,
 }
 
---[[ Events: frame:RegisterEvent(event, func, unitless)
-Used to register a frame for a game event and add an event handler. OnUpdate polled frames are prevented from
-registering events.
-
-* self     - frame that will be registered for the given event.
-* event    - name of the event to register (string)
-* func     - a function that will be executed when the event fires. Multiple functions can be added for the same frame
-             and event (function)
-* unitless - indicates that the event does not fire for a specific unit, so the event arguments won't be
-             matched to the frame unit(s). Obligatory for unitless event (boolean)
---]]
+--[[ Events: frame:RegisterEvent(event, func, unitless) - register a game event handler on the frame. --]]
 function frame_metatable.__index:RegisterEvent(event, func, unitless)
-	-- Block OnUpdate polled frames from registering events except for
-	-- UNIT_PORTRAIT_UPDATE and UNIT_MODEL_CHANGED which are used for
-	-- portrait updates.
+	-- Eventless frames may only register the portrait-update events.
 	if(self.__eventless and event ~= 'UNIT_PORTRAIT_UPDATE' and event ~= 'UNIT_MODEL_CHANGED') then return end
 
 	argcheck(event, 2, 'string')
@@ -154,14 +142,7 @@ function frame_metatable.__index:RegisterEvent(event, func, unitless)
 	end
 end
 
---[[ Events: frame:UnregisterEvent(event, func)
-Used to remove a function from the event handler list for a game event.
-
-* self  - the frame registered for the event
-* event - name of the registered event (string)
-* func  - function to be removed from the list of event handlers. If this is the only handler for the given event, then
-          the frame will be unregistered for the event (function)
---]]
+--[[ Events: frame:UnregisterEvent(event, func) - remove a game event handler from the frame. --]]
 function frame_metatable.__index:UnregisterEvent(event, func)
 	argcheck(event, 2, 'string')
 

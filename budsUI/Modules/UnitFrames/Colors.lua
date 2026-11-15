@@ -30,9 +30,7 @@ local CLASS = {
 K.ClassColors = CLASS
 
 local function MakeColor(c)
-	-- Numeric indices: the oUF core reads colours as t[1..3]. Named fields
-	-- plus methods: our own border/tag code uses :GetRGB() and
-	-- :GenerateHexColorMarkup().
+	-- Numeric indices (t[1..3], oUF) + named fields/methods (:GetRGB, :GenerateHexColorMarkup).
 	return {
 		c[1], c[2], c[3],
 		r = c[1], g = c[2], b = c[3],

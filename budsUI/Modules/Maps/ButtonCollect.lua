@@ -1,12 +1,7 @@
 local K, C, L, _ = select(2, ...):unpack()
 if C.Minimap.Enable ~= true or C.Minimap.CollectButtons ~= true then return end
 
--- ═══════════════════════════════════════════════════════════════
---  Minimap button collector — FrostAtomUI-style:
---    • toggle arrow on the LEFT edge of the minimap
---    • panel with collected buttons tucked to the LEFT of minimap
---    • buttons arranged in a 4-column grid
--- ═══════════════════════════════════════════════════════════════
+-- ===== Minimap button collector (FrostAtomUI-style): toggle arrow on the left edge, panel with collected buttons, 4-column grid =====
 
 local unpack = unpack
 local ipairs = ipairs

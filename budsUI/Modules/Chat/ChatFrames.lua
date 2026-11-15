@@ -59,9 +59,8 @@ local function AddMessage(frame, str, ...)
 	str = str:gsub("<"..DND..">", "[|cffE7E716"..L_CHAT_DND.."|r] ")
 	str = str:gsub("%[BN_CONVERSATION:", "%[1".."")
 	str = str:gsub("^%["..RAID_WARNING.."%]", "["..L_CHAT_RAID_WARNING.."]")
-	-- Chat timestamps, same formats as KkthnxUI (1 = disabled, picked in /buds -> Chat)
-	-- Skip blank lines (e.g. bursts of empty service messages on spec swap):
-	-- they were invisible before, stamping them would spam visible timestamps.
+	-- Chat timestamps, same formats as KkthnxUI (1 = disabled, picked in /buds -> Chat).
+	-- Skip blank lines: invisible before, stamping them would spam timestamps.
 	local visible = str:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|H.-|h", ""):gsub("|h", "")
 	local fmt = C.Chat.TimestampFormat
 	if fmt and fmt > 1 and timestampFormats[fmt] and not visible:match("^%s*$") then
@@ -380,10 +379,8 @@ local function SetupChatPosAndFont(self)
 		local id = chat:GetID()
 		local _, fontSize = FCF_GetChatWindowInfo(id)
 
-		-- No FCF_SetChatWindowFontSize here: it is a secure chat-dock API,
-		-- and calling it from addon context at login taints ChatFrame1 / the
-		-- dock for the whole session (FrostAtomUI never calls it at init).
-		-- The SetFont below styles the same frames via the frame API only.
+		-- No FCF_SetChatWindowFontSize: it is a secure chat-dock API that taints
+		-- ChatFrame1 at login; the SetFont below styles the same frames via frame API.
 
 		if C.Chat.Outline == true then
 			chat:SetFont(C.Media.Font, fontSize, C.Media.Font_Style)
@@ -417,10 +414,8 @@ UIChat:SetScript("OnEvent", function(self, event, addon)
 		if addon == "Blizzard_CombatLog" then
 			self:UnregisterEvent("ADDON_LOADED")
 			if InCombatLockdown() then
-				-- ChatFrame styling calls secure dock/frame APIs (SetSize,
-				-- FCF_SetChatWindowFontSize, FCF_DockFrame); running them during
-				-- combat lockdown taints the chat dock, so every in-combat
-				-- FCFDock_UpdateTabs -> ChatFrame1:Show() gets blocked.
+				-- ChatFrame styling calls secure dock/frame APIs; running them during
+				-- lockdown taints the dock, so in-combat FCFDock_UpdateTabs -> ChatFrame1:Show() gets blocked.
 				self.__pendingStyle = true
 				self:RegisterEvent("PLAYER_REGEN_ENABLED")
 			else

@@ -28,12 +28,8 @@ local function CreateBox(parent, height)
 end
 Module.CreateBox = CreateBox
 
--- ---------------------------------------------------------------------------
 -- Bar shading
--- ---------------------------------------------------------------------------
--- Backdrop tint: the empty part of the bar tinted to a dark version of the
--- fill colour, so an almost dead target still reads as its class. Run from
--- the bar's PostUpdateColor so it always sees the colour oUF just applied.
+-- Backdrop tint: empty bar part tinted dark like the fill; runs from PostUpdateColor.
 local BACKDROP_TINT = 0.22
 local BACKDROP_ALPHA = 0.9
 
@@ -69,14 +65,10 @@ local function AddShading(bar)
 	return false
 end
 
--- ---------------------------------------------------------------------------
 -- Health
--- ---------------------------------------------------------------------------
 
--- Incoming heals + absorb shields ride on top of the health fill as three
--- narrow segments (own heals, other heals, absorbs) walking right from the
--- fill edge. State lives in Module.HealPrediction; this file only refreshes
--- the bar it owns from the health bar's own PostUpdate.
+-- Incoming heals + absorbs ride over the health fill as own/other/absorb segments.
+-- State lives in Module.HealPrediction; this file only refreshes from the bar's PostUpdate.
 local function RefreshPrediction(health, unit)
 	if not health.prediction then
 		return
@@ -93,12 +85,8 @@ local function RefreshPrediction(health, unit)
 	HealPrediction.Refresh(health, guid, unit, C.Unitframe.HealthPrediction, C.Unitframe.AbsorbShields)
 end
 
--- ---------------------------------------------------------------------------
 -- Health border colour
--- ---------------------------------------------------------------------------
--- Threat and the class colour option both want to own the health border, so
--- neither touches it directly. They set a field and call through here, and
--- this decides: dispel first, then threat, then class, then default.
+-- Threat and class colour own it via fields, decided here: dispel > threat > class > default.
 local function UnitBorderColor(frame, unit)
 	local colors = frame.colors
 	if not colors then
@@ -144,9 +132,7 @@ function Module.RefreshHealthBorder(self)
 	end
 end
 
--- Enemy fill override, run after oUF's own colouring. Players and friendly
--- units keep the colour oUF gave them. Enemies get a threat colour when that
--- option is on, and a solid hostile colour otherwise.
+-- Enemy fill override after oUF: players/friendlies keep oUF's colour; enemies get threat or hostile colour.
 local function ColorEnemyFill(element, unit)
 	if UnitIsPlayer(unit) then
 		return
@@ -224,14 +210,10 @@ function Build.Health(self, height)
 	return health
 end
 
--- ---------------------------------------------------------------------------
 -- Power
--- ---------------------------------------------------------------------------
 
--- gap lets compact frames (raid) sit the power bar tight under health instead
--- of using the standard detached gap. pinBottom anchors the bar to the
--- frame's bottom edge instead of below health, so the caller can let health
--- fill the space above (used by raid so hiding power expands health).
+-- gap: compact frames sit power tight under health; pinBottom anchors the bar to
+-- the frame bottom instead of below health (raid, so hiding power expands health).
 function Build.Power(self, height, gap, pinBottom)
 	if not height or height <= 0 then
 		return
@@ -267,12 +249,8 @@ function Build.Power(self, height, gap, pinBottom)
 	return power
 end
 
--- ---------------------------------------------------------------------------
 -- Additional power (druid mana while shapeshifted)
--- ---------------------------------------------------------------------------
--- A thin strip along the bottom of the health bar, driven by classic oUF's
--- AdditionalPower element. Overlaying keeps the frame height stable whether
--- or not the player is in a form that shows it.
+-- Thin strip along the health bottom via oUF's AdditionalPower; overlay keeps height stable.
 function Build.AdditionalPower(self)
 	if select(2, UnitClass("player")) ~= "DRUID" then
 		return
@@ -294,11 +272,8 @@ function Build.AdditionalPower(self)
 	return bar
 end
 
--- ---------------------------------------------------------------------------
 -- Alternative power (boss encounter bars)
--- ---------------------------------------------------------------------------
--- 3.3.5 has no encounter alternate-power API, so this is a no-op kept so the
--- boss style reads unchanged.
+-- 3.3.5 has no alternate-power API; a no-op so the boss style reads unchanged.
 function Build.AlternativePower(self)
 	return nil
 end

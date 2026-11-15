@@ -10,12 +10,8 @@ do
 	MainMenuBar:EnableMouse(false)
 	VehicleMenuBar:SetScale(0.00001)
 
-	-- Vehicle leave updater: the button is a MainMenuBar child (hidden above,
-	-- scale 0.00001), so this updater is pure noise - and it is the ROOT of
-	-- the blocked-action chain: MainMenuBarVehicleLeaveButton_Update ->
-	-- UIParent_ManageFramePositions -> FCF_DockUpdate -> FCFDock_UpdateTabs ->
-	-- ChatFrame1:Show() (the per-session ChatFrame blocks in the taint logs).
-	-- FrostAtomUI neutralizes it the same way (HideBlizzard.lua:189).
+	-- Vehicle leave updater is pure noise (button hidden at 0.00001 scale) and the
+	-- root of the blocked ChatFrame1:Show() chain; neutralize it like FrostAtomUI.
 	MainMenuBarVehicleLeaveButton_Update = K.Noop
 
 	PetActionBarFrame:EnableMouse(false)

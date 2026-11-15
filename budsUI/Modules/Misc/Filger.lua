@@ -55,11 +55,8 @@ T_DE_BUFF_BAR_Anchor:SetSize(C.Filger.BuffsSize, C.Filger.BuffsSize)
 local Filger = {}
 local MyUnits = {player = true, vehicle = true, pet = true}
 
--- 3.3.5 fix: UnitBuff/UnitDebuff(unit, name) returns the FIRST aura with that
--- name and ignores the caster. When several raidmates share identical DoTs on
--- one target, that first match is often a raidmate's copy, so the OnEvent
--- caster check (caster == data.caster / MyUnits[caster]) fails and the
--- player's own DoT never shows. Scan by index and prefer the wanted caster.
+-- 3.3.5 fix: UnitBuff/UnitDebuff(unit, name) returns the FIRST aura, ignoring caster,
+-- so a raidmate's DoT can shadow the player's; scan by index and prefer the wanted caster.
 local function IsPreferredCaster(unitCaster, wantCaster)
 	if MyUnits[unitCaster] then
 		return true
@@ -86,9 +83,7 @@ end
 
 function Filger:UnitBuff(unitID, inSpellID, spn, absID, wantCaster)
 	if not spn then return nil end
-	-- NOTE (3.3.5): UnitBuff(unit, i) returns only 10 values (spellID is always
-	-- nil), so the scan is keyed on the resolved name (spn) only. inSpellID /
-	-- absID are kept in the signature for caller compatibility.
+	-- NOTE (3.3.5): UnitBuff(unit, i) returns only 10 values (spellID always nil); scan on the resolved name only.
 	local fbName, fbRank, fbIcon, fbCount, fbDebuffType, fbDuration, fbExpirationTime, fbUnitCaster, fbIsStealable, fbShouldConsolidate, fbSpellID
 	local foundFallback = false
 	for i = 1, 40 do
@@ -111,9 +106,7 @@ end
 
 function Filger:UnitDebuff(unitID, inSpellID, spn, absID, wantCaster)
 	if not spn then return nil end
-	-- NOTE (3.3.5): UnitDebuff(unit, i) returns only 10 values (spellID is always
-	-- nil), so the scan is keyed on the resolved name (spn) only. inSpellID /
-	-- absID are kept in the signature for caller compatibility.
+	-- NOTE (3.3.5): UnitDebuff(unit, i) returns only 10 values (spellID always nil); scan on the resolved name only.
 	local fbName, fbRank, fbIcon, fbCount, fbDebuffType, fbDuration, fbExpirationTime, fbUnitCaster, fbIsStealable, fbShouldConsolidate, fbSpellID
 	local foundFallback = false
 	for i = 1, 40 do

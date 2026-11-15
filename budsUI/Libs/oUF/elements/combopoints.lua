@@ -1,32 +1,5 @@
---[[
-# Element: ComboPoints
-
-Handles the visibility and updating of the player's combo points.
-
-## Widget
-
-ComboPoints - An `table` consisting of as many Textures as the theoretical maximum return of [GetComboPoints](http://wowprogramming.com/docs/api/GetComboPoints).
-
-## Notes
-
-A default texture will be applied if the widget is a Texture and doesn't have a texture or a color set.
-
-## Examples
-
-    local ComboPoints = {}
-    for index = 1, 10 do
-        local Bar = CreateFrame('StatusBar', nil, self)
-
-        -- Position and size.
-        Bar:SetSize(16, 16)
-        Bar:SetPoint('TOPLEFT', self, 'BOTTOMLEFT', (index - 1) * Bar:GetWidth(), 0)
-
-        ComboPoints[index] = Bar
-    end
-
-    -- Register with oUF
-    self.ComboPoints = ComboPoints
---]]
+--[[ # Element: ComboPoints
+Handles the visibility and updating of the player's combo points. ]]
 
 local _, ns = ...
 local oUF = ns.oUF
@@ -41,11 +14,7 @@ local function Update(self, event, unit)
 
 	local element = self.ComboPoints
 
-	--[[ Callback: ComboPoints:PreUpdate()
-	Called before the element has been updated.
-
-	* self - the ComboPoints element
-	--]]
+	-- Callback: ComboPoints:PreUpdate() - called before the element is updated
 	if(element.PreUpdate) then
 		element:PreUpdate()
 	end
@@ -65,25 +34,14 @@ local function Update(self, event, unit)
 		end
 	end
 
-	--[[ Callback: ComboPoints:PostUpdate(role)
-	Called after the element has been updated.
-
-	* self   - the ComboPoints element
-	* cpoint - the current amount of combo points (number)
-	--]]
+	-- Callback: ComboPoints:PostUpdate(cp) - called after the element is updated
 	if(element.PostUpdate) then
 		return element:PostUpdate(cp)
 	end
 end
 
 local function Path(self, ...)
-	--[[ Override: ComboPoints.Override(self, event, ...)
-	Used to completely override the internal update function.
-
-	* self  - the parent object
-	* event - the event triggering the update (string)
-	* ...   - the arguments accompanying the event
-	--]]
+	-- Override: ComboPoints.Override(self, event, ...) - override the internal update function
 	return (self.ComboPoints.Override or Update) (self, ...)
 end
 

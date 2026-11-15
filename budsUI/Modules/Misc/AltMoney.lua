@@ -18,9 +18,7 @@ local function IsEnabled()
 	return C.Bag ~= nil and C.Bag.AltMoney == true
 end
 
--- ---------------------------------------------------------------------------
--- Storage: budsUIData.CharacterMoney[realm][name] = { copper, class }
--- ---------------------------------------------------------------------------
+-- ===== Storage: budsUIData.CharacterMoney[realm][name] = { copper, class } =====
 
 local function GetStore(create)
 	if type(budsUIData) ~= "table" then
@@ -36,9 +34,8 @@ local function GetStore(create)
 	return store
 end
 
--- A zero from PEW/LOGOUT is not trustworthy: on 3.3.5 cores the purse can still
--- be empty until the server sends it. Only a trusted call (PLAYER_MONEY, or the
--- bags tooltip where the amount is on screen) may lower a recorded amount.
+-- A zero from PEW/LOGOUT is untrustworthy (purse may be empty until the server sends
+-- it); only a trusted call (PLAYER_MONEY, bags tooltip) may lower a recorded amount.
 local function SaveMoney(trusted)
 	local store = GetStore(true)
 	if not store then return end
@@ -66,9 +63,7 @@ local function ForgetMoney(realm, name)
 	end
 end
 
--- ---------------------------------------------------------------------------
--- Formatting
--- ---------------------------------------------------------------------------
+-- ===== Formatting =====
 
 local function MoneyText(copper)
 	-- GetCoinTextureString exists on 3.3.5 but is missing on some private cores.
@@ -90,9 +85,7 @@ local function ClassColor(class)
 	return 1, 1, 1
 end
 
--- ---------------------------------------------------------------------------
--- Tooltip
--- ---------------------------------------------------------------------------
+-- ===== Tooltip =====
 
 local entries = {}
 
@@ -226,9 +219,7 @@ local function HookStuffingGold()
 	end)
 end
 
--- ---------------------------------------------------------------------------
--- Lifecycle
--- ---------------------------------------------------------------------------
+-- ===== Lifecycle =====
 
 K.SaveAltMoney = SaveMoney
 K.ForgetAltMoney = ForgetMoney

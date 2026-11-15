@@ -1,9 +1,5 @@
--- budsUI_Config :: budsUI_Config.lua (compat shim)
--- The old 1763-line monolith was split into modular FrostAtomUI_Config-style
--- architecture: Controls.lua (row creators), Core.lua (window, nav, search)
--- and Pages/*.lua (one schema file per option group).
--- This file only keeps backward compatibility for macros / keybinds that
--- call the legacy global. It loads last (see budsUI_Config.toc).
+-- budsUI_Config :: budsUI_Config.lua (compat shim) — legacy global kept for macros/keybinds.
+-- Monolith split into Controls.lua, Core.lua and Pages/*.lua; this file loads last (see .toc).
 
 local _, ns = ...
 

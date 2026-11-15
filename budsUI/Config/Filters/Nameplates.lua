@@ -2,11 +2,7 @@ local K, C, L, _ = select(2, ...):unpack()
 if C.Nameplate.Enable ~= true then return end
 
 local GetSpellInfo = GetSpellInfo
-----------------------------------------------------------------------------------------
---	The best way to add or delete spell is to go at http://wotlk.openwow.com search for a spell.
---	Example: Necrotic Plague> http://wotlk.openwow.com/spell=73787
---	Take the number ID at the end of the URL, and add it to the list
-----------------------------------------------------------------------------------------
+-- Add/remove spells by their ID from the spell URL (e.g. wotlk.openwow.com/spell=NNN).
 local function SpellName(id)
 	local name = GetSpellInfo(id)
 	if not name then

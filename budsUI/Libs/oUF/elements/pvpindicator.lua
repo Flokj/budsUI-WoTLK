@@ -1,26 +1,5 @@
---[[
-# Element: PvP Icon
-
-Handles the visibility and updating of an indicator based on the unit's PvP status.
-
-## Widget
-
-PvPIndicator - A `Texture` used to display faction, FFA PvP status icon.
-
-## Notes
-
-This element updates by changing the texture.
-
-## Examples
-
-    -- Position and size
-    local PvPIndicator = self:CreateTexture(nil, 'ARTWORK', nil, 1)
-    PvPIndicator:SetSize(30, 30)
-    PvPIndicator:SetPoint('RIGHT', self, 'LEFT')
-
-    -- Register it with oUF
-    self.PvPIndicator = PvPIndicator
---]]
+--[[ # Element: PvP Icon
+Handles indicator visibility and updating based on the unit's PvP status. ]]
 
 local _, ns = ...
 local oUF = ns.oUF
@@ -38,12 +17,7 @@ local function Update(self, event, unit)
 	local element = self.PvPIndicator
 	unit = unit or self.unit
 
-	--[[ Callback: PvPIndicator:PreUpdate(unit)
-	Called before the element has been updated.
-
-	* self - the PvPIndicator element
-	* unit - the unit for which the update has been triggered (string)
-	--]]
+	-- Callback: PvPIndicator:PreUpdate(unit) - called before the element is updated
 	if(element.PreUpdate) then
 		element:PreUpdate(unit)
 	end
@@ -67,27 +41,14 @@ local function Update(self, event, unit)
 		element:Hide()
 	end
 
-	--[[ Callback: PvPIndicator:PostUpdate(unit, status)
-	Called after the element has been updated.
-
-	* self          - the PvPIndicator element
-	* unit          - the unit for which the update has been triggered (string)
-	* status        - the unit's current PvP status or faction accounting for mercenary mode (string)['ffa', 'Alliance',
-	                  'Horde']
-	--]]
+	-- Callback: PvPIndicator:PostUpdate(unit, status) - called after the element is updated
 	if(element.PostUpdate) then
 		return element:PostUpdate(unit, status)
 	end
 end
 
 local function Path(self, ...)
-	--[[Override: PvPIndicator.Override(self, event, ...)
-	Used to completely override the internal update function.
-
-	* self  - the parent object
-	* event - the event triggering the update (string)
-	* ...   - the arguments accompanying the event
-	--]]
+	-- Override: PvPIndicator.Override(self, event, ...) - override the internal update function
 	return (self.PvPIndicator.Override or Update) (self, ...)
 end
 

@@ -1,11 +1,8 @@
 local K, C, L, _ = select(2, ...):unpack()
 if C.ThreatMeter.Enable ~= true then return end
 
--- budsUI Threat Meter (ported from the standalone Threath addon).
--- Shows the top threat holders on your current attackable target.
--- Styled with the budsUI panel look (backdrop + border) and moved
--- through the budsUI mover ("Threat Meter"). Runs on PLAYER_LOGIN so
--- Core (Movers/Border) is fully loaded (Misc modules load before it).
+-- budsUI Threat Meter (ported from Threath): top threat holders on your attackable
+-- target, budsUI panel look + mover; runs on PLAYER_LOGIN so Core (Movers/Border) is loaded.
 
 local tinsert, wipe = table.insert, wipe
 local select, pairs = select, pairs
@@ -25,9 +22,7 @@ local function Threat_Init()
 	local maxBars = C.ThreatMeter.MaxBars
 	local fontSize = C.ThreatMeter.FontSize
 
-	--------------------------------------------------
-	-- HOLDER (anchored to the budsUI mover)
-	--------------------------------------------------
+	-- ===== HOLDER (anchored to the budsUI mover) =====
 
 	local holder = CreateFrame("Frame", "budsUIThreatMeter", UIParent)
 	holder:SetSize(width, (height + spacing) * maxBars)
@@ -37,9 +32,7 @@ local function Threat_Init()
 		{ "TOPLEFT", UIParent, "BOTTOMRIGHT", -565, 113 },
 		width, (height + spacing) * maxBars)
 
-	--------------------------------------------------
-	-- DATA
-	--------------------------------------------------
+	-- ===== DATA =====
 
 	local bars, tList, barList = {}, {}, {}
 	local targeted = false
@@ -87,9 +80,7 @@ local function Threat_Init()
 		end
 	end
 
-	--------------------------------------------------
-	-- BAR CREATION (budsUI style: backdrop + border)
-	--------------------------------------------------
+	-- ===== BAR CREATION (budsUI style: backdrop + border) =====
 
 	local function CreateBar(index)
 		local bar = CreateFrame("StatusBar", nil, holder)
@@ -123,9 +114,7 @@ local function Threat_Init()
 		return bar
 	end
 
-	--------------------------------------------------
-	-- UPDATES
-	--------------------------------------------------
+	-- ===== UPDATES =====
 
 	local function SortMethod(a, b)
 		local ta, tb = tList[a], tList[b]
@@ -208,9 +197,7 @@ local function Threat_Init()
 		UpdateBars()
 	end
 
-	--------------------------------------------------
-	-- EVENTS
-	--------------------------------------------------
+	-- ===== EVENTS =====
 
 	local addon = CreateFrame("Frame")
 	addon:SetScript("OnEvent", function(_, event)

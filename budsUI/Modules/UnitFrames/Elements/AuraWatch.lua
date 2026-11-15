@@ -20,9 +20,7 @@ local CORNERS = {
 	CENTER = { "CENTER", 0, 0 },
 }
 
--- ---------------------------------------------------------------------------
 -- Corner widgets
--- ---------------------------------------------------------------------------
 
 -- Build one corner widget on demand: a dot plus a hidden icon/swipe so a
 -- single widget can render either style depending on the matched entry.
@@ -105,9 +103,7 @@ local function ShowEntry(element, entry, icon, count, duration, expiration)
 	button:Show()
 end
 
--- ---------------------------------------------------------------------------
 -- oUF element
--- ---------------------------------------------------------------------------
 
 local function Update(self, _, unit)
 	if unit and unit ~= self.unit then
@@ -170,9 +166,7 @@ end
 
 oUF:AddElement("AuraWatch", Path, Enable, Disable)
 
--- ---------------------------------------------------------------------------
 -- Builder
--- ---------------------------------------------------------------------------
 
 -- Attaches the watch to a group frame. size is the dot/icon edge in pixels.
 function Build.AuraWatch(self, size)

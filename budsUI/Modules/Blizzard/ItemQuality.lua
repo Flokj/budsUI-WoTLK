@@ -1,9 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
 
--- Item quality borders on Blizzard frames (replaces the oGlow library).
--- KkthnxUI-style: no pipes/filters, the budsUI flat border on each slot is
--- painted directly in the same update that fills the slot. Quality rare (2)
--- and above gets a colored border, everything else keeps the default one.
+-- Item quality borders on Blizzard frames (replaces oGlow): flat budsUI border painted in the slot update, rare+ gets a colored one.
 
 local function BorderOwner(slotFrame)
 	if slotFrame:IsObjectType("Frame") then
@@ -45,9 +42,7 @@ local function SetBorder(slotFrame, ...)
 	end
 end
 
---------------------------------------------------
--- BAGS + BANK (only with Blizzard containers,
--- budsUI bags paint their own quality glow)
+-- BAGS + BANK (only with Blizzard containers; budsUI bags paint their own glow)
 --------------------------------------------------
 
 if C.Bag.Enable ~= true then
@@ -77,7 +72,6 @@ if C.Bag.Enable ~= true then
 	end)
 end
 
---------------------------------------------------
 -- CHARACTER + INSPECT (skipped with Fizzle)
 --------------------------------------------------
 
@@ -171,7 +165,6 @@ if not select(4, GetAddOnInfo("Fizzle")) then
 	end
 end
 
---------------------------------------------------
 -- GUILD BANK
 --------------------------------------------------
 
@@ -193,7 +186,6 @@ do
 	updater:SetScript("OnEvent", UpdateGBank)
 end
 
---------------------------------------------------
 -- TRADE
 --------------------------------------------------
 
@@ -229,7 +221,6 @@ do
 	end)
 end
 
---------------------------------------------------
 -- TRADESKILL
 --------------------------------------------------
 
@@ -265,7 +256,6 @@ do
 	end
 end
 
---------------------------------------------------
 -- MERCHANT
 --------------------------------------------------
 
@@ -293,7 +283,6 @@ do
 	hooksecurefunc("MerchantFrame_Update", UpdateMerchant)
 end
 
---------------------------------------------------
 -- MAIL
 --------------------------------------------------
 
@@ -342,9 +331,7 @@ do
 	updater:SetScript("OnEvent", UpdateSend)
 end
 
---------------------------------------------------
--- LOOT (only with Blizzard loot frame,
--- budsUI loot paints its own)
+-- LOOT (only with Blizzard loot frame; budsUI loot paints its own)
 --------------------------------------------------
 
 if C.Loot.Enable ~= true then

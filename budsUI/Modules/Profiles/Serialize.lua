@@ -3,9 +3,7 @@ local K, C, L, _ = select(2, ...):unpack()
 local floor, strbyte, strchar, strsub, concat = math.floor, string.byte, string.char, string.sub, table.concat
 local tonumber, tostring, type, pairs, ipairs = tonumber, tostring, type, pairs, ipairs
 
--- ---------------------------------------------------------------------------
--- ZeroMQ Base85 (Z85) Encoding
--- ---------------------------------------------------------------------------
+-- ===== ZeroMQ Base85 (Z85) Encoding =====
 local Z85 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.-:+=^!/*?&<>()[]{}@%$#"
 local Z85_INDEX = {}
 for i = 1, 85 do
@@ -59,9 +57,7 @@ local function fromZ85(text)
 	return strsub(bytes, 1, #bytes - pad)
 end
 
--- ---------------------------------------------------------------------------
--- LZW Compression
--- ---------------------------------------------------------------------------
+-- ===== LZW Compression =====
 local MIN_WIDTH = 9
 local MAX_WIDTH = 16
 local MAX_CODES = 2 ^ MAX_WIDTH
@@ -158,9 +154,7 @@ local function decompress(data)
 	return concat(out)
 end
 
--- ---------------------------------------------------------------------------
--- Adler-32 Checksum
--- ---------------------------------------------------------------------------
+-- ===== Adler-32 Checksum =====
 local function adler32(text)
 	local a, b = 1, 0
 	for i = 1, #text do
@@ -195,9 +189,7 @@ function K.Decode(encoded)
 	return text
 end
 
--- ---------------------------------------------------------------------------
--- Deterministic Safe Table Serializer / Parser (No loadstring)
--- ---------------------------------------------------------------------------
+-- ===== Deterministic Safe Table Serializer / Parser (No loadstring) =====
 local function formatNumber(value)
 	if value ~= value then
 		return "0"

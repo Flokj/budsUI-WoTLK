@@ -14,10 +14,8 @@ local StaticPopup_Show = StaticPopup_Show
 local StaticPopupDialogs = StaticPopupDialogs
 
 local URL_LINK = "|cff3399ff|Hurl:%s|h[%s]|h|r"
--- Leading frontier is %f[%w], not %f[%S]: Lua's %f treats the byte before
--- position 1 as \0, which counts as non-space, so %f[%S] never fires at the
--- start of a message and links pasted as the whole message stayed plain text.
--- %w excludes \0 and still blocks matches glued inside a word.
+-- Leading frontier is %f[%w], not %f[%S]: %f sees the byte before position 1 as \0
+-- (non-space), so %f[%S] would never fire; %w excludes \0 and still blocks mid-word matches.
 local URL_PATTERNS = {
 	"%f[%w](%a[%w+.%-]+://%S+)",
 	"%f[%w](www%.[%w_%%%-]+%.%S+)",

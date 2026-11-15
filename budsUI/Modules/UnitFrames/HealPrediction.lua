@@ -101,16 +101,12 @@ local learnedShields = {}
 local lastCrit = {}
 local sentSpell, sentTarget
 local enabled = false
--- Health bars that opted in through CreateBars. Moved up here (the donor
--- declares it beside layout) so changed() below can refresh them directly.
--- oUF unit frames cannot take custom events, so there is no event to fire:
--- a state change walks this list instead of ns:Fire(CHANGED).
+-- Health bars from CreateBars, declared here so changed() can refresh them directly.
+-- oUF frames take no custom events; a state change walks this list instead of ns:Fire(CHANGED).
 local bars = {}
 
--- Own event frame (never an oUF frame: those route unit events through
--- their own unit field and have no RegisterUnitEvent method). Plain
--- RegisterEvent catches every unit's casts; the handlers filter through
--- casterTargets.
+-- Own event frame (not oUF: those have no RegisterUnitEvent). Plain RegisterEvent
+-- catches every unit's casts; handlers filter through casterTargets.
 local eventFrame = CreateFrame("Frame")
 eventFrame:Hide()
 
@@ -328,9 +324,7 @@ local function onAuraRemoved(_, destGUID, spellId)
 end
 
 local function absorb(destGUID, amount)
-	-- tonumber guard: a shifted/misaligned payload must degrade to "no
-	-- absorb", never to a string-vs-number comparison crash inside a
-	-- combat-log handler.
+	-- tonumber guard: a shifted payload degrades to "no absorb", never a crash.
 	amount = tonumber(amount)
 	local set = shields[destGUID]
 	if not set or not amount or amount <= 0 then
@@ -361,22 +355,16 @@ local function onUnitDied(_, destGUID)
 	end
 end
 
--- The 3.3.5 CLEU layout is disputed between the two available sources, so it
--- is detected at runtime instead of trusting either one: the donor
--- (Modules/HealPrediction.lua + Core_Events.lua, and LibHealComm-4.0.lua line
--- 2307) assumes NO hideCaster, while StatusHealth.lua claims hideCaster IS
--- present. The discriminator is reliable because hideCaster is a boolean and
--- GUIDs are strings like "Player-1097-08F2A6B1".
+-- 3.3.5 CLEU layout is disputed, so hideCaster is detected at runtime: the donor
+-- assumes none, StatusHealth.lua says present; reliable via boolean vs GUID string.
 local HAS_HIDECASTER = nil
 
 local function looksLikeGUID(value)
 	return type(value) == "string" and value:find("-", 1, true) ~= nil
 end
 
--- Raw payload is (timestamp, subEvent, arg3, ...): arg3 is hideCaster when
--- boolean, otherwise already sourceGUID. Returns true/false once the layout
--- is validated, nil while inconclusive (nil/filtered args) so the caller
--- keeps re-evaluating instead of locking in a guess from nils.
+-- Raw payload (timestamp, subEvent, arg3, ...): arg3 = hideCaster if boolean, else
+-- sourceGUID. Returns true/false once validated, nil while inconclusive.
 local function detectHideCaster(arg3, arg4)
 	if type(arg3) == "boolean" then
 		if arg4 == nil then
@@ -397,19 +385,8 @@ local function detectHideCaster(arg3, arg4)
 	return nil
 end
 
--- Absorbed-amount slots in NORMALIZED extras, stated once here. Donor
--- positions (SpecializedAbsorbs-1.0.lua, verified on this client, whose CLEU
--- header is the no-hideCaster shape this file normalizes to):
---   SWING_DAMAGE:         amount, overkill, school, resisted, blocked, absorbed (slot 6)
---   SPELL/RANGE/DAMAGE_SHIELD/SPLIT/BUILDING damage:
---                         spellID, spellName, spellSchool, amount, overkill,
---                         school, resisted, blocked, absorbed (slot 9)
---   ENVIRONMENTAL_DAMAGE: envType, amount, overkill, school, resisted, blocked,
---                         absorbed (slot 7)
--- Offsets are into normalized extras, so they hold under either raw layout.
--- SPELL_HEAL extras (LibHealComm-4.0.lua: spellID, spellName, spellSchool,
--- amount, overheal, absorbed, critical): onHeal below consumes slot 4, the
--- heal amount, never spellID, under either layout.
+-- Absorbed-amount slots in NORMALIZED extras (donor positions, hold under either raw layout):
+-- SWING_DAMAGE 6, spell-damage family 9, ENVIRONMENTAL_DAMAGE 7; SPELL_HEAL amount is slot 4.
 local ABSORB_SLOT = {
 	SWING_DAMAGE = 6,
 	SPELL_DAMAGE = 9,
@@ -421,12 +398,8 @@ local ABSORB_SLOT = {
 	ENVIRONMENTAL_DAMAGE = 7,
 }
 
--- Single choke point for damage-absorb resolution. tonumber() rejects
--- non-numbers (GUID strings, spellIDs, missTypes); a numeric value <= 0 is
--- genuinely "no absorb" and must NOT fall through to an earlier field (damage
--- amount/school), which would credit a fake absorb. The backwards scan runs
--- only when the documented slot holds non-nil garbage (a shifted shape), so
--- a nil slot degrades to "no absorb".
+-- Damage-absorb choke point: tonumber() rejects non-numbers; a value <= 0 is "no
+-- absorb" (never fall through to damage fields); backward scan only for garbage slots.
 local function resolveDamageAbsorb(event, ...)
 	local slot = ABSORB_SLOT[event]
 	local count = select("#", ...)
@@ -505,13 +478,8 @@ local function onCombatLog(_, _, event, sourceGUID, _, _, destGUID, _, _, a1, a2
 	end
 end
 
--- Normalize the raw CLEU payload to the donor's (subEvent, sourceGUID,
--- sourceName, sourceFlags, destGUID, destName, destFlags, ...extras) shape.
--- The client layout is detected at runtime (see detectHideCaster) because the
--- two available sources disagree about hideCaster; nothing here assumes one
--- source "must have normalized" it. destGUID is raw arg 7 with hideCaster,
--- raw arg 6 without. onCombatLog above and every handler index stay exactly
--- as the donor has them -- zero handler index edits.
+-- Normalize raw CLEU to the donor's (subEvent, sourceGUID, ..., destGUID, ...extras)
+-- shape, layout detected at runtime; destGUID is raw arg 7 with hideCaster, arg 6 without.
 local function DispatchCombatLog(blizzEvent, ...)
 	if select("#", ...) < 2 then
 		return
@@ -521,9 +489,7 @@ local function DispatchCombatLog(blizzEvent, ...)
 		return
 	end
 	if HAS_HIDECASTER == nil then
-		-- Cache the layout only from an event whose apparent sourceGUID
-		-- looks like a real GUID; otherwise keep re-evaluating on later
-		-- events instead of locking in a guess from nils.
+		-- Cache the layout only when the apparent sourceGUID looks like a real GUID.
 		local arg3, arg4 = select(3, ...), select(4, ...)
 		local apparent = (type(arg3) == "boolean") and arg4 or arg3
 		if looksLikeGUID(apparent) then

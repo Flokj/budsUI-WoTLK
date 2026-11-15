@@ -1,26 +1,5 @@
---[[
-# Element: Group Role Indicator
-
-Toggles the visibility of an indicator based on the unit's current group role (tank, healer or damager).
-
-## Widget
-
-GroupRoleIndicator - A `Texture` used to display the group role icon.
-
-## Notes
-
-A default texture will be applied if the widget is a Texture and doesn't have a texture or a color set.
-
-## Examples
-
-    -- Position and size
-    local GroupRoleIndicator = self:CreateTexture(nil, 'OVERLAY')
-    GroupRoleIndicator:SetSize(16, 16)
-    GroupRoleIndicator:SetPoint('LEFT', self)
-
-    -- Register it with oUF
-    self.GroupRoleIndicator = GroupRoleIndicator
---]]
+--[[ # Element: Group Role Indicator
+Toggles indicator visibility based on the unit's group role (tank, healer or damager). ]]
 
 local _, ns = ...
 local oUF = ns.oUF
@@ -30,11 +9,7 @@ local UnitGroupRolesAssigned = UnitGroupRolesAssigned
 local function Update(self, event)
 	local element = self.GroupRoleIndicator
 
-	--[[ Callback: GroupRoleIndicator:PreUpdate()
-	Called before the element has been updated.
-
-	* self - the GroupRoleIndicator element
-	--]]
+	-- Callback: GroupRoleIndicator:PreUpdate() - called before the element is updated
 	if(element.PreUpdate) then
 		element:PreUpdate()
 	end
@@ -48,25 +23,14 @@ local function Update(self, event)
 		element:Hide()
 	end
 
-	--[[ Callback: GroupRoleIndicator:PostUpdate(role)
-	Called after the element has been updated.
-
-	* self - the GroupRoleIndicator element
-	* isTank, isHealer, isDamage - the role as returned by [UnitGroupRolesAssigned](http://wowprogramming.com/docs/api/UnitGroupRolesAssigned)
-	--]]
+	-- Callback: GroupRoleIndicator:PostUpdate(isTank, isHealer, isDamage) - called after the element is updated
 	if(element.PostUpdate) then
 		return element:PostUpdate(isTank, isHealer, isDamage)
 	end
 end
 
 local function Path(self, ...)
-	--[[ Override: GroupRoleIndicator.Override(self, event, ...)
-	Used to completely override the internal update function.
-
-	* self  - the parent object
-	* event - the event triggering the update (string)
-	* ...   - the arguments accompanying the event
-	--]]
+	-- Override: GroupRoleIndicator.Override(self, event, ...) - override the internal update function
 	return (self.GroupRoleIndicator.Override or Update) (self, ...)
 end
 

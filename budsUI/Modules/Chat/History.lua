@@ -150,10 +150,8 @@ local function SaveHistory()
 	slot.commands = savedCmds
 end
 
--- Dim inline |cAARRGGBB colors by the same factor (FrostAtom 4f1a22e):
--- after /reload only the line r,g,b were faded, leaving links/names bright.
--- Alpha is kept so the text does not turn transparent. Undimmed text stays
--- in memory via PushLine above; only the displayed copy is dimmed.
+-- Dim inline |cAARRGGBB colors by the same factor (FrostAtom 4f1a22e): only the
+-- displayed copy is dimmed, alpha kept; undimmed text stays in memory via PushLine.
 local function DimInlineColors(text)
 	return (gsub(text, "|c(%x%x)(%x%x)(%x%x)(%x%x)", function(a, r, g, b)
 		local function dim(hex)

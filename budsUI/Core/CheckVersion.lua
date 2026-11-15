@@ -20,9 +20,7 @@ local function CheckGitHubVersion()
 			-- GitHub API URL for latest release
 			local url = "https://api.github.com/repos/Budtender3000/budsUI/releases/latest"
 			
-			-- Note: WoW 3.3.5 doesn't have HTTP API, so we use a workaround
-			-- This will be checked via addon communication when playing with others
-			-- For now, show a reminder to check GitHub
+			-- WoW 3.3.5 has no HTTP API; version checked via addon comms, else a GitHub reminder.
 			if not budsUICheckedVersion then
 				K.Print("|cff388bdbbudsUI v"..currentVersion.."|r")
 				K.Print("Check for updates: |cff00ff00https://github.com/Budtender3000/budsUI/releases|r")

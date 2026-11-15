@@ -32,9 +32,7 @@ Module.Styles.Player = function(self)
 	Build.Indicators(self)
 	Build.PlayerIndicators(self)
 
-	-- Class resource lives in its own detached holder with a mover now, so it
-	-- no longer takes part in the upward stack. Only one of the resource
-	-- builders does anything for a given class.
+	-- Class resource sits in its own detached holder/mover; only one resource builder acts per class.
 	if cfg.ClassPower then
 		Build.Runes(self, cfg.Width)
 		Build.ClassPower(self, cfg.Width)

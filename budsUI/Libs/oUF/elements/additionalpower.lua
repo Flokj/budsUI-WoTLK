@@ -1,55 +1,4 @@
---[[
-# Element: Additional Power Bar
-
-Handles the visibility and updating of a status bar that displays the player's additional power, such as Mana for druids.
-
-## Widget
-
-AdditionalPower - A `StatusBar` that is used to display the player's additional power.
-
-## Sub-Widgets
-
-.bg - A `Texture` used as a background. Inherits the widget's color.
-
-## Notes
-
-A default texture will be applied if the widget is a StatusBar and doesn't have a texture set.
-
-## Options
-
-.smoothGradient                   - 9 color values to be used with the .colorSmooth option (table)
-
-The following options are listed by priority. The first check that returns true decides the color of the bar.
-
-.colorPower        - Use `self.colors.power[token]` to color the bar based on the player's additional power type
-                     (boolean)
-.colorClass        - Use `self.colors.class[class]` to color the bar based on unit class. `class` is defined by the
-                     second return of [UnitClass](http://wowprogramming.com/docs/api/UnitClass.html) (boolean)
-.colorSmooth       - Use `self.colors.smooth` to color the bar with a smooth gradient based on the player's current
-                     additional power percentage (boolean)
-
-## Sub-Widget Options
-
-.multiplier - Used to tint the background based on the widget's R, G and B values. Defaults to 1 (number)[0-1]
-
-## Examples
-
-    -- Position and size
-    local AdditionalPower = CreateFrame('StatusBar', nil, self)
-    AdditionalPower:SetSize(20, 20)
-    AdditionalPower:SetPoint('TOP')
-    AdditionalPower:SetPoint('LEFT')
-    AdditionalPower:SetPoint('RIGHT')
-
-    -- Add a background
-    local Background = AdditionalPower:CreateTexture(nil, 'BACKGROUND')
-    Background:SetAllPoints(AdditionalPower)
-    Background:SetTexture(1, 1, 1, .5)
-
-    -- Register it with oUF
-    AdditionalPower.bg = Background
-    self.AdditionalPower = AdditionalPower
---]]
+--[[ Element: Additional Power Bar - handles the visibility and updating of a status bar that displays the player's additional power (e.g. druid Mana). ]]
 
 if(select(2, UnitClass('player')) ~= 'DRUID') then return end
 
@@ -104,14 +53,7 @@ local function UpdateColor(self, event, unit, powertype)
 end
 
 local function ColorPath(self, ...)
-	--[[ Override: AdditionalPower.UpdateColor(self, event, unit, ...)
-	Used to completely override the internal function for updating the widgets' colors.
-
-	* self  - the parent object
-	* event - the event triggering the update (string)
-	* unit  - the unit accompanying the event (string)
-	* ...   - the arguments accompanying the event
-	--]]
+	--[[ Override: AdditionalPower.UpdateColor(self, event, unit, ...) - fully override the widgets' color update function. --]]
 	(self.AdditionalPower.UpdateColor or UpdateColor) (self, ...)
 end
 
@@ -119,12 +61,7 @@ local function Update(self, event, unit, powertype)
 	if(not (unit and unit == 'player') and powertype == ADDITIONAL_POWER_BAR_NAME) then return end
 
 	local element = self.AdditionalPower
-	--[[ Callback: AdditionalPower:PreUpdate(unit)
-	Called before the element has been updated.
-
-	* self - the AdditionalPower element
-	* unit - the unit for which the update has been triggered (string)
-	--]]
+	--[[ Callback: AdditionalPower:PreUpdate(unit) - called before the element has been updated. --]]
 	if(element.PreUpdate) then
 		element:PreUpdate(unit)
 	end
@@ -138,28 +75,14 @@ local function Update(self, event, unit, powertype)
 	element.cur = cur
 	element.max = max
 
-	--[[ Callback: AdditionalPower:PostUpdate(unit, cur, max)
-	Called after the element has been updated.
-
-	* self - the AdditionalPower element
-	* unit - the unit for which the update has been triggered (string)
-	* cur  - the current value of the player's additional power (number)
-	* max  - the maximum value of the player's additional power (number)
-	--]]
+	--[[ Callback: AdditionalPower:PostUpdate(unit, cur, max) - called after the element has been updated. --]]
 	if(element.PostUpdate) then
 		return element:PostUpdate(unit, cur, max, event) -- ElvUI adds event
 	end
 end
 
 local function Path(self, ...)
-	--[[ Override: AdditionalPower.Override(self, event, unit, ...)
-	Used to completely override the element's update process.
-
-	* self  - the parent object
-	* event - the event triggering the update (string)
-	* unit  - the unit accompanying the event (string)
-	* ...   - the arguments accompanying the event
-	--]]
+	--[[ Override: AdditionalPower.Override(self, event, unit, ...) - fully override the element's update process. --]]
 	(self.AdditionalPower.Override or Update) (self, ...)
 
 	ColorPath(self, ...)
@@ -220,13 +143,7 @@ local function Visibility(self, event, unit)
 end
 
 local function VisibilityPath(self, ...)
-	--[[ Override: AdditionalPower.OverrideVisibility(self, event, unit)
-	Used to completely override the element's visibility update process.
-
-	* self  - the parent object
-	* event - the event triggering the update (string)
-	* unit  - the unit accompanying the event (string)
-	--]]
+	--[[ Override: AdditionalPower.OverrideVisibility(self, event, unit) - fully override the element's visibility update process. --]]
 	(self.AdditionalPower.OverrideVisibility or Visibility) (self, ...)
 end
 

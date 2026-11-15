@@ -14,11 +14,7 @@ Module.frames = {}
 Module.all = {}
 Engine.UnitFrames = Module
 
--- ---------------------------------------------------------------------------
--- Tiny event mixin (RegisterEvent/UnregisterEvent), same calling convention
--- as the retail module framework: handler may be a function, a method name
--- string, or nil (calls self[event]).
--- ---------------------------------------------------------------------------
+-- Event mixin (RegisterEvent/UnregisterEvent); handler may be a function, method name, or nil.
 local dispatch = CreateFrame("Frame")
 local eventMap = {}
 
@@ -96,9 +92,7 @@ function Module:UnregisterAllEvents()
 	end
 end
 
--- ---------------------------------------------------------------------------
--- Backfilled K helpers (only defined when budsUI does not provide them)
--- ---------------------------------------------------------------------------
+-- Backfilled K helpers (only if budsUI does not provide them)
 if not K.Print then
 	function K.Print(...)
 		print("|cff388bdbbudsUI|r: " .. string.format(...))
@@ -159,9 +153,7 @@ if not K.CreateGradientBackground then
 	end
 end
 
--- Gradient strip used above health bars / portraits for the name and level.
--- Returns a faux shade object with a real Holder frame, matching the retail
--- call sites (shade.Holder, shade:SetColor, shade:Show).
+-- Gradient strip above health bars/portraits; faux shade with a real Holder (shade.Holder/:SetColor/:Show).
 if not K.CreateTextShade then
 	function K.CreateTextShade(parent, layer, subLevel)
 		local holder = CreateFrame("Frame", nil, parent)

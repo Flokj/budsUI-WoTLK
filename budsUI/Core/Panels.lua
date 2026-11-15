@@ -22,13 +22,7 @@ else
 end
 bottombaranchor:SetFrameStrata("LOW")
 
---	Right bars anchor. Only created when something actually attaches to it:
---	3rd right bar (Bar5 fills it at RightBars = 3), vertical pet bar
---	(PetBarHorizontal ~= true with right bars present), vertical stance bar
---	(ShiftHolder anchors to it BY NAME below - must exist whenever stance is
---	vertical), or toggle mode (Toggle.lua builds its whole layout on it).
--- Otherwise it was a dead empty frame with a mover box: Bar4 floats on its
--- own next to the main bar and never used this anchor at all.
+-- Right bars anchor: created only when something uses it (3rd bar, vertical pet/stance bar, toggle mode); else Bar4 floats alone.
 local rightbaranchor
 local needRightAnchor = (C.ActionBar.RightBars or 0) >= 3
 	or C.ActionBar.ToggleMode == true

@@ -1,26 +1,5 @@
---[[
-# Element: Assistant Indicator
-
-Toggles the visibility of an indicator based on the unit's raid assistant status.
-
-## Widget
-
-AssistantIndicator - Any UI widget.
-
-## Notes
-
-A default texture will be applied if the widget is a Texture and doesn't have a texture or a color set.
-
-## Examples
-
-    -- Position and size
-    local AssistantIndicator = self:CreateTexture(nil, 'OVERLAY')
-    AssistantIndicator:SetSize(16, 16)
-    AssistantIndicator:SetPoint('TOP', self)
-
-    -- Register it with oUF
-    self.AssistantIndicator = AssistantIndicator
---]]
+--[[ # Element: Assistant Indicator
+Toggles indicator visibility based on the unit's raid assistant status. ]]
 
 local _, ns = ...
 local oUF = ns.oUF
@@ -32,11 +11,7 @@ local UnitIsRaidOfficer = UnitIsRaidOfficer
 local function Update(self, event)
 	local element = self.AssistantIndicator
 
-	--[[ Callback: AssistantIndicator:PreUpdate()
-	Called before the element has been updated.
-
-	* self - the AssistantIndicator element
-	--]]
+	-- Callback: AssistantIndicator:PreUpdate() - called before the element is updated
 	if(element.PreUpdate) then
 		element:PreUpdate()
 	end
@@ -49,25 +24,14 @@ local function Update(self, event)
 		element:Hide()
 	end
 
-	--[[ Callback: AssistantIndicator:PostUpdate(isAssistant)
-	Called after the element has been updated.
-
-	* self        - the AssistantIndicator element
-	* isAssistant - indicates whether the unit is a raid assistant (boolean)
-	--]]
+	-- Callback: AssistantIndicator:PostUpdate(isAssistant) - called after the element is updated
 	if(element.PostUpdate) then
 		return element:PostUpdate(isAssistant)
 	end
 end
 
 local function Path(self, ...)
-	--[[ Override: AssistantIndicator.Override(self, event, ...)
-	Used to completely override the element's update process.
-
-	* self  - the parent object
-	* event - the event triggering the update (string)
-	* ...   - the arguments accompanying the event (string)
-	--]]
+	-- Override: AssistantIndicator.Override(self, event, ...) - override the element's update process
 	return (self.AssistantIndicator.Override or Update) (self, ...)
 end
 

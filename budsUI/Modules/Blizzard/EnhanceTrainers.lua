@@ -155,7 +155,6 @@ local function EnhancedTrainer()
 	ClassTrainerMoneyFrame:SetPoint("TOPLEFT", _G["ClassTrainerFrame"], "TOPLEFT", 143, -49)
 	ClassTrainerGreetingText:Hide()
 
-	----------------------------------------------------------------------
 	-- Train All button
 	----------------------------------------------------------------------
 

@@ -14,9 +14,7 @@ local ceil = math.ceil
 
 local MAX_BOSS_FRAMES = MAX_BOSS_FRAMES or 4
 
--- ---------------------------------------------------------------------------
 -- Shared helpers
--- ---------------------------------------------------------------------------
 function Module.PowerHeight(cfg)
 	if cfg.ShowPower == false then
 		return 0
@@ -52,9 +50,7 @@ function Module.StackDown(self, region, height)
 	return region
 end
 
--- Standard mouse wiring for a unit frame or a header child.
--- Blizzard's UnitFrame_OnEnter feeds self.unit straight into
--- GameTooltip:SetUnit, which errors when the unit is nil, so guard it.
+-- Standard mouse wiring; guarded: UnitFrame_OnEnter -> GameTooltip:SetUnit errors on nil unit.
 local function SafeOnEnter(self)
 	if self.unit and UnitExists(self.unit) then
 		UnitFrame_OnEnter(self)
@@ -78,9 +74,7 @@ function Module.EnableInteraction(self, style)
 	Module.all[#Module.all + 1] = self
 end
 
--- ---------------------------------------------------------------------------
 -- Spawn table
--- ---------------------------------------------------------------------------
 Module.UnitDefs = {
 	{ unit = "player", key = "Player", style = "Player", mover = "PlayerFrame", point = { "BOTTOM", "UIParent", "BOTTOM", -370, 580 } },
 	{ unit = "target", key = "Target", style = "Target", mover = "TargetFrame", point = { "BOTTOM", "UIParent", "BOTTOM", -370, 426 } },
@@ -98,9 +92,7 @@ function Module:ResolveAnchor(token)
 	return frame or UIParent
 end
 
--- ---------------------------------------------------------------------------
 -- Spawning
--- ---------------------------------------------------------------------------
 function Module:SpawnUnit(def)
 	local cfg = C.Unitframe[def.key]
 	if not cfg or not cfg.Enable then
@@ -342,9 +334,7 @@ function Module:UpdateRaidGroupLabels()
 	end
 end
 
--- ---------------------------------------------------------------------------
--- Lifecycle (runs at file load; oUF and the config are already up)
--- ---------------------------------------------------------------------------
+-- Lifecycle (file load; oUF and the config are already up)
 function Module:Init()
 	if not C.Unitframe.Enable then
 		return
@@ -380,12 +370,8 @@ function Module:Init()
 	K.RefreshBorderColors()
 end
 
--- ---------------------------------------------------------------------------
--- Test / preview mode (out of combat only).
--- Forces the real single frames to show with the player's data. Secure group
--- headers cannot conjure phantom units on 3.3.5, so party/raid previews show
--- whoever is really in the group.
--- ---------------------------------------------------------------------------
+-- Test / preview mode (out of combat): force real single frames on with player data.
+-- 3.3.5 secure headers cannot fake group units, so party/raid previews only show real members.
 function Module:ToggleTest()
 	if InCombatLockdown() then
 		K.Print("Cannot toggle test mode in combat.")

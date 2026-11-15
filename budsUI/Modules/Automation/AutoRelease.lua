@@ -11,12 +11,8 @@ local StaticPopupDialogs = StaticPopupDialogs
 local HasSoulstone = HasSoulstone
 local IsShiftKeyDown = IsShiftKeyDown
 
--- Auto resurrection in battlegrounds / Wintergrasp.
--- Ported from FrostAtomUI (Modules/Interface/Popups.lua) — release via the
--- actual DEATH dialog Accept (RepopMe), gated on instance type "pvp", the
--- DEATH popup being visible, no soulstone buff and no Shift held (manual
--- override). Wintergrasp is kept from the old KkthnxUI logic since it is an
--- outdoor zone, not a pvp instance.
+-- Auto-release in BG / Wintergrasp (from FrostAtomUI Popups.lua): accept the DEATH
+-- dialog when in a pvp instance, popup visible, no soulstone, no Shift; Wintergrasp kept from KkthnxUI.
 local WINTERGRASP
 WINTERGRASP = L_ZONE_WINTERGRASP
 

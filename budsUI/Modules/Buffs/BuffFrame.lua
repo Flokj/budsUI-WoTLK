@@ -39,13 +39,8 @@ for debuffType, tbl in pairs(DebuffTypeColor) do
 	debuffColors[debuffType] = { tbl.r, tbl.g, tbl.b }
 end
 
--- Temporary-enchant spell-icon resolver (ported from donor
--- FrostAtomUI Modules/TemporaryEnchant.lua: buildSpellNames/enchantSpellIcon).
--- The client has no API for the temp-enchant id; an "item:<id>:<enchant>" link
--- shows the enchant name the same way the weapon tooltip does, so names come
--- from the client (locale-neutral) and Data/TempEnchantSpells.lua maps
--- enchant id -> spell id for display. Returns the SPELL icon (poison, shaman
--- imbue, oil...) or nil when it cannot be resolved.
+-- Temp-enchant spell-icon resolver (from FrostAtomUI): no client API for the id,
+-- so names come from item links and Data/TempEnchantSpells.lua maps id -> spell; returns the SPELL icon or nil.
 local scanTip, scanLeft
 local spellByName
 local slotLines = {}

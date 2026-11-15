@@ -153,9 +153,8 @@ local function ApplyBarStyle(bar)
 		K.SkinFont(timer)
 	end
 
-	-- NOTE: no SetFont = K.Noop lock here on purpose:
-	-- the hook re-applies our font after every DBM ApplyStyle,
-	-- so user/UploadDBM font options keep working.
+	-- NOTE: no SetFont = K.Noop lock -- the hook re-applies our font after each
+	-- DBM ApplyStyle, so user/UploadDBM font options keep working.
 
 	if options then
 		if icon1 and icon1.overlay then

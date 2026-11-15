@@ -38,9 +38,8 @@ UIErrorsFrame:SetFrameLevel(0)
 RaidWarningFrame:ClearAllPoints()
 RaidWarningFrame:SetPoint("TOP", UIParent, 0, -130)
 
--- WorldStateAlwaysUpFrame (BG/arena timer bar), FrostAtomUI-style layout.
--- Rows are laid out inside a SECURE hook on the Blizzard update; addon-code
--- touches in combat taint the bar and block protected raid frame updates.
+-- WorldStateAlwaysUpFrame (BG/arena timer bar), FrostAtomUI-style. Rows are laid
+-- out in a SECURE hook; addon touches in combat taint the bar and block updates.
 local WORLD_STATE_WIDTH = 160
 local WORLD_STATE_ROW = 16
 local WORLD_STATE_ICON = 22
@@ -91,9 +90,8 @@ end
 
 hooksecurefunc("WorldStateAlwaysUpFrame_Update", layoutWorldState)
 
--- FrostAtom runs layoutWorldState() once at load; same, but only out of
--- combat (an addon-context touch of the bar while locked down is the taint
--- seed; the secure hook covers rendering meanwhile).
+-- FrostAtom lays out once at load; here only out of combat (a locked-down touch is
+-- the taint seed) - the secure hook covers rendering meanwhile.
 local wsInit = CreateFrame("Frame")
 wsInit:SetScript("OnUpdate", function(self)
 	if InCombatLockdown() then return end
@@ -408,9 +406,8 @@ for _, frame in ipairs(fadeFrames) do
 	end)
 end
 
--- Movers (deferred: Core/Movers.lua loads later). WorldState's mover is
--- created out of combat only: anchoring it under lockdown taints the bar.
--- K.CreateMover is idempotent, so per-tick re-creation is harmless.
+-- Movers deferred (Core/Movers.lua loads later); WorldState's mover is created out
+-- of combat only - anchoring under lockdown taints the bar. CreateMover is idempotent.
 local moverWait = CreateFrame("Frame")
 moverWait:SetScript("OnUpdate", function()
 	if not K.CreateMover then return end

@@ -10,10 +10,8 @@ local ceil = math.ceil
 local DebuffTypeColor = DebuffTypeColor
 local UnitIsUnit = UnitIsUnit
 
--- Style a fresh aura button: cropped icon, thin border, cooldown swipe, stack
--- count. Runs once per button from PostCreateIcon. oUF calls it as
--- element:PostCreateIcon(button), so the button is the second argument;
--- taking it first would style the whole container instead of each icon.
+-- Style a fresh aura button (cropped icon, thin border, cooldown swipe, stack count).
+-- oUF calls element:PostCreateIcon(button), so the button is the second argument.
 local function StyleButton(_, button)
 	if not button then
 		return
@@ -62,9 +60,7 @@ local function IsMine(caster)
 	return caster and (UnitIsUnit(caster, "player") or UnitIsUnit(caster, "vehicle") or UnitIsUnit(caster, "pet"))
 end
 
--- Debuffs and buffs layout. When DebuffsBelow is enabled (FrostAtomUI style),
--- both sit under the frame and stack dynamically. Otherwise debuffs sit above
--- the frame and buffs below.
+-- Debuffs/buffs layout: DebuffsBelow stacks both under the frame; else debuffs above, buffs below.
 function Build.Auras(self, cfg)
 	local db = C.Unitframe.Auras
 	local width = cfg.Width or 220
@@ -151,9 +147,8 @@ function Build.Auras(self, cfg)
 	end
 end
 
--- Compact debuff row beside a group frame's health bar. side "right" clears
--- the party portrait, "left" is the default for the raid. showAll skips the
--- dispel-only filter (used by pet/tot/focustarget, which show everything).
+-- Compact debuff row beside a group health bar; side "right" clears the party portrait,
+-- showAll skips the dispel-only filter (pet/tot/focustarget, which show everything).
 function Build.GroupDebuffs(self, count, size, side, showAll)
 	local spacing = Module.GAP
 	local debuffs = CreateFrame("Frame", nil, self)
@@ -172,9 +167,7 @@ function Build.GroupDebuffs(self, count, size, side, showAll)
 	debuffs.spacing = spacing
 	debuffs.num = count
 
-	-- Healers usually only want debuffs they can act on, so default the group
-	-- rows to the auras the player can dispel. Toggle off to show everything.
-	-- Small companion frames (pet/tot/focustarget) always show everything.
+	-- Default group rows to auras the player can dispel; small companion frames always show everything.
 	if not showAll and C.Unitframe.GroupDispelOnly then
 		debuffs.CustomFilter = function(element, unit, button, name, rank, icon, count, debuffType)
 			if debuffType and K.CanDispel and K.CanDispel[debuffType] then

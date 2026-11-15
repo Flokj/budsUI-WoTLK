@@ -70,13 +70,7 @@ local function HideObjects(frame)
 	end
 end
 
--- FrostAtomUI-style holder: crisp UI-Tooltip-Border frame (Media.border in
--- Frost) in Frost's colors instead of the black glow halo (C.Media.Glow,
--- black border). Note budsUI's own Border_Default.tga (C.Media.Blizz) is a
--- black-based texture and would still render as a black outline, so it must
--- not be used here. Sizes are FIXED pixels: Frost does not scale the plate
--- frame, while multiplying by K.NoScaleMult (= 768/screenHeight, ~0.71 on
--- 1080p) shrinks the border to a barely visible hairline.
+-- FrostAtomUI-style frame: UI-Tooltip-Border in Frost colors, fixed size (no K.NoScaleMult).
 local BORDER_EDGE_SIZE = 8
 local BORDER_INSET = 2
 local BORDER_EDGE = "Interface\\Tooltips\\UI-Tooltip-Border"
@@ -185,17 +179,12 @@ end
 local CASTBAR_TEXTURE = [=[Interface\Buttons\WHITE8x8]=]
 local CASTBAR_COLOR = { 0.75, 0.4, 0 }
 local CASTBAR_LOCKED_COLOR = { 0.4, 0.4, 0.4 }
--- FrostAtomUI castbar icon: castbarIconSize = 18, fixed (not scaled by plate
--- size or K.NoScaleMult), anchored to the LEFT of the castbar holder with a
--- 2px gap (ICON_GAP). CASTBAR_ICON_Y raises it (the donor centers it at 0).
+-- FrostAtomUI castbar icon: 18px, left of the holder, no K.NoScaleMult scaling.
 local CASTBAR_ICON_SIZE = 18
 local CASTBAR_ICON_GAP = 2
 local CASTBAR_ICON_Y = 0
 
--- Position/size the castbar icon (stock cbicon moved like FrostAtomUI: LEFT
--- of the castbar holder, raised CASTBAR_ICON_Y px). Called ONCE at plate skin
--- time only — re-running it from loops/hooks makes the icon jerk when
--- Blizzard re-lays it out.
+-- Position the castbar icon once at skin time (calling it again would jerk the icon).
 local function LayoutCastIcon(cb)
 	if not cb or not cb.castHolder or not cb.icon then return end
 	cb.icon:ClearAllPoints()
@@ -287,10 +276,7 @@ local function UpdateCastSpell(bar)
 		return
 	end
 	local locked = bar.castLocked
-	-- The stock shield is not a reliable lock source for non-target plates:
-	-- its texture is cleared by HideObjects, but IsShown() can stay true.
-	-- An unresolved caster must not be classified as immune from that widget.
-	-- FrostAtomUI nameplates use the same orange for casts and channels.
+	-- Default shield is unreliable as a loc source for non-target plates: IsShown() may stay true.
 	local color = locked and CASTBAR_LOCKED_COLOR or CASTBAR_COLOR
 	bar:SetStatusBarColor(color[1], color[2], color[3])
 end
@@ -420,9 +406,7 @@ local function ApplyBlacklistHide(frame)
 	frame.hide = true
 end
 
--- Restore a plate leaving the blacklist. Castbar/overlay/raid and cast icons
--- are left for Blizzard to re-drive (shown on cast/hover/mark); everything
--- else is re-shown here so no region stays hidden.
+-- Restore a plate when removed from the blacklist; cast/overlay/raid icons are left to Blizzard.
 local function RestoreBlacklistShow(frame)
 	if not frame then return end
 	frame:SetScript("OnUpdate", nil)
@@ -449,10 +433,7 @@ local function RestoreBlacklistShow(frame)
 	if frame.cb and frame.cb.backdrop then frame.cb.backdrop:Show() end
 	if frame.cb and frame.cb.shield then frame.cb.shield:Show() end
 	if frame.class then frame.class:Show() end
-	-- NOTE: frame.cb, frame.overlay, frame.raidicon and frame.cb.icon stay
-	-- hidden here on purpose; Blizzard re-shows them on next cast / hover /
-	-- mark (or next plate Show), so un-blacklist never flashes a stale
-	-- castbar, highlight, or raid/cast icon.
+	-- cb/overlay/raidicon/cb.icon stay hidden on purpose - Blizzard restores them on the next cast/hover/raid target.
 	frame.hide = false
 end
 
@@ -735,9 +716,7 @@ local function SkinObjects(frame, nameFrame)
 		frame.class.Glow:Hide()
 	end
 
-	-- CastBar Icon (stock cbicon moved like FrostAtomUI: LEFT of the castbar
-	-- holder, raised CASTBAR_ICON_Y px). Blizzard may re-lay it out on casts —
-	-- accepted.
+	-- Castbar icon (stock cbicon left of the holder); Blizzard re-layout on casts is accepted.
 	cb.icon = cbicon
 	LayoutCastIcon(cb)
 	cbicon:SetTexCoord(unpack(K.TexCoords))
@@ -836,10 +815,7 @@ local function UpdateThreat(frame, elapsed)
 	end
 end
 
--- Create our blacklist for nameplates
--- Matches the full, un-abbreviated unit name (oldname), so the blacklist
--- keeps working even with NameAbbreviate enabled (mirroring FrostAtomUI,
--- which hides by the full unit name).
+-- Plate blacklist: matched by the full unabbreviated name (oldname).
 local function CheckBlacklist(frame, ...)
 	local name = frame.hp and (frame.hp.oldname and frame.hp.oldname:GetText() or frame.hp.name and frame.hp.name:GetText())
 	if name and K.IsPlateBlacklisted(name) then
@@ -1039,12 +1015,7 @@ local function BuildResolveUnits()
 	return resolveUnits
 end
 
--- Combat-log name -> guid map for token-less enemy plates (FrostAtomUI
--- Identity.lua rememberEnemy/bindEnemyPlayers pattern). Blizzard nameplates
--- for enemy players in the world/BGs have no unit token on 3.3.5, so we learn
--- hostile PLAYER guids from combat-log traffic and bind visible plates by
--- (realm-stripped) name. Mobs with duplicate names are deliberately NOT
--- learned (one guid per name would misattribute auras); they stay token-only.
+-- name->guid map from CLEU for tokenless enemy players; mobs with duplicate names are skipped.
 local enemyGuidByName = {}
 local BAND_TYPE_PLAYER = COMBATLOG_OBJECT_TYPE_PLAYER or 0x00000400
 local BAND_REACTION_HOSTILE = COMBATLOG_OBJECT_REACTION_HOSTILE or 0x00000040
@@ -1081,9 +1052,7 @@ function NamePlates:COMBAT_LOG_EVENT_UNFILTERED(timestamp, event, srcGUID, srcNa
 	if dstName then RememberEnemyGuid(dstGUID, dstName, dstFlags) end
 end
 
--- Plate-name skips for the guid (token-less) path. The engine still applies
--- the donor UnitCreatureType/name skips on the token path; this mirrors them
--- where no token exists to query (totems have no token, so match by suffix).
+-- Plate-name skip for the guid path; totems match by suffix.
 local PLATE_AURA_SKIPS = {
 	["Viper"] = true,
 	["Venomous Snake"] = true,
@@ -1097,10 +1066,7 @@ local function PlateNameSkipped(base)
 	return false
 end
 
--- One-guid-per-plate bind helpers (FrostAtom Identity.lua setGUID spirit).
--- plateByGuid is the single uniqueness table: a guid is never owned by two
--- plates at once. Evicting the previous owner always hides its icons first so
--- no stale aura row lingers on the wrong plate.
+-- One guid per plate: plateByGuid is the uniqueness table; on eviction icons hide first.
 local function ReleasePlate(frame, hideIcons)
 	if not frame then return end
 	local g = frame.guid
@@ -1389,9 +1355,7 @@ NamePlates:SetScript("OnUpdate", K.SafeOnUpdate(function(self, elapsed)
 				CheckBlacklist(frame)
 				frame.blacklistChecked = true
 			elseif frame.hide then
-				-- Steady-state re-assert: Blizzard re-draws stock regions and
-				-- the frame size on show, which would resurrect the hover
-				-- highlight and click zone; keep them neutralized.
+				-- Re-assert in a stable state: neutralize the hover/click zone after Blizzard's redraw.
 				pcall(ApplyBlacklistHide, frame)
 			end
 			UpdateHealerIcon(frame)
@@ -1431,9 +1395,7 @@ end
 NamePlates:RegisterEvent("UNIT_TARGET")
 NamePlates:RegisterEvent("PLAYER_TARGET_CHANGED")
 
--- Only show nameplates when in combat
--- WoW 3.3.5 Compatibility: CVar "nameplateShowEnemies" doesn't exist in 3.3.5
--- It was added in Legion 7.0. In 3.3.5 we use "ShowNameplates" instead
+-- Combat-only plates: 3.3.5 uses ShowNameplates instead of nameplateShowEnemies.
 if C.Nameplate.Combat == true then
 	NamePlates:RegisterEvent("PLAYER_REGEN_ENABLED")
 	NamePlates:RegisterEvent("PLAYER_REGEN_DISABLED")

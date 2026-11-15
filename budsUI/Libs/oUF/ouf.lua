@@ -18,9 +18,7 @@ local activeElements = {}
 
 local UFParent = CreateFrame('Frame', (global or parent) .. 'Parent', UIParent)
 UFParent:SetFrameStrata('LOW')
--- No [vehicleui] visibility driver here: it would hide every unit frame and
--- header in a vehicle while Blizzard's own vehicle frame stays disabled, and
--- oUF already swaps the player frame to the vehicle unit on its own.
+-- No [vehicleui] visibility driver: oUF swaps the player frame to the vehicle unit itself.
 
 -- updating of "invalid" units.
 local function enableTargetUpdate(object)
@@ -120,13 +118,7 @@ for k, v in next, {
 		end
 	end,
 
-	--[[ frame:EnableElement(name, unit)
-	Used to activate an element for the given unit frame.
-
-	* self - unit frame for which the element should be enabled
-	* name - name of the element to be enabled (string)
-	* unit - unit to be passed to the element's Enable function. Defaults to the frame's unit (string?)
-	--]]
+	--[[ frame:EnableElement(name, unit) - activate an element on the unit frame. --]]
 	EnableElement = function(self, name, unit)
 		argcheck(name, 2, 'string')
 		argcheck(unit, 3, 'string', 'nil')
@@ -143,12 +135,7 @@ for k, v in next, {
 		end
 	end,
 
-	--[[ frame:DisableElement(name)
-	Used to deactivate an element for the given unit frame.
-
-	* self - unit frame for which the element should be disabled
-	* name - name of the element to be disabled (string)
-	--]]
+	--[[ frame:DisableElement(name) - deactivate an element on the unit frame. --]]
 	DisableElement = function(self, name)
 		argcheck(name, 2, 'string')
 
@@ -165,21 +152,13 @@ for k, v in next, {
 
 		activeElements[self][name] = nil
 
-		-- We need to run a new update cycle in-case we knocked ourself out of sync.
-		-- The main reason we do this is to make sure the full update is completed
-		-- if an element for some reason removes itself _during_ the update
-		-- progress.
+		-- Run a new update cycle in case an element removed itself mid-update.
 		self:UpdateAllElements('DisableElement')
 
 		return elements[name].disable(self)
 	end,
 
-	--[[ frame:IsElementEnabled(name)
-	Used to check if an element is enabled on the given frame.
-
-	* self - unit frame
-	* name - name of the element (string)
-	--]]
+	--[[ frame:IsElementEnabled(name) - check if an element is enabled on the frame. --]]
 	IsElementEnabled = function(self, name)
 		argcheck(name, 2, 'string')
 
@@ -190,37 +169,16 @@ for k, v in next, {
 		return active and active[name]
 	end,
 
-	--[[ frame:Enable(asState)
-	Used to toggle the visibility of a unit frame based on the existence of its unit. This is a reference to
-	`RegisterUnitWatch`.
-
-	* self    - unit frame
-	* asState - if true, the frame's "state-unitexists" attribute will be set to a boolean value denoting whether the
-	            unit exists; if false, the frame will be shown if its unit exists, and hidden if it does not (boolean)
-	--]]
+	--[[ frame:Enable(asState) - RegisterUnitWatch: show/hide the frame based on unit existence. --]]
 	Enable = RegisterUnitWatch,
-	--[[ frame:Disable()
-	Used to UnregisterUnitWatch for the given frame and hide it.
-
-	* self - unit frame
-	--]]
+	--[[ frame:Disable() - UnregisterUnitWatch and hide the frame. --]]
 	Disable = function(self)
 		UnregisterUnitWatch(self)
 		self:Hide()
 	end,
-	--[[ frame:IsEnabled()
-	Used to check if a unit frame is registered with the unit existence monitor. This is a reference to
-	`UnitWatchRegistered`.
-
-	* self - unit frame
-	--]]
+	--[[ frame:IsEnabled() - UnitWatchRegistered: is the frame watched on unit existence. --]]
 	IsEnabled = UnitWatchRegistered,
-	--[[ frame:UpdateAllElements(event)
-	Used to update all enabled elements on the given frame.
-
-	* self  - unit frame
-	* event - event name to pass to the elements' update functions (string)
-	--]]
+	--[[ frame:UpdateAllElements(event) - update all enabled elements on the frame. --]]
 	UpdateAllElements = function(self, event)
 		local unit = self.unit
 		if(not unitExists(unit)) then return end
@@ -228,12 +186,7 @@ for k, v in next, {
 		assert(type(event) == 'string', "Invalid argument 'event' in UpdateAllElements.")
 
 		if(self.PreUpdate) then
-			--[[ Callback: frame:PreUpdate(event)
-			Fired before the frame is updated.
-
-			* self  - the unit frame
-			* event - the event triggering the update (string)
-			--]]
+			--[[ Callback: frame:PreUpdate(event) - fired before the frame is updated. --]]
 			self:PreUpdate(event)
 		end
 
@@ -242,12 +195,7 @@ for k, v in next, {
 		end
 
 		if(self.PostUpdate) then
-			--[[ Callback: frame:PostUpdate(event)
-			Fired after the frame is updated.
-
-			* self  - the unit frame
-			* event - the event triggering the update (string)
-			--]]
+			--[[ Callback: frame:PostUpdate(event) - fired after the frame is updated. --]]
 			self:PostUpdate(event)
 		end
 	end,
@@ -374,9 +322,7 @@ local function initObject(unit, style, styleFunc, header, ...)
 			object:RegisterEvent('UNIT_EXITING_VEHICLE', updateActiveUnit)
 			object:RegisterEvent('PLAYER_ENTERING_WORLD', updateActiveUnit)
 
-			-- We don't need to register UNIT_PET for the player unit. We register it
-			-- mainly because UNIT_EXITED_VEHICLE and UNIT_ENTERED_VEHICLE doesn't always
-			-- have pet information when they fire for party and raid units.
+			-- UNIT_PET is only needed for party/raid units (vehicle events lack pet info).
 			if(objectUnit ~= 'player') then
 				object:RegisterEvent('UNIT_PET', updatePet, true)
 			end
@@ -463,23 +409,12 @@ local function walkObject(object, unit)
 	return initObject(unit, style, styleFunc, header, object, object:GetChildren())
 end
 
---[[ oUF:RegisterInitCallback(func)
-Used to add a function to a table to be executed upon unit frame/header initialization.
-
-* self - the global oUF object
-* func - function to be added
---]]
+--[[ oUF:RegisterInitCallback(func) - run func when a frame/header is initialized. --]]
 function oUF:RegisterInitCallback(func)
 	table.insert(callback, func)
 end
 
---[[ oUF:RegisterMetaFunction(name, func)
-Used to make a (table of) function(s) available to all unit frames.
-
-* self - the global oUF object
-* name - unique name of the function (string)
-* func - function or a table of functions (function or table)
---]]
+--[[ oUF:RegisterMetaFunction(name, func) - expose a function/table to all unit frames. --]]
 function oUF:RegisterMetaFunction(name, func)
 	argcheck(name, 2, 'string')
 	argcheck(func, 3, 'function', 'table')
@@ -491,13 +426,7 @@ function oUF:RegisterMetaFunction(name, func)
 	frame_metatable.__index[name] = func
 end
 
---[[ oUF:RegisterStyle(name, func)
-Used to register a style with oUF. This will also set the active style if it hasn't been set yet.
-
-* self - the global oUF object
-* name - name of the style
-* func - function(s) defining the style (function or table)
---]]
+--[[ oUF:RegisterStyle(name, func) - register a style (sets active if none set). --]]
 function oUF:RegisterStyle(name, func)
 	argcheck(name, 2, 'string')
 	argcheck(func, 3, 'function', 'table')
@@ -508,12 +437,7 @@ function oUF:RegisterStyle(name, func)
 	styles[name] = func
 end
 
---[[ oUF:SetActiveStyle(name)
-Used to set the active style.
-
-* self - the global oUF object
-* name - name of the style (string)
---]]
+--[[ oUF:SetActiveStyle(name) - set the active style. --]]
 function oUF:SetActiveStyle(name)
 	argcheck(name, 2, 'string')
 	if(not styles[name]) then return error('Style [%s] does not exist.', name) end
@@ -527,11 +451,7 @@ do
 		return (next(styles, n))
 	end
 
-	--[[ oUF:IterateStyles()
-	Returns an iterator over all registered styles.
-
-	* self - the global oUF object
-	--]]
+	--[[ oUF:IterateStyles() - iterator over all registered styles. --]]
 	function oUF.IterateStyles()
 		return iter, nil, nil
 	end
@@ -625,11 +545,7 @@ do
 	-- There has to be an easier way to do this.
 	local initialConfigFunction = function(self)
 		local header = self:GetParent()
-		-- 3.3.5 never runs the oUF-initialConfigFunction snippet (retail-only
-		-- secure path), so children would keep the template's zero size and
-		-- every anchored bar/texture would collapse into a single pixel.
-		-- Apply the size cached by SpawnHeader before styling, so builders
-		-- see the real frame dimensions.
+		-- 3.3.5 skips the secure snippet; apply the child size cached by SpawnHeader first.
 		local cw, ch = header.__childWidth, header.__childHeight
 		if(cw or ch) then
 			if(cw) then self:SetWidth(cw) end
@@ -679,25 +595,7 @@ do
 		header:styleFunction(self:GetName())
 	end
 
-	--[[ oUF:SpawnHeader(overrideName, template, visibility, ...)
-	Used to create a group header and apply the currently active style to it.
-
-	* self         - the global oUF object
-	* overrideName - unique global name to be used for the header. Defaults to an auto-generated name based on the name
-	                 of the active style and other arguments passed to `:SpawnHeader` (string?)
-	* template     - name of a template to be used for creating the header. Defaults to `'SecureGroupHeaderTemplate'`
-	                 (string?)
-	* visibility   - macro conditional(s) which define when to display the header (string).
-	* ...          - further argument pairs. Consult [Group Headers](http://wowprogramming.com/docs/secure_template/Group_Headers)
-	                 for possible values.
-
-	In addition to the standard group headers, oUF implements some of its own attributes. These can be supplied by the
-	layout, but are optional.
-
-	* oUF-initialConfigFunction - can contain code that will be securely run at the end of the initial secure
-	                              configuration (string?)
-	* oUF-onlyProcessChildren   - can be used to force headers to only process children (boolean?)
-	--]]
+	--[[ oUF:SpawnHeader(overrideName, template, visibility, ...) - create a group header with the active style. --]]
 	function oUF:SpawnHeader(overrideName, template, visibility, ...)
 		if(not style) then return error('Unable to create frame. No styles have been registered.') end
 
@@ -751,14 +649,7 @@ do
 	end
 end
 
---[[ oUF:Spawn(unit, overrideName)
-Used to create a single unit frame and apply the currently active style to it.
-
-* self         - the global oUF object
-* unit         - the frame's unit (string)
-* overrideName - unique global name to use for the unit frame. Defaults to an auto-generated name based on the unit
-                 (string?)
---]]
+--[[ oUF:Spawn(unit, overrideName) - create a single unit frame with the active style. --]]
 function oUF:Spawn(unit, overrideName)
 	argcheck(unit, 2, 'string')
 	if(not style) then return error('Unable to create frame. No styles have been registered.') end
@@ -778,15 +669,7 @@ function oUF:Spawn(unit, overrideName)
 	return object
 end
 
---[[ oUF:AddElement(name, update, enable, disable)
-Used to register an element with oUF.
-
-* self    - the global oUF object
-* name    - unique name of the element (string)
-* update  - used to update the element (function?)
-* enable  - used to enable the element for a given unit frame and unit (function?)
-* disable - used to disable the element for a given unit frame (function?)
---]]
+--[[ oUF:AddElement(name, update, enable, disable) - register an element with oUF. --]]
 function oUF:AddElement(name, update, enable, disable)
 	argcheck(name, 2, 'string')
 	argcheck(update, 3, 'function', 'nil')
@@ -810,13 +693,9 @@ function oUF:GetSpellInfo(spellID)
 end
 
 oUF.version = _VERSION
---[[ oUF.objects
-Array containing all unit frames created by `oUF:Spawn`.
---]]
+--[[ oUF.objects - all unit frames created by oUF:Spawn. --]]
 oUF.objects = objects
---[[ oUF.headers
-Array containing all group headers created by `oUF:SpawnHeader`.
---]]
+--[[ oUF.headers - all group headers created by oUF:SpawnHeader. --]]
 oUF.headers = headers
 
 if(global) then

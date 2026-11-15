@@ -1,8 +1,5 @@
--- budsUI_Config :: Pages/Unitframe.lua
--- Nested per-unit tables (C.Unitframe.Player, .Target, ...) are addressed
--- with group = "Unitframe", option = <sub-table>, key = <field>.
--- Writes go through ns.Set which merges one level deep, exactly like the
--- legacy monolith and MergeProfileIntoC on load.
+-- budsUI_Config :: Pages/Unitframe.lua — per-unit tables as group="Unitframe", option=<sub-table>, key=<field>.
+-- Writes go through ns.Set (merges one level deep, like the legacy monolith / MergeProfileIntoC).
 
 local _, ns = ...
 

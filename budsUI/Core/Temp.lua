@@ -3,9 +3,7 @@ local K, C, L, _ = select(2, ...):unpack()
 -- THIS FILE IS FOR TESTING AND REMINDERS BULLSHIT :D
 -- [[ -*- NOTES -*- ]] --
 
--- [[ -*- COMBAT_LOG_EVENT_UNFILTERED -*- ]] --
--- timestamp, event, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, spellID = ...
--- timestamp, event, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, spellID, spellName = select (1, ...)
+-- COMBAT_LOG_EVENT_UNFILTERED args: timestamp..spellID (or spellID, spellName via select(1, ...)).
 
 if C.General.DeveloperMode == true then
 

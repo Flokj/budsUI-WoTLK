@@ -116,10 +116,8 @@ local CHAT_EVENTS = {
 	"CHAT_MSG_MONEY",
 }
 
--- ElvUI runs CheckKeyword through its message pipeline; budsUI has no such
--- pipeline, so a plain 3.3.5 chat filter is the equivalent hook. arg12 of
--- the event (sender GUID) sits at select(10, ...) after (self, event,
--- message=arg1, author=arg2).
+-- No ElvUI message pipeline here: a plain 3.3.5 chat filter is the hook. The sender
+-- GUID (arg12) sits at select(10, ...) after (self, event, message=arg1, author=arg2).
 local function ChatMentionFilter(self, event, message, author, ...)
 	GetPlayerInfo(select(10, ...))
 	if C.Chat.ClassColorMentions ~= true then return end

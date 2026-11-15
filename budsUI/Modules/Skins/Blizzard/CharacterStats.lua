@@ -164,9 +164,8 @@ local function FindCategoryById(id)
 	end
 end
 
--- Saved state per character, like E.private.enhanced.character in ElvUI_Enhanced:
--- collapsed/collapsed2 + order/order2 (one set per talent group), panelHidden.
--- Left-click header: toggle + autosave. Drag header: reorder (autosaved).
+-- Per-character saved state (like ElvUI_Enhanced's): collapsed + order per talent
+-- group, panelHidden; header click toggles/autosaves, drag reorders (autosaved).
 local function CharStatsData()
 	if type(budsUIData) ~= "table" then budsUIData = {} end
 	if type(budsUIData.CharacterData) ~= "table" then budsUIData.CharacterData = {} end

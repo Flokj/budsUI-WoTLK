@@ -1,7 +1,4 @@
--- budsUI_Config :: Core.lua
--- Main config window: left navigation, right page content,
--- Close / Reload / Defaults footer. Pages register via ns.RegisterPage().
--- Lua 5.1 / WoW 3.3.5a safe.
+-- budsUI_Config :: Core.lua — main config window: left nav, right page content, Close/Reload/Defaults footer.
 
 local ADDON_NAME, ns = ...
 
@@ -58,15 +55,8 @@ local CATEGORY_ICONS = {
 	Movers = "Ability_Hunter_Pathfinding",
 }
 
--- ---------------------------------------------------------------------------
--- Page loading: Pages/*.lua register via ns.RegisterPage().
--- In-game the files are loaded via budsUI_Config.toc BEFORE this file
--- (WoW 3.3.5a has no directory enumeration, so .toc is the loader), so
--- ns.pages is already filled when the config opens. The manifest below
--- mirrors the .toc order and ns.LoadPages() is a require/loadstring-style
--- fallback for dev/test harnesses outside WoW: it loads every listed page
--- file and each file calls ns.RegisterPage().
--- ---------------------------------------------------------------------------
+-- Page loading: Pages/*.lua register via ns.RegisterPage(); .toc loads them before this file.
+-- ns.LoadPages() is a dev/test fallback that loads the manifest below outside WoW.
 
 ns.PageFiles = ns.PageFiles or {
 	"General",
@@ -144,9 +134,7 @@ function ns.LoadPages()
 	return #ns.pages
 end
 
--- ---------------------------------------------------------------------------
 -- Reload indicator (flagged by ns.Set when a reload entry changes)
--- ---------------------------------------------------------------------------
 
 function ns.FlagReload()
 	if frame and frame.reloadButton then
@@ -154,9 +142,7 @@ function ns.FlagReload()
 	end
 end
 
--- ---------------------------------------------------------------------------
 -- Enabled state
--- ---------------------------------------------------------------------------
 
 local function listPaths(paths, list)
 	list = list or {}
@@ -211,9 +197,7 @@ local function isEntryEnabled(entry)
 	return true
 end
 
--- ---------------------------------------------------------------------------
 -- Page building
--- ---------------------------------------------------------------------------
 
 local function buildPageContent(container, schema, rows)
 	for _, row in ipairs(rows) do
@@ -228,9 +212,7 @@ local function buildPageContent(container, schema, rows)
 	if width < 50 then
 		width = 500
 	end
-	-- NOTE: header entries ({ header = "..." }) carry no .type, so they must
-	-- resolve to creators.header explicitly. Falling back to "description"
-	-- renders entry.description (nil -> empty) and headers stay invisible.
+	-- NOTE: header entries ({ header = "..." }) carry no .type; resolve to creators.header explicitly.
 	local offset = 4
 	for _, entry in ipairs(schema) do
 		if not entry.hidden then
@@ -256,9 +238,7 @@ end
 -- so it needs showPage defined below.
 local showPage
 
--- ns.RefreshPage(full): light refresh (row Refresh/SetEnabled/Update) by
--- default; with full == true rebuilds the current page via
--- buildPageContent, i.e. fully redraws the current page.
+-- ns.RefreshPage(full): light row refresh; full == true rebuilds the current page.
 function ns.RefreshPage(full)
 	if not frame or not frame:IsShown() then
 		return
@@ -487,9 +467,7 @@ function ns.PerformSearch(query)
 	refreshNav()
 end
 
--- ---------------------------------------------------------------------------
 -- Reset
--- ---------------------------------------------------------------------------
 
 StaticPopupDialogs["BUDSUI_CONFIG_RESET_PAGE"] = {
 	text = ns.Text("Reset all %s settings to defaults?"),
@@ -547,9 +525,7 @@ StaticPopupDialogs["BUDSUI_CONFIG_RESET_ALL"] = {
 	preferredIndex = 3,
 }
 
--- ---------------------------------------------------------------------------
 -- Frame construction
--- ---------------------------------------------------------------------------
 
 local function backdropOf(panel)
 	local K, C = ns.Engine()
@@ -585,9 +561,7 @@ end
 
 local function createFrame()
 	frame = CreateFrame("Frame", FRAME_NAME, UIParent)
-	-- Start hidden: CreateFrame shows by default, which would leave the
-	-- frame visible (and Toggle would immediately hide it again, so the
-	-- first click appears to do nothing). Toggle() shows it explicitly.
+	-- Start hidden: CreateFrame shows by default; Toggle() shows it explicitly.
 	frame:Hide()
 	frame:SetSize(WIDTH, HEIGHT)
 	frame:SetPoint("CENTER")
@@ -861,9 +835,7 @@ local function createFrame()
 	frame.reloadButton = reloadButton
 end
 
--- ---------------------------------------------------------------------------
 -- Open / toggle
--- ---------------------------------------------------------------------------
 
 function ns.Toggle(pageKey)
 	if InCombatLockdown() and not (frame and frame:IsShown()) then
@@ -904,9 +876,7 @@ function CreateUIConfig()
 	ns.Toggle()
 end
 
--- ---------------------------------------------------------------------------
 -- Slash commands, game menu, interface options
--- ---------------------------------------------------------------------------
 
 do
 	SLASH_BUDSUICONFIG1 = "/kc"
@@ -946,11 +916,7 @@ do
 			ns.Toggle()
 		end)
 		local KeyBinds = GameMenuButtonKeybindings
-		-- Re-anchor the whole chain below our button so nothing overlaps.
-		-- The default buttons are relatively chained, but other addons
-		-- (e.g. budsUI AddOns button) may insert extra buttons, so anchor
-		-- every known lower button explicitly, in top-to-bottom order.
-		-- Missing buttons (other clients / not yet created) are skipped.
+		-- Re-anchor the chain below our button; anchor every known lower button explicitly.
 		local previous = button
 		local chain = {
 			"GameMenuButtonKeybindings",

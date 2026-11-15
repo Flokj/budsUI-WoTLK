@@ -1,6 +1,4 @@
--- budsUI_Config :: Pages/Movers.lua
--- Management and individual reset of movable frames.
--- Lua 5.1 / WoW 3.3.5a safe.
+-- budsUI_Config :: Pages/Movers.lua — management and individual reset of movable frames.
 
 local _, ns = ...
 

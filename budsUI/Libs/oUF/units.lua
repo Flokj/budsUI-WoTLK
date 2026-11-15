@@ -47,10 +47,7 @@ end
 function oUF:HandleEventlessUnit(object)
 	object.__eventless = true
 
-	-- It's impossible to set onUpdateFrequency before the frame is created, so
-	-- by default all eventless frames are created with the 0.5s timer.
-	-- To change it you'll need to call oUF:HandleEventlessUnit(frame) one more
-	-- time from the layout code after oUF:Spawn(unit) returns the frame.
+	-- Eventless frames default to the 0.5s timer; re-call HandleEventlessUnit to change it.
 	local timer = object.onUpdateFrequency or 0.5
 
 	-- Remove it, in case it's already registered with any timer

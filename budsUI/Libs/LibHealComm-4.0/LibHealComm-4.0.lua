@@ -238,9 +238,7 @@ HealComm.averageHealMT = HealComm.averageHealMT or {
 		local average = spellData.averages[rank]
 		if( UnitLevel("level") >= MAX_PLAYER_LEVEL ) then
 			average = average + spellData.increase[rank]
-		-- Here's how this works: If a spell increases 1,000 between 70 and 80, the player is level 75 the spell is 70
-		-- it's 1000 / (80 - 70) so 100, the player learned the spell 5 levels ago which means that the spell average increases by 500
-		-- This figures out how much it increases per level and how ahead of the spells level they are to figure out how much to add
+		-- Adds the spell's per-level increase scaled by how far above the spell's level the player is
 		else
 			average = average + (UnitLevel("player") - spellLevel) * (spellData.increase[rank] / (MAX_PLAYER_LEVEL - spellLevel))
 		end
@@ -573,13 +571,7 @@ local function unitHasAura(unit, name)
 	return select(8, UnitBuff(unit, name)) == "player"
 end
 
--- Note because I always forget on the order:
--- Talents that effective the coeffiency of spell power to healing are first and are tacked directly onto the coeffiency (Empowered Rejuvenation)
--- Penalty modifiers (downranking/spell level too low) are applied directly to the spell power
--- Spell power modifiers are then applied to the spell power
--- Heal modifiers are applied after all of that
--- Crit modifiers are applied after
--- Any other modifiers such as Mortal Strike or Avenging Wrath are applied after everything else
+-- Modifier order: talent spell-power coeff, penalty (downranking/spell level), spell power, heal, crit, then other (Mortal Strike, Avenging Wrath)
 local function calculateGeneralAmount(level, amount, spellPower, spModifier, healModifier)
 	-- Apply downranking penalities for spells below 20
 	local penalty = level > 20 and 1 or (1 - ((20 - level) * 0.0375))
@@ -608,39 +600,8 @@ local function avg(a, b)
 	return (a + b) / 2
 end
 
---[[
-	What the different callbacks do:
-
-	AuraHandler: Specific aura tracking needed for this class, who has Beacon up on them and such
-
-	ResetChargeData: Due to spell "queuing" you can't always rely on aura data for buffs that last one or two casts, for example Divine Favor (+100% crit, one spell)
-	if you cast Holy Light and queue Flash of Light the library would still see they have Divine Favor and give them crits on both spells. The reset means that the flag that indicates
-	they have the aura can be killed and if they interrupt the cast then it will call this and let you reset the flags.
-
-	What happens in terms of what the client thinks and what actually is, is something like this:
-
-	UNIT_SPELLCAST_START, Holy Light -> Divine Favor up
-	UNIT_SPELLCAST_SUCCEEDED, Holy Light -> Divine Favor up (But it was really used)
-	UNIT_SPELLCAST_START, Flash of Light -> Divine Favor up (It's not actually up but auras didn't update)
-	UNIT_AURA -> Divine Favor up (Split second where it still thinks it's up)
-	UNIT_AURA -> Divine Favor faded (Client catches up and realizes it's down)
-
-	CalculateHealing: Calculates the healing value, does all the formula calculations talent modifiers and such
-
-	CalculateHotHealing: Used specifically for calculating the heals of hots
-
-	GetHealTargets: Who the heal is going to hit, used for setting extra targets for Beacon of Light + Paladin heal or Prayer of Healing.
-	The returns should either be:
-
-	"compressedGUID1,compressedGUID2,compressedGUID3,compressedGUID4", healthAmount
-	Or if you need to set specific healing values for one GUID it should be
-	"compressedGUID1,healthAmount1,compressedGUID2,healAmount2,compressedGUID3,healAmount3", -1
-
-	The latter is for cases like Glyph of Healing Wave where you need a heal for 1,000 on A and a heal for 200 on the player for B without sending 2 events.
-	The -1 tells the library to look in the GUId list for the heal amounts
-
-	**NOTE** Any GUID returned from GetHealTargets must be compressed through a call to compressGUID[guid]
-]]
+-- Callbacks: AuraHandler = class-specific aura tracking (e.g. Beacon); ResetChargeData = resets per-cast aura flags on cast interrupt
+-- CalculateHealing/CalculateHotHealing = heal formulas; GetHealTargets = extra targets (Beacon/PoH), returns "compressedGUIDs,health" or "-1" with per-GUID amounts; GUIDs must be compressGUID()ed
 
 local CalculateHealing, GetHealTargets, AuraHandler, CalculateHotHealing, ResetChargeData, LoadClassData, LoadRaceData
 
@@ -992,9 +953,7 @@ if( playerClass == "PALADIN" ) then
 			averages = {avg(81, 93), avg(124, 144), avg(189, 211), avg(256, 288), avg(346, 390), avg(445, 499), avg(588, 658), avg(682, 764), avg(785, 879)},
 			increase = {60, 70, 73, 72, 66, 57, 42, 20, 3}}
 
-		-- Talent data
-		-- Need to figure out a way of supporting +6% healing from imp devo aura, might not be able to
-		-- Healing Light (Add)
+		-- Talent data (TODO: +6% healing from imp devo aura not yet supported)
 		local HealingLight = GetSpellInfo(20237)
 		talentData[HealingLight] = {mod = 0.04, current = 0}
 		-- Divinity (Add)
@@ -2028,9 +1987,7 @@ local function parseChannelHeal(casterGUID, spellID, amount, totalTicks, ...)
 	HealComm.callbacks:Fire("HealComm_HealStarted", casterGUID, spellID, pending.bitType, pending.endTime, unpack(tempPlayerList))
 end
 
--- Hot heal started
--- When the person is within visible range of us, the aura is available by the time the message reaches the target
--- as such, we can rely that at least one person is going to have the aura data on them (and that it won't be different, at least for this cast)
+-- Hot heal started: if the target is visible to us, the aura data is reliable on at least one person by the time the message arrives
 local function findAura(casterGUID, spellName, spellRank, inc, ...)
 	for i=1, select("#", ...), inc do
 		local guid = decompressGUID[select(i, ...)]
@@ -2184,9 +2141,7 @@ local function parseHealDelayed(casterGUID, startTime, endTime, spellName)
 	HealComm.callbacks:Fire("HealComm_HealDelayed", casterGUID, pending.spellID, pending.bitType, pending.endTime, unpack(tempPlayerList))
 end
 
--- After checking around 150-200 messages in battlegrounds, server seems to always be passed (if they are from another server)
--- Channels use tick total because the tick interval varies by haste
--- Hots use tick interval because the total duration varies but the tick interval stays the same
+-- Server is always passed (per BG testing); channels count ticks (tick interval varies by haste), hots use tick interval
 function HealComm:CHAT_MSG_ADDON(prefix, message, channel, sender)
 	if( prefix ~= COMM_PREFIX or channel ~= distribution or sender == playerName ) then return end
 
@@ -2425,23 +2380,17 @@ function HealComm:COMBAT_LOG_EVENT_UNFILTERED(timestamp, eventType, sourceGUID, 
 	end
 end
 
--- Spell cast magic
--- When auto self cast is on, the UNIT_SPELLCAST_SENT event will always come first followed by the funciton calls
--- Otherwise either SENT comes first then function calls, or some function calls then SENT then more function calls
+-- Spell cast ordering: with auto self-cast the SENT event always fires first, otherwise SENT and function calls interleave
 local castTarget, castID, mouseoverGUID, mouseoverName, hadTargetingCursor, lastSentID, lastTargetGUID, lastTargetName
 local lastFriendlyGUID, lastFriendlyName, lastGUID, lastName, lastIsFriend
 local castGUIDs, guidPriorities = {}, {}
 
--- Deals with the fact that functions are called differently
--- Why a table when you can only cast one spell at a time you ask? When you factor in lag and mash clicking it's possible to:
--- cast A, interrupt it, cast B and have A fire SUCEEDED before B does, the tables keeps it from bugging out
+-- Table needed: with lag and mash-clicking, interrupting a cast and casting another can make SUCCEEDED fire out of order
 local function setCastData(priority, name, guid)
 	if( not guid or not lastSentID ) then return end
 	if( guidPriorities[lastSentID] and guidPriorities[lastSentID] >= priority ) then return end
 
-	-- This is meant as a way of locking a cast in because which function has accurate data can be called into question at times, one of them always does though
-	-- this means that as soon as it finds a name match it locks the GUID in until another SENT is fired. Technically it's possible to get a bad GUID but it first requires
-	-- the functions to return different data and it requires the messed up call to be for another name conflict.
+	-- Locks the GUID in on the first name match until a new SENT fires; a bad GUID requires the functions to return conflicting data
 	if( castTarget and castTarget == name ) then priority = 99 end
 
 	castGUIDs[lastSentID] = guid
@@ -2895,10 +2844,8 @@ function HealComm:OnInitialize()
 	self.resetFrame:Hide()
 	self.resetFrame:SetScript("OnUpdate", function(self) self:Hide() end)
 
-	-- You can't unhook secure hooks after they are done, so will hook once and the HealComm table will update with the latest functions
-	-- automagically. If a new function is ever used it'll need a specific variable to indicate those set of hooks.
-	-- By default most of these are mapped to a more generic function, but I call separate ones so I don't have to rehook
-	-- if it turns out I need to know something specific
+	-- Hooks are permanent (can't unhook); the HealComm table updates with the latest functions instead.
+	-- Each function gets its own hook so specifics can be added later without rehooking
 	hooksecurefunc("TargetUnit", function(...) HealComm:TargetUnit(...) end)
 	hooksecurefunc("SpellTargetUnit", function(...) HealComm:SpellTargetUnit(...) end)
 	hooksecurefunc("AssistUnit", function(...) HealComm:AssistUnit(...) end)

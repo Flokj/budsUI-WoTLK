@@ -1,8 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
 
--- Pinned currencies in the bags: the tokens watched in the currency tab get a
--- strip along the bottom of the Stuffing window (Blizzard's token frame floats
--- free once its ContainerFrame host is killed).
+-- Pinned currencies: a strip along Stuffing's bottom for watched tokens (Blizzard's token frame floats once its host is killed).
 
 local _G = _G
 local CreateFrame, UIParent = CreateFrame, UIParent
@@ -35,7 +33,6 @@ local function OpenCurrencyTab()
 	end
 end
 
--- ---------------------------------------------------------------------------
 -- Token buttons
 -- ---------------------------------------------------------------------------
 
@@ -156,7 +153,6 @@ local function Refresh()
 	SyncBand()
 end
 
--- ---------------------------------------------------------------------------
 -- Bag frame band
 -- ---------------------------------------------------------------------------
 
@@ -201,7 +197,6 @@ local function EnsureBar()
 	frame:HookScript("OnShow", Refresh)
 end
 
--- ---------------------------------------------------------------------------
 -- Blizzard leftovers and events
 -- ---------------------------------------------------------------------------
 
