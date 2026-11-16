@@ -139,6 +139,7 @@ C["Chat"] = {
 	["EditBoxPosition"] = "above", -- "above" or "below"
 	["ScrollButton"] = true, -- scroll to bottom button with flash alert
 	["SocialButton"] = true, -- social button in top-left of chat
+	["ChatBar"] = false, -- vertical channel bar (disabled by default: taints tab clicks in combat)
 }
 -- Cooldown Options
 C["Cooldown"] = {

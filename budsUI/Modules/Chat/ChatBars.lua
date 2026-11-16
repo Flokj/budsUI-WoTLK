@@ -1,5 +1,5 @@
 local K, C, L, _ = select(2, ...):unpack()
-if C.Chat.Enable ~= true then return end
+if C.Chat.Enable ~= true or C.Chat.ChatBar ~= true then return end
 
 local _G = _G
 local CreateFrame = CreateFrame

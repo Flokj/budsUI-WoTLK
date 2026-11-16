@@ -79,6 +79,10 @@ ns.RegisterPage({
 			type = "toggle", reload = true,
 			desc = "Show social (friends) button in the top-left of the chat frame.",
 		}),
+		T("ChatBar", L_GUI_CHAT_CHATBAR or "Channel bar", {
+			type = "toggle", reload = true,
+			desc = "Vertical channel bar next to the chat. Disabled by default: its chat-opening calls taint tab clicks in combat.",
+		}),
 		T("HideTextures", L_GUI_CHAT_HIDE_TEXTURES or "Hide background", {
 			type = "toggle",
 			desc = "Hide chat background.",
