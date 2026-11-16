@@ -46,7 +46,7 @@ class AltMoneyTests(unittest.TestCase):
         self.assertEqual(
             rt.scalar("return budsUIData.CharacterMoney.Realm.Player['class']"), "MAGE")
 
-    def test_entries_put_current_character_first_then_gold_desc(self):
+    def test_entries_put_current_realm_first_then_gold_desc(self):
         rt = AltMoneyRuntime()
         rt.lua.execute(
             """
@@ -66,41 +66,137 @@ class AltMoneyTests(unittest.TestCase):
         )
         self.assertEqual(order, "Player*,Alt,Twink")
 
-    def test_tooltip_lists_characters_with_class_colors_and_total(self):
+    def test_tooltip_groups_by_realm_with_subtotals(self):
         rt = AltMoneyRuntime()
         rt.lua.execute(
             """
             budsUIData.CharacterMoney.Realm.Alt = { copper = 99999999, class = 'WARRIOR' }
+            budsUIData.CharacterMoney.Other = {}
+            budsUIData.CharacterMoney.Other.Twink = { copper = 5000, class = 'MAGE' }
             K.ShowAltMoneyTooltip(Stuffing.frame.gold)
             Test.header = GameTooltip.lines[1][1]
-            Test.first = GameTooltip.lines[2][1]
+            Test.current = GameTooltip.lines[2][1]
             Test.currentMoney = GameTooltip.lines[2][2]
             Test.altLabel = GameTooltip.lines[3][1]
             Test.altColorR = GameTooltip.lines[3][3]
-            Test.totalLabel = GameTooltip.lines[5][1]
-            Test.totalMoney = GameTooltip.lines[5][2]
+            Test.spacingBeforeTotal = GameTooltip.lines[4][1]
+            Test.realmTotalLabel = GameTooltip.lines[5][1]
+            Test.realmTotalMoney = GameTooltip.lines[5][2]
+            Test.spacingAfterTotal = GameTooltip.lines[6][1]
+            Test.otherLabel = GameTooltip.lines[7][1]
+            Test.spacingBeforeOtherTotal = GameTooltip.lines[8][1]
+            Test.otherTotalLabel = GameTooltip.lines[9][1]
+            Test.otherTotalMoney = GameTooltip.lines[9][2]
+            Test.hint = GameTooltip.lines[11][1]
             """
         )
         g = rt.lua.globals()
         self.assertEqual(g.Test.header, "Character gold")
-        self.assertIn("Player", g.Test.first)
-        self.assertIn("(current)", g.Test.first)
+        # Current character is listed like everyone else (mists style, no label).
+        self.assertEqual(g.Test.current, "Player")
+        # mists-style money: plain numbers, colored g/s/c letters, separators.
+        self.assertEqual(g.Test.currentMoney,
+                         "123|cffffd700g|r 45|cffc7c7cfs|r 67|cffeda55fc|r")
         self.assertEqual(g.Test.altLabel, "Alt")
         self.assertAlmostEqual(g.Test.altColorR, 0.78, places=3)
-        self.assertEqual(g.Test.totalLabel, "Total")
-        # 1234567 copper -> 123g 45s 67c
-        self.assertEqual(g.Test.currentMoney,
-                         "|cffffd700123g|r |cffc7c7cf45s|r |cffeda55f67c|r")
-        # 1234567 + 99999999 copper -> 10123g 45s 66c
-        self.assertEqual(g.Test.totalMoney,
-                         "|cffffd70010123g|r |cffc7c7cf45s|r |cffeda55f66c|r")
+        # The subtotal gets a blank line on both sides so it stands out.
+        self.assertEqual(g.Test.spacingBeforeTotal, " ")
+        self.assertEqual(g.Test.spacingAfterTotal, " ")
+        # First realm subtotal: 1234567 + 99999999 copper -> 10123g 45s 66c
+        self.assertEqual(g.Test.realmTotalLabel, "Total")
+        self.assertEqual(g.Test.realmTotalMoney,
+                         "10,123|cffffd700g|r 45|cffc7c7cfs|r 66|cffeda55fc|r")
+        # Second realm block with its own subtotal.
+        self.assertEqual(g.Test.otherLabel, "Twink - Other")
+        self.assertEqual(g.Test.spacingBeforeOtherTotal, " ")
+        self.assertEqual(g.Test.otherTotalLabel, "Total")
+        self.assertEqual(g.Test.otherTotalMoney,
+                         "50|cffc7c7cfs|r 00|cffeda55fc|r")
+        self.assertEqual(g.Test.hint, "Ctrl+Right-click: clear the list")
 
-    def test_single_character_shows_a_hint_instead_of_a_total(self):
+    def test_realm_names_are_shortened_to_their_tail(self):
+        rt = AltMoneyRuntime()
+        rt.lua.execute("K.Realm = 'WoW Circle 3.3.5a x1'")
+        self.assertEqual(
+            rt.scalar("return K.ShortAltRealm('WoW Circle 3.3.5a x100')"), "x100")
+        self.assertEqual(
+            rt.scalar("return K.ShortAltRealm('WoW Circle 3.3.5a Fun')"), "Fun")
+        # A shared word boundary keeps the whole "x1 [FIN]" tail visible.
+        self.assertEqual(
+            rt.scalar("return K.ShortAltRealm('x1 [FIN]')"), "x1 [FIN]")
+        self.assertIsNone(rt.scalar("return K.ShortAltRealm('WoW Circle 3.3.5a x1')"))
+
+    def test_money_text_matches_the_mists_format(self):
+        rt = AltMoneyRuntime()
+        rt.lua.execute(
+            """
+            budsUIData.CharacterMoney.Realm.Alt = { copper = 12345678901, class = 'WARRIOR' }
+            K.ShowAltMoneyTooltip(Stuffing.frame.gold)
+            Test.value = GameTooltip.lines[3][2]
+            """
+        )
+        # 1234567g 89s 01c with thousands separators and a padded copper.
+        self.assertEqual(rt.scalar("return Test.value"),
+                         "1,234,567|cffffd700g|r 89|cffc7c7cfs|r 01|cffeda55fc|r")
+
+    def test_ctrl_right_click_asks_before_clearing_everyone(self):
+        rt = AltMoneyRuntime()
+        rt.lua.execute(
+            """
+            budsUIData.CharacterMoney.Realm.Alt = { copper = 99999999, class = 'WARRIOR' }
+            budsUIData.CharacterMoney.Other = {}
+            budsUIData.CharacterMoney.Other.Twink = { copper = 5000, class = 'MAGE' }
+            Test.hover = _G['budsUIAltMoneyHover']
+            Test.ctrl = true
+            Test.hover.scripts.OnMouseDown(Test.hover, 'RightButton')
+            Test.dialog = Test.lastPopupKey
+            StaticPopupDialogs[Test.dialog].OnAccept()
+            """
+        )
+        self.assertEqual(rt.scalar("return Test.dialog"), "BUDSUI_RESET_ALTMONEY")
+        # Only the current character survives the reset.
+        self.assertEqual(
+            rt.scalar(
+                """
+                local n = 0
+                for r, c in pairs(budsUIData.CharacterMoney or {}) do
+                    for k in pairs(c) do n = n + 1 end
+                end
+                return n
+                """
+            ),
+            1)
+        self.assertEqual(
+            rt.scalar("return budsUIData.CharacterMoney.Realm.Player.copper"), 1234567)
+
+    def test_plain_right_click_does_not_clear(self):
+        rt = AltMoneyRuntime()
+        rt.lua.execute(
+            """
+            budsUIData.CharacterMoney.Realm.Alt = { copper = 99999999, class = 'WARRIOR' }
+            Test.hover = _G['budsUIAltMoneyHover']
+            Test.hover.scripts.OnMouseDown(Test.hover, 'RightButton')
+            """
+        )
+        self.assertIsNone(rt.scalar("return Test.lastPopupKey"))
+
+    def test_left_click_does_not_clear(self):
+        rt = AltMoneyRuntime()
+        rt.lua.execute(
+            """
+            budsUIData.CharacterMoney.Realm.Alt = { copper = 99999999, class = 'WARRIOR' }
+            Test.hover = _G['budsUIAltMoneyHover']
+            Test.hover.scripts.OnMouseDown(Test.hover, 'LeftButton')
+            """
+        )
+        self.assertIsNone(rt.scalar("return Test.lastPopupKey"))
+
+    def test_single_character_shows_a_hint_instead_of_subtotals(self):
         rt = AltMoneyRuntime()
         hint = rt.scalar(
             """
             K.ShowAltMoneyTooltip(Stuffing.frame.gold)
-            return GameTooltip.lines[3][1]
+            return GameTooltip.lines[2][1]
             """
         )
         self.assertEqual(hint, "No other characters recorded yet")
@@ -159,7 +255,7 @@ class AltMoneyTests(unittest.TestCase):
             K.ShowAltMoneyTooltip(Stuffing.frame.gold)
             """
         )
-        self.assertEqual(rt.scalar("return GameTooltip.lines[3][1]"), "Twink - Other")
+        self.assertEqual(rt.scalar("return GameTooltip.lines[6][1]"), "Twink - Other")
 
 
 if __name__ == "__main__":

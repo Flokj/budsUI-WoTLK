@@ -171,6 +171,7 @@ end)
 -- Disable Boss Emotes (all zones at once).
 if C.Misc.BGSpam == true then
 	RaidBossEmoteFrame:UnregisterEvent("RAID_BOSS_EMOTE")
+	RaidBossEmoteFrame:SetAlpha(0)
 end
 
 -- Undress button in auction dress-up frame(by Nefarion)

@@ -50,37 +50,30 @@ local function SkinBar(bar, barname)
 	bar.skinned = true
 end
 
--- Anchor one bar: first to holder (locked against Blizzard moves),
--- the rest stacked below the previous one (ElvUI-style)
-local function captureBarUpdate(id)
-	local barname = "WorldStateCaptureBar"..id
-	local bar = _G[barname]
-	if not bar then return end
-
-	SkinBar(bar, barname)
-
-	bar:ClearAllPoints()
-	if id == 1 then
-		-- Lock first bar on the holder: block Blizzard's SetPoint,
-		-- reposition through the saved original so our own updates still work
-		if not bar._OrigSetPoint then bar._OrigSetPoint = bar.SetPoint end
-		bar._OrigSetPoint(bar, "CENTER", holder, "CENTER", 0, 0)
-		bar.SetPoint = K.Noop
-	else
-		local prev = _G["WorldStateCaptureBar"..(id - 1)]
-		if prev then
-			bar:SetPoint("TOPLEFT", prev, "TOPLEFT", 0, -45)
-		else
-			bar:SetPoint("CENTER", holder, "CENTER", 0, 0)
-		end
-	end
-end
+-- Stack bars on the holder via a secure SetPoint hook (FrostAtomUI pattern)
+local hookedBars = {}
+local stacking = false
 
 local function CaptureUpdateAll()
-	if not _G.NUM_EXTENDED_UI_FRAMES then return end
-	for id = 1, _G.NUM_EXTENDED_UI_FRAMES do
-		captureBarUpdate(id)
+	if stacking then return end
+	stacking = true
+	local y = 0
+	for i = 1, NUM_EXTENDED_UI_FRAMES or 0 do
+		local bar = _G["WorldStateCaptureBar"..i]
+		if bar then
+			if not hookedBars[bar] then
+				hookedBars[bar] = true
+				hooksecurefunc(bar, "SetPoint", CaptureUpdateAll)
+			end
+			if bar:IsShown() then
+				SkinBar(bar, "WorldStateCaptureBar"..i)
+				bar:ClearAllPoints()
+				bar:SetPoint("TOP", holder, "TOP", 0, y)
+				y = y - bar:GetHeight()
+			end
+		end
 	end
+	stacking = false
 end
 
 -- 3.3.5 path: Blizzard repositions capture bars inside this update
@@ -88,7 +81,7 @@ hooksecurefunc("WorldStateAlwaysUpFrame_Update", CaptureUpdateAll)
 
 -- Newer clients path (ElvUI-style): hook bar creation directly when available
 if _G.ExtendedUI and _G.ExtendedUI["CAPTUREPOINT"] then
-	hooksecurefunc(_G.ExtendedUI["CAPTUREPOINT"], "create", captureBarUpdate)
+	hooksecurefunc(_G.ExtendedUI["CAPTUREPOINT"], "create", CaptureUpdateAll)
 end
 
 -- Initial pass for bars that already exist at load

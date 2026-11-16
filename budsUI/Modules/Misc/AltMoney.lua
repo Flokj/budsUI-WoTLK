@@ -10,9 +10,19 @@ local format, floor = string.format, math.floor
 local sort, pairs, type, tonumber = table.sort, pairs, type, tonumber
 
 local NUM_CONTAINER_FRAMES = NUM_CONTAINER_FRAMES or 13
-local GOLD_SYMBOL = GOLD_AMOUNT_SYMBOL or "g"
-local SILVER_SYMBOL = SILVER_AMOUNT_SYMBOL or "s"
-local COPPER_SYMBOL = COPPER_AMOUNT_SYMBOL or "c"
+
+-- Same coin-text style as the mists gold DataText: plain numbers, colored g/s/c
+-- letters, separators on platinum, zero-padded silver/copper (not GetCoinTextureString).
+local GOLD_SYMBOL_COLOR = "|cffffd700g|r"
+local SILVER_SYMBOL_COLOR = "|cffc7c7cfs|r"
+local COPPER_SYMBOL_COLOR = "|cffeda55fc|r"
+
+local function BreakUp(n)
+	if type(BreakUpLargeNumbers) == "function" then
+		return BreakUpLargeNumbers(n)
+	end
+	return tostring(n)
+end
 
 local function IsEnabled()
 	return C.Bag ~= nil and C.Bag.AltMoney == true
@@ -66,15 +76,42 @@ end
 -- ===== Formatting =====
 
 local function MoneyText(copper)
-	-- GetCoinTextureString exists on 3.3.5 but is missing on some private cores.
-	if type(GetCoinTextureString) == "function" then
-		return GetCoinTextureString(copper)
+	copper = tonumber(copper) or 0
+	local gold = floor(copper / 10000)
+	local silver = floor(copper % 10000 / 100)
+	local copperLeft = copper % 100
+	if gold > 0 then
+		return format("%s%s %02d%s %02d%s", BreakUp(gold), GOLD_SYMBOL_COLOR, silver, SILVER_SYMBOL_COLOR, copperLeft, COPPER_SYMBOL_COLOR)
+	elseif silver > 0 then
+		return format("%d%s %02d%s", silver, SILVER_SYMBOL_COLOR, copperLeft, COPPER_SYMBOL_COLOR)
+	else
+		return format("%d%s", copperLeft, COPPER_SYMBOL_COLOR)
 	end
-	return format("|cffffd700%d%s|r |cffc7c7cf%d%s|r |cffeda55f%d%s|r",
-		floor(copper / 10000), GOLD_SYMBOL,
-		floor(copper % 10000 / 100), SILVER_SYMBOL,
-		copper % 100, COPPER_SYMBOL)
 end
+
+-- A realm tail like "x1"/"Fun" reads better than the full name; roll the shared
+-- prefix back to a word boundary so "x1" and "x100" don't collide into a bare "00".
+local function SharedPrefixLen(a, b)
+	local i = 0
+	while i < #a and i < #b and a:byte(i + 1) == b:byte(i + 1) do
+		i = i + 1
+	end
+	return i
+end
+
+local function ShortRealm(realm)
+	if not realm or realm == K.Realm then return nil end
+	local kr = K.Realm or ""
+	local i = SharedPrefixLen(realm, kr)
+	while i > 0 and realm:sub(i, i) ~= " " do
+		i = i - 1
+	end
+	local tail = realm:sub(i + 1):gsub("^%s+", "")
+	if tail == "" then return realm end
+	return tail
+end
+
+K.ShortAltRealm = ShortRealm
 
 local function ClassColor(class)
 	local colors = CUSTOM_CLASS_COLORS or _G.RAID_CLASS_COLORS
@@ -114,6 +151,12 @@ local function CollectEntries()
 	end
 
 	sort(entries, function(a, b)
+		-- Characters cluster by realm (current realm first), then by gold.
+		if a.realm ~= b.realm then
+			if a.realm == K.Realm then return true end
+			if b.realm == K.Realm then return false end
+			return a.realm < b.realm
+		end
 		if a.current ~= b.current then return a.current end
 		if a.copper ~= b.copper then return a.copper > b.copper end
 		return a.name < b.name
@@ -130,35 +173,78 @@ local function ShowTooltip(owner)
 	GameTooltip:ClearLines()
 	GameTooltip:AddLine(L_BAG_ALT_MONEY, 1, 0.82, 0)
 
-	local total = 0
-	for i = 1, #entries do
-		local entry = entries[i]
-		local label = entry.name
-		if entry.realm ~= K.Realm then
-			label = label .. " - " .. entry.realm
-		end
-		if entry.current then
-			label = label .. " |cff808080" .. L_BAG_ALT_MONEY_CURRENT .. "|r"
-		end
-		-- A call in mid-argument-list is truncated to one value in Lua 5.1.
-		local r, g, b = ClassColor(entry.class)
-		GameTooltip:AddDoubleLine(label, MoneyText(entry.copper), r, g, b, 1, 1, 1)
-		total = total + entry.copper
-	end
-
 	if #entries <= 1 then
 		GameTooltip:AddLine(L_BAG_ALT_MONEY_NONE, 0.6, 0.6, 0.6)
 	else
+		-- One block per realm: the characters of that realm, then its subtotal,
+		-- so a single grand total never mixes gold across realms.
+		local lastRealm, realmTotal = nil, 0
+		for i = 1, #entries do
+			local entry = entries[i]
+			if entry.realm ~= lastRealm then
+				if lastRealm then
+					GameTooltip:AddLine(" ")
+					GameTooltip:AddDoubleLine(L_BAG_ALT_MONEY_TOTAL, MoneyText(realmTotal), 1, 0.82, 0, 1, 1, 1)
+					GameTooltip:AddLine(" ")
+				end
+				lastRealm = entry.realm
+				realmTotal = 0
+			end
+			realmTotal = realmTotal + entry.copper
+
+			local label = entry.name
+			if entry.realm ~= K.Realm then
+				local short = ShortRealm(entry.realm)
+				label = label .. " - " .. short
+			end
+			-- A call in mid-argument-list is truncated to one value in Lua 5.1.
+			local r, g, b = ClassColor(entry.class)
+			GameTooltip:AddDoubleLine(label, MoneyText(entry.copper), r, g, b, 1, 1, 1)
+		end
 		GameTooltip:AddLine(" ")
-		GameTooltip:AddDoubleLine(L_BAG_ALT_MONEY_TOTAL, MoneyText(total), 1, 0.82, 0, 1, 1, 1)
+		GameTooltip:AddDoubleLine(L_BAG_ALT_MONEY_TOTAL, MoneyText(realmTotal), 1, 0.82, 0, 1, 1, 1)
 	end
 
+	GameTooltip:AddLine(" ")
+	GameTooltip:AddLine(L_BAG_ALT_MONEY_RESET_HINT, 0.5, 0.5, 0.5)
 	GameTooltip:Show()
 end
 
--- ---------------------------------------------------------------------------
--- Hover regions
--- ---------------------------------------------------------------------------
+-- ===== Reset (right-click the money: clears every recorded character) =====
+
+local function ClearAllMoney()
+	local store = GetStore(false)
+	if store then
+		wipe(store)
+	end
+	SaveMoney(true)
+	if K.Print then
+		K.Print(L_BAG_ALT_MONEY_RESET_DONE)
+	end
+end
+
+K.ResetAltMoney = ClearAllMoney
+
+if StaticPopupDialogs then
+	StaticPopupDialogs["BUDSUI_RESET_ALTMONEY"] = {
+		text = L_BAG_ALT_MONEY_RESET_CONFIRM,
+		button1 = YES,
+		button2 = NO,
+		OnAccept = ClearAllMoney,
+		timeout = 0,
+		whileDead = 1,
+		hideOnEscape = 1,
+	}
+end
+
+local function OnMouseDown(self, btn)
+	-- Same gesture as the mists gold DataText: Ctrl+right-click.
+	if btn == "RightButton" and IsControlKeyDown() and IsEnabled() and StaticPopup_Show then
+		StaticPopup_Show("BUDSUI_RESET_ALTMONEY")
+	end
+end
+
+-- ===== Hover regions =====
 
 local function OnEnter(self)
 	if not IsEnabled() then return end
@@ -179,6 +265,7 @@ local function HookButton(button)
 	hookedButtons[button] = true
 	button:HookScript("OnEnter", OnEnter)
 	button:HookScript("OnLeave", OnLeave)
+	button:HookScript("OnMouseDown", OnMouseDown)
 end
 
 local function HookBlizzardMoneyFrames()
@@ -204,6 +291,7 @@ local function HookStuffingGold()
 	hover:SetFrameLevel(frame:GetFrameLevel() + 5)
 	hover:SetScript("OnEnter", OnEnter)
 	hover:SetScript("OnLeave", OnLeave)
+	hover:SetScript("OnMouseDown", OnMouseDown)
 
 	-- The search box hides the money text; mirror its state on the hover region.
 	frame:HookScript("OnUpdate", function(self)

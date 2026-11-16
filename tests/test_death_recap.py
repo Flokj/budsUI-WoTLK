@@ -1,4 +1,4 @@
-"""Regression tests for budsUI ports, executed in a real Lua 5.1 runtime.
+﻿"""Regression tests for budsUI ports, executed in a real Lua 5.1 runtime.
 
 Run: python -m unittest discover -s tests -v
 Only WoW's client API is stubbed; the addon event handlers, border helper,
@@ -64,7 +64,8 @@ class DeathRecapTests(unittest.TestCase):
     def test_url_popup_uses_global_handler_without_touching_chat_draft(self):
         rt = AddonRuntime()
         rt.boot_recap()
-        rt.lua.globals().SetItemRef("url:https://example.com", "[URL]", "LeftButton", rt.lua.globals().ChatFrame1)
+        tip = rt.lua.globals().ItemRefTooltip
+        tip.SetHyperlink(tip, "url:https://example.com", "[URL]")
         self.assertEqual(rt.lua.globals().Test.lastPopupKey, "BUDSUI_COPY_URL")
         self.assertEqual(rt.lua.globals().TestPopupEditBox.GetText(rt.lua.globals().TestPopupEditBox), "https://example.com")
         self.assertEqual(rt.lua.globals().Test.refCalls, 0)
@@ -141,7 +142,8 @@ class DeathRecapTests(unittest.TestCase):
         rt = AddonRuntime()
         rt.boot_recap()
         rt.lua.execute("K.OpenDeathRecap = function(id) Test.openedId = id end")
-        rt.lua.globals().SetItemRef("budsrecap:17", "[Death recap]", "LeftButton", rt.lua.globals().ChatFrame1)
+        tip = rt.lua.globals().ItemRefTooltip
+        tip.SetHyperlink(tip, "budsrecap:17", "[Death recap]")
         self.assertEqual(rt.lua.globals().Test.openedId, 17)
         self.assertEqual(rt.lua.globals().Test.refCalls, 0)
 
@@ -158,7 +160,8 @@ class DeathRecapTests(unittest.TestCase):
         rt = AddonRuntime(chat=False)
         rt.boot_recap()
         rt.lua.execute("K.OpenDeathRecap = function(id) Test.openedId = id end")
-        rt.lua.globals().SetItemRef("budsrecap:12", "[Death recap]", "LeftButton", rt.lua.globals().ChatFrame1)
+        tip = rt.lua.globals().ItemRefTooltip
+        tip.SetHyperlink(tip, "budsrecap:12", "[Death recap]")
         self.assertEqual(rt.lua.globals().Test.openedId, 12)
 
     def test_normal_links_are_forwarded_without_losing_arguments(self):
@@ -173,7 +176,8 @@ class DeathRecapTests(unittest.TestCase):
         rt = AddonRuntime()
         rt.boot_recap()
         rt.lua.execute("K.OpenDeathRecap = function(id) Test.openedId = id or -1 end")
-        rt.lua.globals().SetItemRef("budsrecap:abc", "[Death recap]", "LeftButton", rt.lua.globals().ChatFrame1)
+        tip = rt.lua.globals().ItemRefTooltip
+        tip.SetHyperlink(tip, "budsrecap:abc", "[Death recap]")
         self.assertIsNone(rt.lua.globals().Test.openedId)
         self.assertEqual(rt.lua.globals().Test.refCalls, 0)
 

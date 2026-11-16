@@ -168,8 +168,23 @@ GameTooltip = CreateFrame("GameTooltip", "GameTooltip", UIParent)
 ItemRefTooltip = CreateFrame("GameTooltip", "ItemRefTooltip", UIParent)
 SlashCmdList, UISpecialFrames, StaticPopupDialogs = {}, {}, {}
 CLOSE, OKAY, INTERRUPTED = "Close", "Okay", "Interrupted"
+YES, NO = "Yes", "No"
+BreakUpLargeNumbers = function(value)
+	local s = tostring(value)
+	if #s <= 3 then return s end
+	local out, count = {}, 0
+	for i = 1, #s do
+		count = count + 1
+		out[#out + 1] = s:sub(i, i)
+		if count < #s and (#s - i) % 3 == 0 then
+			out[#out + 1] = ","
+		end
+	end
+	return table.concat(out)
+end
 GameFontHighlightSmall, GameFontHighlight = "SmallFont", "HighlightFont"
 IsModifiedClick = function() return false end
+IsControlKeyDown = function() return Test.ctrl == true end
 ShowUIPanel = function(frame) frame:Show() end
 HideUIPanel = function(frame) frame:Hide() end
 GetLocale = function() return Test.locale end

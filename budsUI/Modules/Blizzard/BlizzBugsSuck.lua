@@ -31,22 +31,6 @@ do
 	hooksecurefunc("UIDropDownMenu_CreateFrames", FixMenuFrameLevels)
 end
 
--- Taint fix: run UIDropDownMenu_Initialize through securecall so its global writes aren't attributed to an addon.
-do
-	local orig_UIDropDownMenu_Initialize = UIDropDownMenu_Initialize
-	function UIDropDownMenu_Initialize(frame, initFunction, displayMode, level, menuList)
-		local oldLevel = UIDROPDOWNMENU_MENU_LEVEL
-		local oldValue = UIDROPDOWNMENU_MENU_VALUE
-		local oldOpen  = UIDROPDOWNMENU_OPEN_MENU
-
-		orig_UIDropDownMenu_Initialize(frame, initFunction, displayMode, level, menuList)
-
-		UIDROPDOWNMENU_MENU_LEVEL = oldLevel or 1
-		UIDROPDOWNMENU_MENU_VALUE = oldValue or 1
-		UIDROPDOWNMENU_OPEN_MENU  = oldOpen
-	end
-end
-
 -- Fix German Locale: Blizzard made the one-letter time abbreviations 3-letter there.
 if K.Client == "deDE" then
 	MINUTE_ONELETTER_ABBR = "%d m"

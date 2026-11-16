@@ -48,8 +48,10 @@ L_BAG_STACK_SPECIAL = "Объединить в специальных сумка
 -- Alt gold tooltip (hover the money in bags)
 L_BAG_ALT_MONEY = "Золото персонажей"
 L_BAG_ALT_MONEY_TOTAL = "Всего"
-L_BAG_ALT_MONEY_CURRENT = "(текущий)"
 L_BAG_ALT_MONEY_NONE = "Другие персонажи ещё не записаны"
+L_BAG_ALT_MONEY_RESET_HINT = "Ctrl+ПКМ: очистить список"
+L_BAG_ALT_MONEY_RESET_CONFIRM = "Очистить записанное золото всех персонажей?"
+L_BAG_ALT_MONEY_RESET_DONE = "Список золота персонажей очищен."
 -- Profession sidebar (trade skill window)
 L_PROFESSIONS_CURRENT = "Текущая профессия"
 L_PROFESSIONS_SWITCH = "Нажмите, чтобы открыть эту профессию"

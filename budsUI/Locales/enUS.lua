@@ -47,8 +47,10 @@ L_BAG_STACK_SPECIAL = "Stack Special"
 -- Alt gold tooltip (hover the money in bags)
 L_BAG_ALT_MONEY = "Character gold"
 L_BAG_ALT_MONEY_TOTAL = "Total"
-L_BAG_ALT_MONEY_CURRENT = "(current)"
 L_BAG_ALT_MONEY_NONE = "No other characters recorded yet"
+L_BAG_ALT_MONEY_RESET_HINT = "Ctrl+Right-click: clear the list"
+L_BAG_ALT_MONEY_RESET_CONFIRM = "Clear the recorded gold of all characters?"
+L_BAG_ALT_MONEY_RESET_DONE = "Character gold list cleared."
 -- Profession sidebar (trade skill window)
 L_PROFESSIONS_CURRENT = "Current profession"
 L_PROFESSIONS_SWITCH = "Click to open this profession"

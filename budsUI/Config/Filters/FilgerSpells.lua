@@ -55,19 +55,19 @@ C["filger_spells"] = {
 			-- Abolish Poison
 			P_BUFF(2893),
 			-- Savage roar
-			P_BUFF(52610),
+			--P_BUFF(52610),
 			-- Innervate
 			--P_BUFF_ALL(29166),
 			-- Barkskin
-			P_BUFF(22812),
+			--P_BUFF(22812),
 			-- Bloodlust
-			P_BUFF_ALL(2825),
+			--P_BUFF_ALL(2825),
 			-- Heroism
-			P_BUFF_ALL(32182),
+			--P_BUFF_ALL(32182),
 			-- Survival Instincts
-			P_BUFF(61336),
+			--P_BUFF(61336),
 			-- Hyperspeed Accelerators
-			P_BUFF(54999),
+			--P_BUFF(54999),
 		},
 
 		{
@@ -86,9 +86,9 @@ C["filger_spells"] = {
 			-- Faerie Fire
 			T_DEBUFF_ALL(770),
 			-- Entangling Roots
-			T_DEBUFF_ALL(26989),
+			--T_DEBUFF_ALL(26989),
 			-- Earth and Moon
-			T_DEBUFF(48511),
+			--T_DEBUFF(48511),
 			-- Rake
 			T_DEBUFF(59886),
 			-- Rip
@@ -151,6 +151,8 @@ C["filger_spells"] = {
 			--{ spellID = 48438, size = 25, barWidth = 187, unitID = "target", caster = "player", filter = "BUFF" },
 			-- Demoralizing Roar
 			{ spellID = 99, size = 25, barWidth = 187, unitID = "target", caster = "player", filter = "DEBUFF" },
+			-- Swiftmend
+			CD(18562, 30),
 		},
 
 		{
