@@ -979,7 +979,7 @@ local function createMenuButton()
 			"GameMenuButtonTemplate,SecureActionButtonTemplate")
 	end
 	menuButton:SetText(ADDONS or "AddOns")
-	local anchor = GameMenuButtonMacros or GameMenuButtonKeybindings
+	local anchor = GameMenuBudsUIButton or GameMenuButtonUIOptions
 	if anchor then
 		menuButton:ClearAllPoints()
 		menuButton:SetPoint("TOP", anchor, "BOTTOM", 0, -1)
@@ -991,12 +991,12 @@ local function createMenuButton()
 		menuButton:SetAttribute("clickbutton", GameMenuButtonContinue)
 	end
 	menuButton:SetScript("PostClick", show)
-	local nextButton = _G.GameMenuButtonMoveAnything or GameMenuButtonLogout
+	local nextButton = GameMenuButtonKeybindings
 	if nextButton then
 		nextButton:ClearAllPoints()
-		nextButton:SetPoint("TOP", menuButton, "BOTTOM", 0, -16)
+		nextButton:SetPoint("TOP", menuButton, "BOTTOM", 0, -1)
 	end
-	GameMenuFrame:SetHeight(GameMenuFrame:GetHeight() + menuButton:GetHeight() + 2)
+	GameMenuFrame:SetHeight(GameMenuFrame:GetHeight() + menuButton:GetHeight() + 1)
 end
 
 AddonList:RegisterEvent("PLAYER_LOGIN", function()

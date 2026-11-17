@@ -919,14 +919,12 @@ do
 		-- Re-anchor the chain below our button; anchor every known lower button explicitly.
 		local previous = button
 		local chain = {
+			"GameMenuButtonAddOns",
 			"GameMenuButtonKeybindings",
 			"GameMenuButtonMacros",
-			"GameMenuButtonAddOns",
 			"GameMenuButtonLogout",
 			"GameMenuButtonQuit",
 			"GameMenuButtonExit",
-			"GameMenuButtonContinue",
-			"GameMenuButtonReturnToGame",
 		}
 		for _, name in ipairs(chain) do
 			local b = _G[name]

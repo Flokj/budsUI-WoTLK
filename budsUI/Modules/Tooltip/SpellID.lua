@@ -16,6 +16,7 @@ local UnitDebuff = UnitDebuff
 
 --	Spell/Item IDs(idTip by Silverwind)
 local debuginfo = false
+local LABEL_HEX = "|cff3366ff"
 local function addLine(self, id, isItem)
 	for i = 1, self:NumLines() do
 		local line = _G[self:GetName().."TextLeft"..i]
@@ -23,10 +24,16 @@ local function addLine(self, id, isItem)
 		local text = line:GetText()
 		if text and (text:match(L_TOOLTIP_ITEM_ID) or text:match(L_TOOLTIP_SPELL_ID)) then return end
 	end
+	for i = 1, self:NumLines() do
+		local line = _G[self:GetName().."TextRight"..i]
+		if not line then break end
+		local text = line:GetText()
+		if text and (text:match(L_TOOLTIP_ITEM_ID) or text:match(L_TOOLTIP_SPELL_ID)) then return end
+	end
 	if isItem then
-		self:AddLine("|cffffffff"..L_TOOLTIP_ITEM_ID.." "..id)
+		self:AddDoubleLine(" ", ("%s%s|r: |cffffffff%d|r"):format(LABEL_HEX, L_TOOLTIP_ITEM_ID, id))
 	else
-		self:AddLine("|cffffffff"..L_TOOLTIP_SPELL_ID.." "..id)
+		self:AddDoubleLine(" ", ("%s%s|r: |cffffffff%d|r"):format(LABEL_HEX, L_TOOLTIP_SPELL_ID, id))
 	end
 	self:Show()
 end
@@ -47,17 +54,20 @@ local function addAuraID(self, unit, index, filter, auraFunc)
 	end
 end
 
-hooksecurefunc(GameTooltip, "SetUnitAura", function(self, unit, index, filter)
-	addAuraID(self, unit, index, filter, UnitAura)
-end)
+-- AuraSource renders aura tooltips (caster + ID) when CastBy is enabled
+if C.Aura.CastBy ~= true then
+	hooksecurefunc(GameTooltip, "SetUnitAura", function(self, unit, index, filter)
+		addAuraID(self, unit, index, filter, UnitAura)
+	end)
 
-hooksecurefunc(GameTooltip, "SetUnitBuff", function(self, unit, index, filter)
-	addAuraID(self, unit, index, filter, UnitBuff)
-end)
+	hooksecurefunc(GameTooltip, "SetUnitBuff", function(self, unit, index, filter)
+		addAuraID(self, unit, index, filter, UnitBuff)
+	end)
 
-hooksecurefunc(GameTooltip, "SetUnitDebuff", function(self, unit, index, filter)
-	addAuraID(self, unit, index, filter, UnitDebuff)
-end)
+	hooksecurefunc(GameTooltip, "SetUnitDebuff", function(self, unit, index, filter)
+		addAuraID(self, unit, index, filter, UnitDebuff)
+	end)
+end
 
 hooksecurefunc("SetItemRef", function(link, ...)
 	local id = tonumber(link:match("spell:(%d+)"))
