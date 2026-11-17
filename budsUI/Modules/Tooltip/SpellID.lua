@@ -75,7 +75,7 @@ hooksecurefunc("SetItemRef", function(link, ...)
 end)
 
 hooksecurefunc(GameTooltip, "SetGlyph", function(self, ...)
-	local id = select(4, GetGlyphSocketInfo(...))
+	local id = select(3, GetGlyphSocketInfo(...))
 	if id then addLine(self, id) end
 end)
 
