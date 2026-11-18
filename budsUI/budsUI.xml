@@ -125,6 +125,7 @@
 	<Script file="Data\GlyphIcons.lua"/>
 	<Script file="Data\TempEnchantSpells.lua"/>
 	<Script file="Data\SpecHints.lua"/>
+	<Script file="Modules\Blizzard\ThirdSpec.lua"/>
 	<Script file="Modules\Blizzard\TalentFrame.lua"/>
 
 	<Script file="Modules\Buffs\AuraSource.lua"/>

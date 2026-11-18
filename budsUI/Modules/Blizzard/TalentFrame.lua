@@ -652,97 +652,22 @@ local function showSpecTooltip(self)
 	GameTooltip:Show()
 end
 
-local thirdPending
-
--- Per-character storage for the third-spec toggle (budsUIData SavedVariables).
-local function thirdSpecStore()
-	if type(budsUIData) ~= "table" then
-		budsUIData = {}
-	end
-	if type(budsUIData.CharacterData) ~= "table" then
-		budsUIData.CharacterData = {}
-	end
-	local key = (K.Realm or GetRealmName()) .. "-" .. (K.Name or UnitName("player"))
-	if type(budsUIData.CharacterData[key]) ~= "table" then
-		budsUIData.CharacterData[key] = {}
-	end
-	if type(budsUIData.CharacterData[key].ThirdSpec) ~= "table" then
-		budsUIData.CharacterData[key].ThirdSpec = {}
-	end
-	return budsUIData.CharacterData[key].ThirdSpec
-end
-
--- Fingerprint of the talent content in group 2: the realm swaps the third spec in, so this is the only client-side way to tell which set is mounted.
-local function thirdFingerprint(cache)
-	if not cache or not cache.numTabs then
-		return nil
-	end
-	local parts = {}
-	for index = 1, cache.numTabs do
-		local info = cache[index]
-		if info and info.name then
-			parts[#parts + 1] = info.name
-			parts[#parts + 1] = info.icon or "?"
-			parts[#parts + 1] = info.pointsSpent or 0
-		else
-			parts[#parts + 1] = "#"
-		end
-	end
-	parts[#parts + 1] = cache.primaryTabIndex or 0
-	return tconcat(parts, "|")
-end
-
-local function thirdReadFingerprint()
-	local tab = frame and frame.specTabs and frame.specTabs[2]
-	if not tab or not tab.cache then
-		return nil
-	end
-	return thirdFingerprint(tab.cache)
-end
-
--- Is the mounted group-2 content the realm's third set? Falls back to the last
--- user intent while the button is still learning the two builds.
-local function thirdIsThird(store, cur)
-	if store.fp2 and store.fp3 and store.fp2 ~= store.fp3 then
-		return cur and cur == store.fp3 or false
-	end
-	return store.onThird and true or false
-end
-
+-- The realm swaps the third set into group 2. The machine that tracks which of
+-- the two builds is mounted lives in Modules/Blizzard/ThirdSpec.lua (exposed as
+-- K.ThirdSpec), so it also runs while the talent frame is closed.
 local function syncThirdSpec()
-	local tab = frame and frame.specTabs and frame.specTabs[2]
-	if not tab or not tab.cache then
+	if not frame or not frame.thirdTab or not (K.ThirdSpec and K.ThirdSpec.Loaded()) then
 		return
 	end
-	if GetNumTalentGroups(false, false) < 2 then
-		return
-	end
-	TalentFrame_UpdateSpecInfoCache(tab.cache, false, false, 2)
-	local store = thirdSpecStore()
-	local cur = thirdFingerprint(tab.cache)
-	if thirdPending then
-		-- Learn the build only when the click actually changed group-2 content.
-		if cur and cur ~= thirdPending.before and cur ~= store.fp2 and cur ~= store.fp3 then
-			if thirdPending.spec == "3" then
-				store.fp3 = cur
-			else
-				store.fp2 = cur
-			end
-		end
-		thirdPending = nil
-	end
-	local onThird = thirdIsThird(store, cur)
-	if onThird ~= (store.onThird and true or false) then
-		store.onThird = onThird
-	end
+	local onThird = K.ThirdSpec.Loaded() == 3
 	local third = frame.thirdTab
-	if third then
-		third:SetChecked(onThird)
-		if third.badge then
-			third.badge:SetTextColor(onThird and 1 or 1, onThird and 0.82 or 1, onThird and 0 or 1)
-		end
-		-- Mirror the mounted slot-2 build: second-tree icon normally, third-tree
-		-- icon while the third set is swapped in. The "3" badge keeps the button distinct.
+	third:SetChecked(onThird)
+	if third.badge then
+		third.badge:SetTextColor(onThird and 1 or 1, onThird and 0.82 or 1, onThird and 0 or 1)
+	end
+	local tab = frame.specTabs and frame.specTabs[2]
+	if tab and tab.cache then
+		TalentFrame_UpdateSpecInfoCache(tab.cache, false, false, 2)
 		local info = tab.cache.primaryTabIndex and tab.cache[tab.cache.primaryTabIndex]
 		if info and info.icon then
 			third:SetNormalTexture(info.icon)
@@ -750,27 +675,10 @@ local function syncThirdSpec()
 	end
 end
 
-local function activateThirdSpec()
-	local store = thirdSpecStore()
-	local cur = thirdReadFingerprint()
-	local onThird = thirdIsThird(store, cur)
-	if onThird then
-		SendChatMessage(".spec 2", "SAY")
-		store.onThird = false
-		thirdPending = { spec = "2", before = cur }
-	else
-		SendChatMessage(".spec 3", "SAY")
-		store.onThird = true
-		thirdPending = { spec = "3", before = cur }
-	end
-	PlaySound("igCharacterInfoTab")
-	K.After(0.8, syncThirdSpec)
-end
-
 local function showThirdSpecTooltip(self)
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 	GameTooltip:AddLine(STR_THIRD_SPEC, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
-	local onThird = thirdIsThird(thirdSpecStore(), thirdReadFingerprint())
+	local onThird = K.ThirdSpec and K.ThirdSpec.Loaded() == 3 or false
 	GameTooltip:AddLine(
 		onThird and STR_THIRD_ACTIVE or STR_THIRD_INACTIVE,
 		GREEN_FONT_COLOR.r, GREEN_FONT_COLOR.g, GREEN_FONT_COLOR.b
@@ -1503,7 +1411,11 @@ local function createFrame()
 	frame.specTabs = specTabs
 
 	local third = createSideTab(frame, QUESTION_MARK)
-	third:SetScript("OnClick", activateThirdSpec)
+	third:SetScript("OnClick", function()
+		if K.ThirdSpec then
+			K.ThirdSpec.Click()
+		end
+	end)
 	third:SetScript("OnEnter", showThirdSpecTooltip)
 	third:SetScript("OnLeave", function()
 		GameTooltip:Hide()
