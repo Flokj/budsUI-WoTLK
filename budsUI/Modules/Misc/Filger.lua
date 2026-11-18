@@ -200,7 +200,7 @@ function Filger:DisplayActives()
 				else
 					bar.count = bar:CreateFontString("$parentCount", "OVERLAY")
 					bar.count:SetFont(C.Media.Font, C.Media.Font_Size, C.Media.Font_Style)
-					bar.count:SetPoint("BOTTOMRIGHT", 1, 2)
+					bar.count:SetPoint("BOTTOMRIGHT", 2, -2)
 					bar.count:SetJustifyH("RIGHT")
 				end
 			else
@@ -254,7 +254,7 @@ function Filger:DisplayActives()
 				else
 					bar.count = bar:CreateFontString("$parentCount", "OVERLAY")
 					bar.count:SetFont(C.Media.Font, C.Media.Font_Size, C.Media.Font_Style)
-					bar.count:SetPoint("BOTTOMRIGHT", 1, 0)
+					bar.count:SetPoint("BOTTOMRIGHT", 2, -2)
 					bar.count:SetJustifyH("RIGHT")
 				end
 

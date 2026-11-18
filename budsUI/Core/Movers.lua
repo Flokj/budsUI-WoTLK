@@ -1060,3 +1060,6 @@ combat:RegisterEvent("PLAYER_REGEN_DISABLED")
 combat:SetScript("OnEvent", function()
 	if editing then K.ToggleMovers(false) end
 end)
+
+-- Sync mover sizes that modules set after load (e.g. ShiftHolder to the form count)
+if K.UpdateMoverSize then K.UpdateMoverSize() end

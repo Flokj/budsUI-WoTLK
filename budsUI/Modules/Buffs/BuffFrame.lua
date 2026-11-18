@@ -26,7 +26,7 @@ local hooksecurefunc = hooksecurefunc
 local SIZE = C.Aura.BuffSize or 36
 local SPACING_X = 4
 local SPACING_Y = 12
-local IN_ROW = 14
+local IN_ROW = 12
 
 -- BuffsAnchor Frame setup
 local BuffsAnchor = CreateFrame("Frame", "BuffsAnchor", UIParent)

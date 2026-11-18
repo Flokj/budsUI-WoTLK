@@ -334,7 +334,7 @@ function Module:UpdateRaidGroupLabels()
 	end
 end
 
--- Lifecycle (file load; oUF and the config are already up)
+-- Lifecycle (after SavedVariables and the active profile are loaded)
 function Module:Init()
 	if not C.Unitframe.Enable then
 		return

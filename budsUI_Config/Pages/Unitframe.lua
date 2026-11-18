@@ -175,7 +175,7 @@ local generalSchema = {
 
 local unitsSchema = {
 	{ header = L_GUI_UNITFRAME_OPT_PLAYER or "Player" },
-	S("Player", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle" }),
+	S("Player", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle", reload = true }),
 }
 for _, e in ipairs(Dims("Player")) do
 	unitsSchema[#unitsSchema + 1] = e
@@ -195,7 +195,7 @@ for _, e in ipairs({
 end
 
 unitsSchema[#unitsSchema + 1] = { header = L_GUI_UNITFRAME_OPT_TARGET or "Target" }
-unitsSchema[#unitsSchema + 1] = S("Target", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle" })
+unitsSchema[#unitsSchema + 1] = S("Target", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle", reload = true })
 for _, e in ipairs(Dims("Target")) do
 	unitsSchema[#unitsSchema + 1] = e
 end
@@ -203,26 +203,26 @@ unitsSchema[#unitsSchema + 1] = S("Target", "Buffs", L_GUI_UNITFRAME_OPT_BUFFS o
 unitsSchema[#unitsSchema + 1] = S("Target", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS or "Debuffs", { type = "toggle" })
 
 unitsSchema[#unitsSchema + 1] = { header = L_GUI_UNITFRAME_OPT_FOCUS or "Focus" }
-unitsSchema[#unitsSchema + 1] = S("Focus", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle" })
+unitsSchema[#unitsSchema + 1] = S("Focus", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle", reload = true })
 for _, e in ipairs(Dims("Focus")) do
 	unitsSchema[#unitsSchema + 1] = e
 end
 unitsSchema[#unitsSchema + 1] = S("Focus", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS or "Debuffs", { type = "toggle" })
 
 unitsSchema[#unitsSchema + 1] = { header = L_GUI_UNITFRAME_OPT_TARGETTOT or "Target of target" }
-unitsSchema[#unitsSchema + 1] = S("TargetOfTarget", "Enable", "Target of target", { type = "toggle" })
+unitsSchema[#unitsSchema + 1] = S("TargetOfTarget", "Enable", "Target of target", { type = "toggle", reload = true })
 for _, e in ipairs(Dims("TargetOfTarget")) do
 	unitsSchema[#unitsSchema + 1] = e
 end
 unitsSchema[#unitsSchema + 1] = S("TargetOfTarget", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS or "Debuffs", { type = "toggle" })
 unitsSchema[#unitsSchema + 1] = { header = L_GUI_UNITFRAME_OPT_PET or "Pet" }
-unitsSchema[#unitsSchema + 1] = S("Pet", "Enable", "Pet", { type = "toggle" })
+unitsSchema[#unitsSchema + 1] = S("Pet", "Enable", "Pet", { type = "toggle", reload = true })
 for _, e in ipairs(Dims("Pet")) do
 	unitsSchema[#unitsSchema + 1] = e
 end
 unitsSchema[#unitsSchema + 1] = S("Pet", "Debuffs", L_GUI_UNITFRAME_OPT_DEBUFFS or "Debuffs", { type = "toggle" })
 unitsSchema[#unitsSchema + 1] = { header = L_GUI_UNITFRAME_OPT_FOCUSTARGET or "Focus target" }
-unitsSchema[#unitsSchema + 1] = S("FocusTarget", "Enable", "Focus target", { type = "toggle" })
+unitsSchema[#unitsSchema + 1] = S("FocusTarget", "Enable", "Focus target", { type = "toggle", reload = true })
 for _, e in ipairs(Dims("FocusTarget")) do
 	unitsSchema[#unitsSchema + 1] = e
 end
@@ -232,7 +232,7 @@ local groupSchema = {
 	{ header = L_GUI_UNITFRAME_OPT_PARTY or "Party" },
 }
 for _, e in ipairs({
-	S("Party", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle" }),
+	S("Party", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle", reload = true }),
 	S("Party", "Width", L_GUI_UNITFRAME_WIDTH or "Width", { type = "number", min = 40, max = 400, step = 1 }),
 	S("Party", "Height", L_GUI_UNITFRAME_HEIGHT or "Height", { type = "number", min = 8, max = 100, step = 1 }),
 	S("Party", "PowerHeight", L_GUI_UNITFRAME_POWER_HEIGHT or "Power height", {
@@ -252,7 +252,7 @@ end
 
 groupSchema[#groupSchema + 1] = { header = L_GUI_UNITFRAME_OPT_RAID or "Raid" }
 for _, e in ipairs({
-	S("Raid", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle" }),
+	S("Raid", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle", reload = true }),
 	S("Raid", "Width", L_GUI_UNITFRAME_WIDTH or "Width", { type = "number", min = 40, max = 200, step = 1 }),
 	S("Raid", "Height", L_GUI_UNITFRAME_HEIGHT or "Height", { type = "number", min = 8, max = 100, step = 1 }),
 	S("Raid", "PowerHeight", L_GUI_UNITFRAME_POWER_HEIGHT or "Power height", {
@@ -291,7 +291,7 @@ for _, e in ipairs({
 end
 
 groupSchema[#groupSchema + 1] = { header = L_GUI_UNITFRAME_OPT_BOSS or "Boss" }
-groupSchema[#groupSchema + 1] = S("Boss", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle" })
+groupSchema[#groupSchema + 1] = S("Boss", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle", reload = true })
 for _, e in ipairs(Dims("Boss")) do
 	groupSchema[#groupSchema + 1] = e
 end
@@ -356,7 +356,7 @@ elementsSchema[#elementsSchema + 1] = S("ClassPower", "Spacing", L_GUI_UNITFRAME
 
 elementsSchema[#elementsSchema + 1] = { header = L_GUI_UNITFRAME_OPT_CASTBAR or "Castbar" }
 for _, e in ipairs({
-	S("Castbar", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle" }),
+	S("Castbar", "Enable", L_GUI_UNITFRAME_OPT_ENABLE or "Enable", { type = "toggle", reload = true }),
 	S("Castbar", "ShowIcon", L_GUI_UNITFRAME_OPT_SHOW_ICON or "Icon", { type = "toggle" }),
 	S("Castbar", "ShowTimer", L_GUI_UNITFRAME_OPT_SHOW_TIMER or "Timer", { type = "toggle" }),
 	S("Castbar", "ShowSpark", L_GUI_UNITFRAME_OPT_SHOW_SPARK or "Spark", { type = "toggle" }),

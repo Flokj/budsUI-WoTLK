@@ -6,6 +6,7 @@ local unpack = unpack
 local CreateFrame = CreateFrame
 local UIParent = UIParent
 local InCombatLockdown = InCombatLockdown
+local GetNumShapeshiftForms = GetNumShapeshiftForms
 local GetShapeshiftFormInfo = GetShapeshiftFormInfo
 local hooksecurefunc = hooksecurefunc
 
@@ -25,6 +26,43 @@ local States = {
 	["WARLOCK"] = "show",
 	["WARRIOR"] = "show",
 }
+
+-- Resize holder + mover to the form count the class actually has
+local function updateSize(numForms)
+	numForms = tonumber(numForms) or GetNumShapeshiftForms()
+	numForms = math.min(math.max(numForms, 1), NUM_SHAPESHIFT_SLOTS)
+	local size, space = C.ActionBar.ButtonSize, C.ActionBar.ButtonSpace
+	local length = (size * numForms) + (space * (numForms - 1))
+	if C.ActionBar.StanceBarHorizontal == true then
+		ShiftHolder:SetWidth(length)
+		ShiftHolder:SetHeight(size)
+	else
+		ShiftHolder:SetWidth(size)
+		ShiftHolder:SetHeight(length)
+	end
+	local mover = ShiftHolder.budsUI_Mover
+	if mover then mover:SetSize(ShiftHolder:GetWidth(), ShiftHolder:GetHeight()) end
+end
+K.UpdateMoverSize = updateSize
+
+local function updateForms()
+	if InCombatLockdown() then
+		bar:RegisterEvent("PLAYER_REGEN_ENABLED")
+		return
+	end
+	bar:UnregisterEvent("PLAYER_REGEN_ENABLED")
+	updateSize(GetNumShapeshiftForms())
+	for i = 1, NUM_SHAPESHIFT_SLOTS do
+		local button = _G["ShapeshiftButton"..i]
+		local _, name = GetShapeshiftFormInfo(i)
+		if name then
+			button:Show()
+		else
+			button:Hide()
+		end
+	end
+	K.ShiftBarUpdate()
+end
 
 bar:RegisterEvent("PLAYER_LOGIN")
 bar:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -53,12 +91,6 @@ bar:SetScript("OnEvent", function(self, event, ...)
 					button:SetPoint("TOP", previous, "BOTTOM", 0, -C.ActionBar.ButtonSpace)
 				end
 			end
-			local _, name = GetShapeshiftFormInfo(i)
-			if name then
-				button:Show()
-			else
-				button:Hide()
-			end
 		end
 		RegisterStateDriver(self, "visibility", States[K.Class] or "hide")
 		local function movestance()
@@ -71,20 +103,13 @@ bar:SetScript("OnEvent", function(self, event, ...)
 			end
 		end
 		hooksecurefunc("ShapeshiftBar_Update", movestance)
-	elseif event == "UPDATE_SHAPESHIFT_FORMS" then
-		if InCombatLockdown() then return end
-		for i = 1, NUM_SHAPESHIFT_SLOTS do
-			local button = _G["ShapeshiftButton"..i]
-			local _, name = GetShapeshiftFormInfo(i)
-			if name then
-				button:Show()
-			else
-				button:Hide()
-			end
+	elseif event == "UPDATE_SHAPESHIFT_FORMS" or event == "PLAYER_ENTERING_WORLD" then
+		updateForms()
+		if event == "PLAYER_ENTERING_WORLD" then
+			K.StyleShift()
 		end
-		K.ShiftBarUpdate()
-	elseif event == "PLAYER_ENTERING_WORLD" then
-		K.StyleShift()
+	elseif event == "PLAYER_REGEN_ENABLED" then
+		updateForms()
 	else
 		K.ShiftBarUpdate()
 	end

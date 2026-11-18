@@ -144,7 +144,7 @@ C["Chat"] = {
 -- Cooldown Options
 C["Cooldown"] = {
 	["Enable"] = true,
-	["FontSize"] = 18,
+	["FontSize"] = 17,
 	["Threshold"] = 3,
 	["IgnoreWeakAuras"] = false,
 }

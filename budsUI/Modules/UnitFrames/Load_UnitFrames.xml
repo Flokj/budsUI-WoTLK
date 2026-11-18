@@ -33,6 +33,6 @@
 	<!-- Preview / test mode. -->
 	<Script file="Test.lua" />
 
-	<!-- Spawn pass, runs last. -->
+	<!-- Register the login handler after styles and builders are loaded. -->
 	<Script file="Init.lua" />
 </Ui>
