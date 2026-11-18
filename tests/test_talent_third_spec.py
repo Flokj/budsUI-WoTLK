@@ -20,10 +20,12 @@ Test.builds = {
 }
 Test.mounted = 2
 Test.numGroups = 2
+Test.activeGroup = 2
 Test.sent = {}
 Test.combat = false
 
 GetNumTalentGroups = function(_, pet) return pet and 0 or Test.numGroups end
+GetActiveTalentGroup = function() return Test.activeGroup end
 GetNumTalentTabs = function() return 2 end
 GetNumTalents = function() return 3 end
 GetTalentInfo = function(tab, index, inspect, pet, group)
@@ -112,6 +114,17 @@ class TalentThirdSpecTests(unittest.TestCase):
         rt.lua.execute("Test.Install(2)")
         self.assertEqual(rt.loaded(), 2)
 
+    def test_click_from_primary_reloads_the_third_set(self):
+        # The third set is mounted but the player is playing the PRIMARY spec:
+        # the button must load the third set (glow is off), NOT jump to second.
+        rt = TalentThirdRuntime()
+        rt.lua.execute("Test.BudsThird.Click(); Test.Install(3)")
+        rt.lua.execute("Test.activeGroup = 1")
+        rt.lua.execute("Test.BudsThird.Click()")
+        self.assertEqual(rt.sent(2, 1), ".spec 3")
+        rt.lua.execute("Test.Install(3)")
+        self.assertEqual(rt.loaded(), 3)
+
     def test_out_of_band_swap_is_recognized_once_both_builds_known(self):
         rt = TalentThirdRuntime()
         rt.lua.execute("Test.BudsThird.Click(); Test.Install(3)")
@@ -138,14 +151,17 @@ class TalentThirdSpecTests(unittest.TestCase):
 
     def test_watchdog_times_out_then_late_load_is_recognized(self):
         rt = TalentThirdRuntime()
-        # Server never answers the first .spec: pending survives 6s, then falls
-        # into the late window instead of forgetting the request.
+        # The watchdog unlocks a failed request after WAIT_SECONDS (3): at
+        # exactly 3s it holds, just past 3s it drops into the late window.
         rt.lua.execute("Test.BudsThird.Click()")
-        rt.lua.execute("Test.now = 107")
+        rt.lua.execute("Test.now = 103")
+        rt.lua.execute("local c = Test.BudsThird.Clock; c.scripts.OnUpdate(c); return nil")
+        self.assertTrue(rt.pending())
+        rt.lua.execute("Test.now = 104")
         rt.lua.execute("local c = Test.BudsThird.Clock; c.scripts.OnUpdate(c); return nil")
         self.assertFalse(rt.pending())
         self.assertEqual(rt.loaded(), 2)
-        # The swap completes 20s later, inside the late window.
+        # The swap completes inside the late window and is still recognized.
         rt.lua.execute("Test.now = 120; Test.mounted = 3; Fire('PLAYER_TALENT_UPDATE')")
         self.assertEqual(rt.loaded(), 3)
 

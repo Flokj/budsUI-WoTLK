@@ -10,13 +10,13 @@ if C.Blizzard.TalentFrame ~= true then return end
 
 local tostring = tostring
 local CreateFrame = CreateFrame
-local GetNumTalentTabs, GetNumTalents, GetTalentInfo, GetNumTalentGroups, GetTime =
-	GetNumTalentTabs, GetNumTalents, GetTalentInfo, GetNumTalentGroups, GetTime
+local GetNumTalentTabs, GetNumTalents, GetTalentInfo, GetNumTalentGroups, GetActiveTalentGroup, GetTime =
+	GetNumTalentTabs, GetNumTalents, GetTalentInfo, GetNumTalentGroups, GetActiveTalentGroup, GetTime
 local GetRealmName, UnitName, SendChatMessage, PlaySound, InCombatLockdown =
 	GetRealmName, UnitName, SendChatMessage, PlaySound, InCombatLockdown
 local tconcat = table.concat
 
-local WAIT_SECONDS = 6
+local WAIT_SECONDS = 3
 local LATE_SECONDS = 20
 local STR_THIRD_COMBAT = "Not available in combat"
 
@@ -168,7 +168,8 @@ local function activateThirdSpec()
 	local cur = ranksSig(2)
 	local loaded = store.loaded or 2
 	store.sig[loaded] = cur
-	local want = loaded == 3 and 2 or 3
+	local onThird = loaded == 3 and GetActiveTalentGroup(false, false) == 2
+	local want = onThird and 2 or 3
 	thirdPending = { want = want, before = cur, seen = false, at = GetTime() }
 	SendChatMessage(".spec " .. want, "WHISPER", nil, UnitName("player"))
 	PlaySound("igCharacterInfoTab")

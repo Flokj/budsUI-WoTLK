@@ -656,15 +656,13 @@ end
 -- the two builds is mounted lives in Modules/Blizzard/ThirdSpec.lua (exposed as
 -- K.ThirdSpec), so it also runs while the talent frame is closed.
 local function syncThirdSpec()
-	if not frame or not frame.thirdTab or not (K.ThirdSpec and K.ThirdSpec.Loaded()) then
+	local loaded = K.ThirdSpec and K.ThirdSpec.Loaded()
+	if not frame or not frame.thirdTab or not loaded then
 		return
 	end
-	local onThird = K.ThirdSpec.Loaded() == 3
+	local onThird = loaded == 3 and GetActiveTalentGroup(false, false) == 2
 	local third = frame.thirdTab
 	third:SetChecked(onThird)
-	if third.badge then
-		third.badge:SetTextColor(onThird and 1 or 1, onThird and 0.82 or 1, onThird and 0 or 1)
-	end
 	local tab = frame.specTabs and frame.specTabs[2]
 	if tab and tab.cache then
 		TalentFrame_UpdateSpecInfoCache(tab.cache, false, false, 2)
@@ -678,7 +676,7 @@ end
 local function showThirdSpecTooltip(self)
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 	GameTooltip:AddLine(STR_THIRD_SPEC, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
-	local onThird = K.ThirdSpec and K.ThirdSpec.Loaded() == 3 or false
+	local onThird = (K.ThirdSpec and K.ThirdSpec.Loaded() == 3 and GetActiveTalentGroup(false, false) == 2) or false
 	GameTooltip:AddLine(
 		onThird and STR_THIRD_ACTIVE or STR_THIRD_INACTIVE,
 		GREEN_FONT_COLOR.r, GREEN_FONT_COLOR.g, GREEN_FONT_COLOR.b
@@ -1415,18 +1413,12 @@ local function createFrame()
 		if K.ThirdSpec then
 			K.ThirdSpec.Click()
 		end
+		syncThirdSpec()
 	end)
 	third:SetScript("OnEnter", showThirdSpecTooltip)
 	third:SetScript("OnLeave", function()
 		GameTooltip:Hide()
 	end)
-	local badge = third:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	badge:SetPoint("BOTTOMRIGHT", -1, 0)
-	badge:SetText("3")
-	badge:SetTextColor(1, 1, 1)
-	badge:SetShadowColor(0, 0, 0, 1)
-	badge:SetShadowOffset(1, -1)
-	third.badge = badge
 	frame.thirdTab = third
 
 	createStatus()
