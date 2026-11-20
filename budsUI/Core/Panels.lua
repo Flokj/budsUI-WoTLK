@@ -11,10 +11,9 @@ bottombaranchor:CreatePanel("Invisible", 1, 1, unpack(C.Position.BottomBars))
 bottombaranchor:SetWidth((C.ActionBar.ButtonSize * 12) + (C.ActionBar.ButtonSpace * 11))
 bottombaranchor:SetFrameStrata("LOW")
 
--- Right bars anchor: created only when something uses it (3rd bar, vertical pet/stance bar, toggle mode); else Bar4 floats alone.
+-- Right bars anchor: created only when something uses it (3rd bar, vertical pet/stance bar); else Bar4 floats alone.
 local rightbaranchor
 local needRightAnchor = (C.ActionBar.RightBars or 0) >= 3
-	or C.ActionBar.ToggleMode == true
 	or (C.ActionBar.PetBarHorizontal ~= true and (C.ActionBar.RightBars or 0) > 0)
 	or C.ActionBar.StanceBarHorizontal ~= true
 if needRightAnchor then

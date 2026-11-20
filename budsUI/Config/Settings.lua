@@ -37,7 +37,6 @@ C["ActionBar"] = {
 	["PetBarHorizontal"] = true,
 	["PetBarScale"] = 0.7,
 	["RightBars"] = 2,
-	["Selfcast"] = false,
 	["ShowGrid"] = true,
 	["SplitBars"] = false,
 	["StanceBarHide"] = false,
@@ -274,24 +273,30 @@ C["Nameplate"] = {
 	["CastBarName"] = true,
 	["Auras"] = true,
 	["Width"] = 180,
+	-- Totem nameplate icons (FrostAtomUI Totems port)
+	["TotemIcons"] = true,
+	["TotemFilter"] = "important",
+	["TotemIconSize"] = 24,
+	["TotemTimer"] = true,
+	["TotemPulse"] = true,
+	["TotemPulseHeight"] = 4,
+	["TotemPulseColor"] = {0.3, 0.75, 1},
 	["BlacklistEnable"] = true,
 	["Blacklist"] = (function()
+		-- FrostAtomUI namePlates.hiddenNames, 1:1 (no totems: unimportant
+		-- totems are hidden by the totem filter, not the blacklist).
 		local list = {
+			"Mirror Image",
+			"Viper",
+			"Venomous Snake",
 			"Army of the Dead Ghoul",
 			"Bloodworm",
-			"Crafty Snake",
-			"Dragonmaw War Banner",
-			"Fanged Pit Viper",
-			"Healing Tide Totem",
-			"Mirror Image",
-			"Spirit Wolf",
 			"Treant",
+			"Spirit Wolf",
 			"Val'kyr Protector",
-			"Venomous Snake",
-			"Viper",
 		}
 		if GetLocale() == "ruRU" then
-			local ru = { "Войско мертвых", "Кровавый червь", "Гадюка", "Ядовитая змея", "Зеркальное изображение", "Дух волка", "Древень", "Валь'кира-защитница" }
+			local ru = { "Зеркальное изображение", "Гадюка", "Ядовитая змея", "Войско мертвых", "Кровавый червь", "Древень", "Дух волка", "Валь'кира-защитница" }
 			for _, n in ipairs(ru) do list[#list + 1] = n end
 		end
 		return list

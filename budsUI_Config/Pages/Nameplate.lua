@@ -96,6 +96,42 @@ local generalSchema = {
 		desc = "Bad threat color, varies depending if you are a tank or dps/heal.",
 		enabledBy = { "Nameplate.Enable", "Nameplate.EnhanceThreat" },
 	}),
+	{ header = L_GUI_NAMEPLATE_TOTEMS or "Totems" },
+	T("TotemIcons", L_GUI_NAMEPLATE_TOTEM_ICONS or "Totem icons", {
+		type = "toggle",
+		desc = "Replace totem nameplates with clickable icons (FrostAtomUI style).",
+		enabledBy = "Nameplate.Enable",
+	}),
+	T("TotemFilter", L_GUI_NAMEPLATE_TOTEM_FILTER or "Totem filter", {
+		type = "select", width = 140,
+		values = {
+			{ "important", L_GUI_NAMEPLATE_TOTEM_FILTER_IMPORTANT or "Important only" },
+			{ "all", L_GUI_NAMEPLATE_TOTEM_FILTER_ALL or "All totems" },
+		},
+		enabledBy = { "Nameplate.Enable", "Nameplate.TotemIcons" },
+	}),
+	T("TotemIconSize", L_GUI_NAMEPLATE_TOTEM_SIZE or "Icon size", {
+		type = "number", min = 12, max = 48, step = 1,
+		enabledBy = { "Nameplate.Enable", "Nameplate.TotemIcons" },
+	}),
+	T("TotemTimer", L_GUI_NAMEPLATE_TOTEM_TIMER or "Duration timer", {
+		type = "toggle",
+		desc = "Show remaining duration and a bar under the totem icon.",
+		enabledBy = { "Nameplate.Enable", "Nameplate.TotemIcons" },
+	}),
+	T("TotemPulse", L_GUI_NAMEPLATE_TOTEM_PULSE or "Pulse bar", {
+		type = "toggle",
+		desc = "Show the tick pulse bar above the totem icon.",
+		enabledBy = { "Nameplate.Enable", "Nameplate.TotemIcons" },
+	}),
+	T("TotemPulseHeight", L_GUI_NAMEPLATE_TOTEM_PULSE_HEIGHT or "Pulse bar height", {
+		type = "number", min = 2, max = 12, step = 1,
+		enabledBy = { "Nameplate.Enable", "Nameplate.TotemIcons" },
+	}),
+	T("TotemPulseColor", L_GUI_NAMEPLATE_TOTEM_PULSE_COLOR or "Pulse bar color", {
+		type = "color",
+		enabledBy = { "Nameplate.Enable", "Nameplate.TotemIcons" },
+	}),
 }
 
 local function getBlacklist()

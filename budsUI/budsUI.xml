@@ -24,7 +24,6 @@
 	<Script file="Config\Filters\ChatSpam.lua"/>
 	<Script file="Config\Filters\Errors.lua"/>
 	<Script file="Config\Filters\FilgerSpells.lua"/>
-	<Script file="Config\Filters\Nameplates.lua"/>
 	<Script file="Config\Filters\NeedItems.lua"/>
 
 	<Script file="Core\API.lua"/>
@@ -118,6 +117,8 @@
 	<Script file="Modules\Blizzard\ItemQuality.lua"/>
 	<Script file="Modules\Blizzard\NamePlateAuras.lua"/>
 	<Script file="Modules\Blizzard\NameplateHitRect.lua"/>
+	<Script file="Modules\Blizzard\NameplateTotemData.lua"/>
+	<Script file="Modules\Blizzard\NameplateTotems.lua"/>
 	<Script file="Modules\Blizzard\NamePlateCastEnhancements.lua"/>
 	<Script file="Modules\Blizzard\Nameplate.lua"/>
 	<Script file="Modules\Blizzard\RepReward.lua"/>

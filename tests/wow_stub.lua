@@ -143,7 +143,12 @@ function Frame:Hide()
 	if self.scripts.OnHide then self.scripts.OnHide(self) end
 end
 function Frame:IsShown() return self.shown end
+function Frame:IsMouseOver() return Test.mouseover == true end
 function Frame:SetValue(value) self.value = value end
+function Frame:SetMinMaxValues(min, max) self.minMax = { min, max } end
+function Frame:GetMinMaxValues() return unpack(self.minMax or { 0, 1 }) end
+function Frame:SetStatusBarTexture(value) self.statusTexture = value end
+function Frame:SetStatusBarColor(...) self.statusColor = { ... } end
 function Frame:SetFocus() self.focused = true end
 function Frame:ClearFocus() self.focused = false end
 function Frame:HighlightText() self.highlightedText = true end

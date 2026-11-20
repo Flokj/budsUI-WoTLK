@@ -643,6 +643,7 @@ local LEGACY_MOVER_NAMES = {
 	"budsUI_T_DE_BUFF_BAR_Anchor",
 	"TooltipAnchor",
 	"VehicleAnchor",
+	"VehicleButtonAnchor",
 	"WatchFrameAnchor",
 }
 

@@ -395,6 +395,10 @@ local function ApplyBlacklistHide(frame)
 	end
 	if frame.class then frame.class:Hide() end
 	if frame.class and frame.class.Glow then frame.class.Glow:Hide() end
+	-- Totem icon must never leak through the blacklist (FrostAtomUI port)
+	if K.NameplateTotems_OnBlacklisted then
+		K.NameplateTotems_OnBlacklisted(frame)
+	end
 	-- Neutralize the hit zone via the secure HitRect module: click rect (w, 0).
 	-- Runs inside the WrapScript sweep, so it survives combat lockdown.
 	if K.NameplateHitRect_Update then
@@ -455,6 +459,10 @@ local function OnPlateShow(frame)
 	if (name and K.IsPlateBlacklisted(name)) or frame.hide then
 		pcall(ApplyBlacklistHide, frame)
 	end
+	-- Early totem pass so the icon replaces the UI right on show
+	if K.NameplateTotems_Update then
+		K.NameplateTotems_Update(frame)
+	end
 	UpdateHealerIcon(frame)
 end
 
@@ -463,6 +471,11 @@ local function OnHide(frame)
 	-- Release ported aura icons (NamePlateAuras engine)
 	if K.NamePlateAuras_Hide then
 		K.NamePlateAuras_Hide(frame)
+	end
+
+	-- Release totem icon claims (FrostAtomUI Totems port)
+	if K.NameplateTotems_OnPlateHide then
+		K.NameplateTotems_OnPlateHide(frame)
 	end
 
 	-- Release guid ownership so a hidden plate never blocks a new bind
@@ -523,6 +536,7 @@ local function Colorize(frame)
 	end
 
 	frame.isTapped = false
+	frame.plateReaction = "hostile"
 
 	if (r + g + b) == 1.59 then
 		r, g, b = 153/255, 153/255, 153/255
@@ -534,12 +548,15 @@ local function Colorize(frame)
 	elseif r + b == 0 then
 		r, g, b = 79/255, 115/255, 161/255
 		frame.isFriendly = true
+		frame.plateReaction = "friendly"
 	elseif r + g > 1.95 then
 		r, g, b = 217/255, 196/255, 92/255
 		frame.isFriendly = false
+		frame.plateReaction = "neutral"
 	elseif r + g == 0 then
 		r, g, b = 84/255, 150/255, 84/255
 		frame.isFriendly = true
+		frame.plateReaction = "friendly"
 	else
 		frame.isFriendly = false
 	end
@@ -771,6 +788,10 @@ local function SkinObjects(frame, nameFrame)
 	--frame.hp:HookScript("OnShow", UpdateObjects)
 	frame:HookScript("OnHide", OnHide)
 	frame:HookScript("OnShow", OnPlateShow)
+	-- Totem icon stack (FrostAtomUI Totems port)
+	if K.NameplateTotems_Setup then
+		K.NameplateTotems_Setup(frame)
+	end
 	frames[frame] = true
 end
 
@@ -1331,6 +1352,14 @@ NamePlates:SetScript("OnUpdate", K.SafeOnUpdate(function(self, elapsed)
 		-- Batch-update all functions in a single loop
 		for i = 1, #visiblePlates do
 			local frame = visiblePlates[i]
+
+			-- Totem icons: identify/filter/hit-rect per pass (FrostAtomUI port)
+			if K.NameplateTotems_Update then
+				local ok, err = pcall(K.NameplateTotems_Update, frame)
+				if not ok and C.General.DeveloperMode then
+					K.Print("NameplateTotems error:", err)
+				end
+			end
 			
 			-- Threat update (only when in combat and threat system active)
 			if C.Nameplate.EnhanceThreat and InCombatLockdown() then

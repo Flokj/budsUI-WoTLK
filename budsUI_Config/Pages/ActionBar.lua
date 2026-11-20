@@ -23,15 +23,15 @@ ns.RegisterPage({
 		}),
 		{ header = "Bars" },
 		T("BottomBars", L_GUI_ACTIONBAR_BOTTOMBARS or "Bottom bars", {
-			type = "number", min = 1, max = 3, step = 1,
+			type = "number", min = 1, max = 3, step = 1, reload = true,
 			desc = "Number of action bars on the bottom (1, 2 or 3).",
 		}),
 		T("RightBars", L_GUI_ACTIONBAR_RIGHTBARS or "Right bars", {
-			type = "number", min = 0, max = 3, step = 1,
+			type = "number", min = 0, max = 3, step = 1, reload = true,
 			desc = "Number of action bars on the right (0, 1, 2 or 3).",
 		}),
 		T("SplitBars", L_GUI_ACTIONBAR_SPLIT_BARS or "Split fifth bar", {
-			type = "toggle",
+			type = "toggle", reload = true,
 			desc = "Split the fifth bar on two bars of 6 buttons.",
 		}),
 		T("ButtonSize", L_GUI_ACTIONBAR_BUTTON_SIZE or "Button size", {
@@ -62,7 +62,8 @@ ns.RegisterPage({
 			type = "toggle",
 		}),
 		T("PetBarHorizontal", L_GUI_ACTIONBAR_PETBAR_HORIZONTAL or "Horizontal pet bar", {
-			type = "toggle", enabledBy = "ActionBar.PetBarHide",
+			type = "toggle", reload = true,
+			desc = "Pet bar layout: on = horizontal, off = vertical (the mover resizes with it).",
 		}),
 		T("PetBarScale", L_GUI_ACTIONBAR_PETBAR_SCALE or "Pet bar scale", {
 			type = "number", min = 0.5, max = 1.5, step = 0.05, percent = true,
@@ -105,10 +106,6 @@ ns.RegisterPage({
 		T("EquipBorder", L_GUI_ACTIONBAR_EQUIP_BORDER or "Equipped border", {
 			type = "toggle",
 			desc = "Display green border on equipped items.",
-		}),
-		T("Selfcast", L_GUI_ACTIONBAR_SELFCAST or "Self-cast on right-click", {
-			type = "toggle",
-			desc = "Always self-cast on right-click (regardless of current target).",
 		}),
 		T("OutOfMana", L_GUI_ACTIONBAR_OUT_OF_MANA or "Out of mana color", {
 			type = "color",
