@@ -1,6 +1,8 @@
 local K, C, _ = select(2, ...):unpack()
 
 -- Add/remove spells by their ID from the spell URL (e.g. wowhead.com / openwow.com).
+
+local function Init()
 if C.Announcements.Spells == true then
 	K.AnnounceSpells = {
 		34477, -- Misdirection
@@ -89,3 +91,11 @@ if C.PulseCD.Enable == true then
 		-- GetSpellInfo(35395), -- Crusader Strike
 	}
 end
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

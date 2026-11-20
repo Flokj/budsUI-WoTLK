@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Announcements.Interrupt ~= true then return end
 
 local format = string.format
@@ -26,4 +28,12 @@ frame:SetScript("OnEvent", function(self, _, ...)
 	if spellLink then
 		SendChatMessage(L_ANNOUNCE_INTERRUPTED.." "..destName..": "..spellLink, K.CheckChat())
 	end
+end)
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
 end)

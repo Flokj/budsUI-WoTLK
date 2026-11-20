@@ -1,5 +1,7 @@
 local K, C, L, _ = select(2, ...):unpack()
 
+
+local function Init()
 if C.Skins.ChatBubble ~= true then return end
 if IsAddOnLoaded("BossEncounter2") then return end
 
@@ -167,4 +169,12 @@ configWatch:SetScript("OnEvent", function(_, _, cvar)
 	if cvar == "chatBubbles" or cvar == "chatBubblesParty" then
 		relayout()
 	end
+end)
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
 end)

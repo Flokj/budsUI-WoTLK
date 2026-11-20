@@ -1,5 +1,4 @@
 local K, C, L, _ = select(2, ...):unpack()
-if C.Tooltip.Enable ~= true or C.Tooltip.ArenaExperience ~= true then return end
 
 local _G = _G
 local format = string.format
@@ -44,6 +43,7 @@ end
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
 frame:SetScript("OnEvent", function(self, event, ...)
+	if C.Tooltip.Enable ~= true or C.Tooltip.ArenaExperience ~= true then return end
 	if event == "ADDON_LOADED" then
 		if ... then
 			frame:UnregisterEvent("ADDON_LOADED")

@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Chat.Enable ~= true or C.Tooltip.Enable ~= true or IsAddOnLoaded("tekKompare") then return end
 
 local _G = _G
@@ -37,3 +39,11 @@ for i = 1, NUM_CHAT_WINDOWS do
 	orig2[frame] = frame:GetScript("OnHyperlinkLeave")
 	frame:SetScript("OnHyperlinkLeave", OnHyperlinkLeave)
 end
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

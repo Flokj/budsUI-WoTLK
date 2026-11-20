@@ -1,4 +1,6 @@
 local K, C, L = select(2, ...):unpack()
+
+local function Init()
 if C.Announcements.SaySapped ~= true then return end
 
 -- Cache Sap spell name for robust catching of all ranks/custom variations
@@ -19,4 +21,12 @@ SaySapped:SetScript("OnEvent", function(self, event, ...)
 			K.Print((L_ANNOUNCE_SAPPED_BY or "Sapped by: ")..(sourceName or "(unknown)"))
 		end
 	end
+end)
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
 end)

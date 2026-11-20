@@ -1,5 +1,4 @@
 local K, C, L, _ = select(2, ...):unpack()
-if C.Skins.WeakAuras ~= true then return end
 
 local pairs = pairs
 local select = select
@@ -8,6 +7,7 @@ local CreateFrame = CreateFrame
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:SetScript("OnEvent", function(self, event)
+	if C.Skins.WeakAuras ~= true then return end
 	if not WeakAuras or not WeakAuras.regionTypes then return end
 
 	local function Skin_WeakAuras(frame, ftype)

@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Automation.Resurrection ~= true then return end
 
 local tostring = tostring
@@ -49,3 +51,11 @@ end)
 local autoreleasepvp = CreateFrame("frame")
 autoreleasepvp:RegisterEvent("PLAYER_DEAD")
 autoreleasepvp:SetScript("OnEvent", tryRelease)
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

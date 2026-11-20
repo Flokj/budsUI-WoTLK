@@ -1,4 +1,8 @@
 local K, C, L, _ = select(2, ...):unpack()
+-- Chunk varargs captured here: the body moves into Init() (PLAYER_LOGIN) later.
+local _, _NS = ...
+
+local function Init()
 if C.Loot.Enable ~= true then return end
 
 local gsub = string.gsub
@@ -7,7 +11,6 @@ local CreateFrame = CreateFrame
 local UnitIsDead = UnitIsDead
 
 -- Loot frame(Butsu by Haste)
-local _, _NS = ...
 local Butsu = CreateFrame("Button", "Butsu")
 local lb = CreateFrame("Button", "ButsuAdv", Butsu, "UIPanelScrollDownButtonTemplate")
 local LDD = CreateFrame("Frame", "ButsuLDD", Butsu, "UIDropDownMenuTemplate")
@@ -424,3 +427,11 @@ LootFrame:UnregisterAllEvents()
 
 -- Escape the dungeon
 table.insert(UISpecialFrames, "Butsu")
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

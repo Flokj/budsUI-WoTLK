@@ -5,21 +5,10 @@ local _G = _G
 local CreateFrame = CreateFrame
 local UIParent = UIParent
 
---	Bottom bars anchor
+--	Bottom bars anchor (height follows BottomBars/SplitBars, applied after profile merge)
 local bottombaranchor = CreateFrame("Frame", "ActionBarAnchor", UIParent)
 bottombaranchor:CreatePanel("Invisible", 1, 1, unpack(C.Position.BottomBars))
 bottombaranchor:SetWidth((C.ActionBar.ButtonSize * 12) + (C.ActionBar.ButtonSpace * 11))
-if C.ActionBar.BottomBars == 2 then
-	bottombaranchor:SetHeight((C.ActionBar.ButtonSize * 2) + C.ActionBar.ButtonSpace)
-elseif C.ActionBar.BottomBars == 3 then
-	if C.ActionBar.SplitBars == true then
-		bottombaranchor:SetHeight((C.ActionBar.ButtonSize * 2) + C.ActionBar.ButtonSpace)
-	else
-		bottombaranchor:SetHeight((C.ActionBar.ButtonSize * 3) + (C.ActionBar.ButtonSpace * 2))
-	end
-else
-	bottombaranchor:SetHeight(C.ActionBar.ButtonSize)
-end
 bottombaranchor:SetFrameStrata("LOW")
 
 -- Right bars anchor: created only when something uses it (3rd bar, vertical pet/stance bar, toggle mode); else Bar4 floats alone.
@@ -53,10 +42,36 @@ local SplitBarRight = CreateFrame("Frame", "SplitBarRight", UIParent)
 SplitBarRight:CreatePanel("Invisible", (C.ActionBar.ButtonSize * 3) + (C.ActionBar.ButtonSpace * 2), (C.ActionBar.ButtonSize * 2) + C.ActionBar.ButtonSpace, "BOTTOMLEFT", ActionBarAnchor, "BOTTOMRIGHT", C.ActionBar.ButtonSpace, 0)
 SplitBarRight:SetFrameStrata("LOW")
 
-if C.ActionBar.SplitBars ~= true then
-	SplitBarLeft:Hide()
-	SplitBarRight:Hide()
+-- Split anchors exist always; the toggle only switches visibility and the bottom
+-- anchor height. 3.3.5 loads profiles after the files, so re-apply on PLAYER_LOGIN.
+local function ApplyBottomLayout()
+	if C.ActionBar.BottomBars == 2 then
+		bottombaranchor:SetHeight((C.ActionBar.ButtonSize * 2) + C.ActionBar.ButtonSpace)
+	elseif C.ActionBar.BottomBars == 3 then
+		if C.ActionBar.SplitBars == true then
+			bottombaranchor:SetHeight((C.ActionBar.ButtonSize * 2) + C.ActionBar.ButtonSpace)
+		else
+			bottombaranchor:SetHeight((C.ActionBar.ButtonSize * 3) + (C.ActionBar.ButtonSpace * 2))
+		end
+	else
+		bottombaranchor:SetHeight(C.ActionBar.ButtonSize)
+	end
+
+	if C.ActionBar.SplitBars == true then
+		SplitBarLeft:Show()
+		SplitBarRight:Show()
+	else
+		SplitBarLeft:Hide()
+		SplitBarRight:Hide()
+	end
 end
+ApplyBottomLayout()
+local layoutLoader = CreateFrame("Frame")
+layoutLoader:RegisterEvent("PLAYER_LOGIN")
+layoutLoader:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	ApplyBottomLayout()
+end)
 
 --	Pet bar anchor (sized to the on-screen footprint: pet buttons render
 --	with C.ActionBar.PetBarScale, so the anchor and its mover must match it)

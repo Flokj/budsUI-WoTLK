@@ -1,4 +1,6 @@
 local K, C = select(2, ...):unpack()
+
+local function Init()
 if C.Tooltip.Enable ~= true or C.Tooltip.Talents ~= true then return end
 
 -- Target talent display (based on TipTacTalents by Aezay): talent data and tooltip
@@ -103,4 +105,12 @@ tooltip:HookScript("OnTooltipSetUnit", function(self)
 		current[1], current[2], current[3] = data[1], data[2], data[3]
 		self:AddLine(TALENTS_PREFIX..data.format)
 	end
+end)
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
 end)

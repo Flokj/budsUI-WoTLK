@@ -1,4 +1,6 @@
 local K, C, L = select(2, ...):unpack()
+
+local function Init()
 if C.Misc.DurabilityWarning ~= true then return end
 
 local Durability = CreateFrame("Frame")
@@ -23,3 +25,11 @@ DurabilityFrame:SetAlpha(0)
 DurabilityFrame:Hide()
 DurabilityFrame:HookScript("OnShow", Durability.OnShow)
 DurabilityFrame:HookScript("OnHide", Durability.OnHide)
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

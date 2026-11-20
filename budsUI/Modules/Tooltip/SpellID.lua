@@ -1,4 +1,6 @@
-﻿local K, C, L, _ = select(2, ...):unpack()
+local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Tooltip.Enable ~= true or C.Tooltip.SpellID ~= true then return end
 
 local _G = _G
@@ -104,3 +106,11 @@ end
 SLASH_SHOWSPELLID1 = "/showid"
 SLASH_SHOWSPELLID2 = "/si"
 SLASH_SHOWSPELLID3 = "/ыш"
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

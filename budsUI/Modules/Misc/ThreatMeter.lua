@@ -1,5 +1,4 @@
 local K, C, L, _ = select(2, ...):unpack()
-if C.ThreatMeter.Enable ~= true then return end
 
 -- budsUI Threat Meter (ported from Threath): top threat holders on your attackable
 -- target, budsUI panel look + mover; runs on PLAYER_LOGIN so Core (Movers/Border) is loaded.
@@ -241,5 +240,6 @@ local loader = CreateFrame("Frame")
 loader:RegisterEvent("PLAYER_LOGIN")
 loader:SetScript("OnEvent", function(self)
 	self:UnregisterEvent("PLAYER_LOGIN")
+	if C.ThreatMeter.Enable ~= true then return end
 	Threat_Init()
 end)

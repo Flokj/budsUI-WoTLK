@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Automation.SellGreyRepair ~= true then return end
 
 local format, strsub = string.format, string.sub
@@ -59,4 +61,12 @@ SellGreyRepair:SetScript("OnEvent", function(self, event)
 			end
 		end
 	end
+end)
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
 end)

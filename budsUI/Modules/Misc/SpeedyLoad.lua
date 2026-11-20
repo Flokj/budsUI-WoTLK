@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Misc.SpeedyLoad ~= true then return end
 
 -- Speedy Load disables certain events during loading screens to drastically improve loading times.
@@ -145,4 +147,12 @@ f:SetScript("OnEvent", function(self, event)
 		occured[event] = 1
 		f:UnregisterEvent(event)
 	end
+end)
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
 end)

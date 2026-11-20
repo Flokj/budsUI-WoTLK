@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Minimap.Enable ~= true then return end
 
 local _G = _G
@@ -140,3 +142,11 @@ MinimapBackdrop:SetOutside(Minimap, 4, 4)
 -- Set Square Map View
 Minimap:SetMaskTexture(C.Media.Blank)
 MinimapBorder:Hide()
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

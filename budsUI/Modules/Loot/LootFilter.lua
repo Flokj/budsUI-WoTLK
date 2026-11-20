@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Loot.LootFilter ~= true then return end
 
 local select = select
@@ -20,3 +22,11 @@ function LootFilter(self, event, msg)
 	end
 end
 ChatFrame_AddMessageEventFilter("CHAT_MSG_LOOT", LootFilter)
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

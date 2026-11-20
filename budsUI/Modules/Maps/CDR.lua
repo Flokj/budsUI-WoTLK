@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Minimap.CDR ~= true then return end
 
 local function fmttime(sec)
@@ -50,4 +52,12 @@ end)
 
 TimeManagerClockButton:SetScript("OnLeave", function()
    GameTooltip:Hide()
+end)
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
 end)

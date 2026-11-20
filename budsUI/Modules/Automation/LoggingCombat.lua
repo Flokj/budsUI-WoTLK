@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Automation.LoggingCombat ~= true then return end
 
 local IsInInstance = IsInInstance
@@ -20,4 +22,12 @@ frame:SetScript("OnEvent", function()
 			K.Print("|cffffe02e"..COMBATLOGDISABLED.."|r")
 		end
 	end
+end)
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
 end)

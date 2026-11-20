@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Skins.Recount ~= true or not IsAddOnLoaded("Recount") then return end
 
 local _G = _G
@@ -133,3 +135,11 @@ RecountDB["profiles"][K.Name.." - "..K.Realm]["MainWindowWidth"] = 230.00
 RecountDB["profiles"][K.Name.." - "..K.Realm]["MainWindowHeight"] = 120.00
 RecountDB["profiles"][K.Name.." - "..K.Realm]["ClampToScreen"] = true
 RecountDB["profiles"][K.Name.." - "..K.Realm]["Font"] = "KkUI Normal"
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

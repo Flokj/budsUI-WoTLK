@@ -4,8 +4,11 @@ if C.ActionBar.Enable ~= true then return end
 local _G = _G
 local CreateFrame = CreateFrame
 
---	Setup MultiBarBottomRight as bar #5 by Tukz
-local bar = CreateFrame("Frame", "Bar5Holder", UIParent)
+-- Layout runs on PLAYER_LOGIN: 3.3.5 merges the profile into C only after the
+-- files execute, so a file-scope build would always see the Settings.lua default.
+local function BuildBar5()
+	--	Setup MultiBarBottomRight as bar #5 by Tukz
+	local bar = CreateFrame("Frame", "Bar5Holder", UIParent)
 if C.ActionBar.RightBars < 3 then
 	if C.ActionBar.SplitBars == true then
 		bar:SetAllPoints(SplitBarLeft)
@@ -54,3 +57,11 @@ end
 if C.ActionBar.RightBars < 3 and C.ActionBar.BottomBars < 3 then
 	bar:Hide()
 end
+end
+
+local loader = CreateFrame("Frame")
+loader:RegisterEvent("PLAYER_LOGIN")
+loader:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	BuildBar5()
+end)

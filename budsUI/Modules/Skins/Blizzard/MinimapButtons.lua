@@ -1,5 +1,4 @@
 local K, C, L, _ = select(2, ...):unpack()
-if C.Skins.MinimapButtons ~= true or C.Minimap.Enable ~= true then return end
 
 local match = string.match
 local select = select
@@ -91,6 +90,7 @@ end
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:SetScript("OnEvent", function(self, event)
+	if C.Skins.MinimapButtons ~= true or C.Minimap.Enable ~= true then return end
 	for i = 1, Minimap:GetNumChildren() do
 		SkinButton(select(i, Minimap:GetChildren()))
 	end

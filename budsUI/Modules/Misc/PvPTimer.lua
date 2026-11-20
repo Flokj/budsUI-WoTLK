@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Misc.PvPTimer ~= true then return end
 
 -- PvP start timer (from FriskesUI-WoTLK RetailTimer): autostart countdown bar + big
@@ -861,3 +863,11 @@ function inviteHideFrame.OnUpdate(Frame)
 end
 
 StaticPopupDialogs["CONFIRM_BATTLEFIELD_ENTRY"].hideOnEscape = false -- disable hiding the popup with ESC
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

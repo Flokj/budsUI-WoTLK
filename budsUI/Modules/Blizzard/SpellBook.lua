@@ -1,6 +1,8 @@
 -- budsUI :: Modules/Blizzard/SpellBook.lua
 
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Blizzard.SpellBook ~= true then return end
 
 local _G = _G
@@ -1214,3 +1216,11 @@ local function Initialize()
 end
 
 Initialize()
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

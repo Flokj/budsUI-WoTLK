@@ -1,4 +1,6 @@
-﻿local K, C, L, _ = select(2, ...):unpack()
+local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Tooltip.Enable ~= true or C.Tooltip.InstanceLock ~= true then return end
 
 local gsub = string.gsub
@@ -103,3 +105,11 @@ end)
 
 hooksecurefunc(GameTooltip, "SetHyperlink", ILockCompare)
 hooksecurefunc(ItemRefTooltip,"SetHyperlink", ILockCompare)
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

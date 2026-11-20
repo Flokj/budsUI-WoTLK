@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Loot.AutoGreed ~= true or K.Level ~= MAX_PLAYER_LEVEL then return end
 
 local pairs = pairs
@@ -34,4 +36,12 @@ frame:SetScript("OnEvent", function(self, event, id)
 			RollOnLoot(id, 2)
 		end
 	end
+end)
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
 end)

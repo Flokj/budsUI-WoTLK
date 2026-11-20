@@ -1,5 +1,4 @@
 local K, C, L, _ = select(2, ...):unpack()
-if C.Skins.DBM ~= true then return end
 
 local _G = _G
 local format = string.format
@@ -345,6 +344,7 @@ local Loader = CreateFrame("Frame")
 Loader:RegisterEvent("ADDON_LOADED")
 Loader:RegisterEvent("PLAYER_LOGIN")
 Loader:SetScript("OnEvent", function(_, event, addon)
+	if C.Skins.DBM ~= true then return end
 	if event == "ADDON_LOADED" then
 		if addon == "DBM-Core" then
 			InitCoreSkin()

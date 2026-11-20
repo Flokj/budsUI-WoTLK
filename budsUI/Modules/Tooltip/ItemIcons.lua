@@ -1,4 +1,6 @@
-﻿local K, C, L, _ = select(2, ...):unpack()
+local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Tooltip.Enable ~= true or C.Tooltip.ItemIcon ~= true then return end
 
 local _G = _G
@@ -60,3 +62,11 @@ for _, tooltip in pairs{GameTooltip, ItemRefTooltip, ItemRefShoppingTooltip1, It
 	hookItem(tooltip)
 	hookSpell(tooltip)
 end
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

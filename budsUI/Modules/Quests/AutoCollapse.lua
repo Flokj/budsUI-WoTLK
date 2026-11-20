@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Automation.AutoCollapse ~= true or IsAddOnLoaded("QuestHelper") == true then return end
 
 local CreateFrame = CreateFrame
@@ -18,4 +20,12 @@ frame:SetScript("OnEvent", function(self, event)
 	elseif WatchFrame.collapsed and not InCombatLockdown() then
 		WatchFrame_CollapseExpandButton_OnClick(WatchFrame_CollapseExpandButton)
 	end
+end)
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
 end)

@@ -1,5 +1,4 @@
 local K, C, L, _ = select(2, ...):unpack()
-if C.ActionBar.SplitBars == true then return end
 
 local unpack = unpack
 local format = string.format
@@ -123,6 +122,15 @@ end
 -- Hide text when not in an bg
 local function OnEvent(self, event)
 	if event == "PLAYER_ENTERING_WORLD" then
+		-- Split bars take the bottom corners; hide the BG line then (profile merged).
+		if C.ActionBar.SplitBars == true then
+			Text1:SetText("")
+			Text2:SetText("")
+			Text3:SetText("")
+			bgframe:Hide()
+			Stat:SetScript("OnUpdate", nil)
+			return
+		end
 		local _, instanceType = IsInInstance()
 		if instanceType == "pvp" then
 			bgframe:Show()

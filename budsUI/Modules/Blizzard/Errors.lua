@@ -1,6 +1,8 @@
 local K, C, L, _ = select(2, ...):unpack()
 
 -- Clear UIErrorsFrame(module from Kousei by Haste)
+
+local function Init()
 if C.Error.White == true or C.Error.Black == true then
 	local frame = CreateFrame("Frame")
 	frame:SetScript("OnEvent", function(self, event, text)
@@ -42,3 +44,11 @@ if C.Error.Combat == true then
 	frame:RegisterEvent("PLAYER_REGEN_ENABLED")
 	frame["PLAYER_REGEN_ENABLED"] = PLAYER_REGEN_ENABLED
 end
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

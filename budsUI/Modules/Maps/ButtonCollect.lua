@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Minimap.Enable ~= true or C.Minimap.CollectButtons ~= true then return end
 
 -- ===== Minimap button collector (FrostAtomUI-style): toggle arrow on the left edge, panel with collected buttons, 4-column grid =====
@@ -306,3 +308,11 @@ function K.ReleaseMinimapButtons()
 		collectorToggle = nil
 	end
 end
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

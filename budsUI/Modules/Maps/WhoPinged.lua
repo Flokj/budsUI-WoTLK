@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Minimap.Ping ~= true then return end
 
 local format = string.format
@@ -29,3 +31,11 @@ local function OnEvent(self, event, unit)
 end
 PingFrame:RegisterEvent("MINIMAP_PING")
 PingFrame:SetScript("OnEvent", OnEvent)
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

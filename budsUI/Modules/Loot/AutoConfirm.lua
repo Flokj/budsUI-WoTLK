@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Loot.ConfirmDisenchant ~= true then return end
 
 local _G = _G
@@ -14,4 +16,12 @@ frame:SetScript("OnEvent", function(self, event, id)
 		local frame = _G["StaticPopup"..i]
 		if (frame.which == "CONFIRM_LOOT_ROLL" or frame.which == "LOOT_BIND") and frame:IsVisible() then StaticPopup_OnClick(frame, 1) end
 	end
+end)
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
 end)

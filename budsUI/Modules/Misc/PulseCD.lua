@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.PulseCD.Enable ~= true then return end
 
 -- Based on Doom Cooldown Pulse(by Woffle of Dark Iron, editor Affli)
@@ -127,13 +129,10 @@ local function OnUpdate(_, update)
 end
 
 -- Event Handlers
-function frame:ADDON_LOADED(addon)
-	for _, v in pairs(K.pulse_ignored_spells) do
-		K.pulse_ignored_spells[v] = true
-	end
-	self:UnregisterEvent("ADDON_LOADED")
+-- All addons have loaded by PLAYER_LOGIN; pre-populate the ignore list.
+for _, v in pairs(K.pulse_ignored_spells) do
+	K.pulse_ignored_spells[v] = true
 end
-frame:RegisterEvent("ADDON_LOADED")
 
 function frame:UNIT_SPELLCAST_SUCCEEDED(unit, spell, rank)
 	if unit == "player" then
@@ -196,3 +195,11 @@ SlashCmdList.PulseCD = function()
 	frame:SetScript("OnUpdate", OnUpdate)
 end
 SLASH_PulseCD1 = "/pulsecd"
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

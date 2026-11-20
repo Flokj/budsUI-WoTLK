@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Skins.WorldMap ~= true or IsAddOnLoaded("Mapster") == true or IsAddOnLoaded("Aurora") then return end
 
 local floor = math.floor
@@ -248,3 +250,11 @@ if InCombatLockdown() then
 else
 	InitializeMap()
 end
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

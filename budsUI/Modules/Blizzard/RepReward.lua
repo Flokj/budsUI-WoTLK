@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Blizzard.Reputations ~= true then return end
 
 local pairs = pairs
@@ -233,3 +235,11 @@ else
 	table.insert(QUEST_TEMPLATE_REWARD.elements, 0)
 	table.insert(QUEST_TEMPLATE_REWARD.elements, -5)
 end
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

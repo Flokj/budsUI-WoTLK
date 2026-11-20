@@ -1,7 +1,7 @@
 local K, C, L, _ = select(2, ...):unpack()
-if C.Skins.Skada ~= true then return end
 
 local function LoadSkadaSkin()
+	if C.Skins.Skada ~= true then return end
 	if not IsAddOnLoaded("Skada") then return end
 
 	local Skada = Skada

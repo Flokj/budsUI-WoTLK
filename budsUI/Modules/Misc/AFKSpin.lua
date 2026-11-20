@@ -1,4 +1,6 @@
 local K, C, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Misc.AFKCamera ~= true then return end
 
 local CAMERA_SPEED = 0.035
@@ -54,3 +56,11 @@ function K.SpinStop()
 	MoveViewRightStop()
 	UIParent:Show()
 end
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
+end)

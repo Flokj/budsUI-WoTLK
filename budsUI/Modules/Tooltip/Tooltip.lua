@@ -1,4 +1,6 @@
 local K, C, L, _ = select(2, ...):unpack()
+
+local function Init()
 if C.Tooltip.Enable ~= true then return end
 
 local _G = _G
@@ -434,4 +436,12 @@ Tooltip:SetScript("OnEvent", function(self)
 		hooksecurefunc(GameTooltip, "SetPetAction", CombatHideActionButtonsTooltip)
 		hooksecurefunc(GameTooltip, "SetShapeshift", CombatHideActionButtonsTooltip)
 	end
+end)
+end
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("PLAYER_LOGIN")
+initFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	Init()
 end)
