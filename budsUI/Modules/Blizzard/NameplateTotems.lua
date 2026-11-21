@@ -85,11 +85,14 @@ end
 
 -- Totem spellId for a plate: by creature entry, then by name.
 local function identify(frame)
+	local name = plateName(frame)
+	if frame.boundName and frame.boundName ~= name then
+		return name and (learned[name] or byName[name]) or nil
+	end
 	local entry = entryOf(frame.guid)
 	if entry then
 		return byEntry[entry]
 	end
-	local name = plateName(frame)
 	return name and (learned[name] or byName[name]) or nil
 end
 
@@ -324,14 +327,18 @@ end
 -- clickable through an icon-sized hit rect (K.NameplateHitRect_Update).
 local function enterIconMode(plate, spellId)
 	if mode[plate] then
-		return
+		if plate.totemSpell == spellId then return end
+		release(plate)
+	else
+		mode[plate] = true
+		rememberHit(plate)
+		plate.totemConcealed = nil
+		hidePlateUI(plate)
+		plate.totem:Show()
 	end
-	mode[plate] = true
-	rememberHit(plate)
-	plate.totemConcealed = nil
-	hidePlateUI(plate)
 	plate.totemSpell = spellId
-	plate.totem:Show()
+	plate.totemTargetAt = nil
+	plate.totem.icon:SetTexture(spells[spellId].icon or "")
 	bind(plate)
 end
 
@@ -372,24 +379,9 @@ function K.NameplateTotems_Update(plate)
 	if not plate or not plate.totem or plate.hide or not plate:IsShown() then
 		return
 	end
-	if C.Nameplate.TotemIcons ~= true then
-		-- Master switch off: fall back to full plates immediately.
-		if mode[plate] then
-			leaveIconMode(plate)
-		elseif plate.totemConcealed then
-			showPlateUI(plate)
-			restoreHit(plate)
-		end
-		return
-	end
 	local totem = plate.totem
-	local spellId = plate.totemSpell
-	if not spellId and C.Nameplate.TotemIcons == true then
-		spellId = identify(plate)
-		if spellId then
-			plate.totemSpell = spellId
-		end
-	end
+	-- A visible Blizzard plate can change unit without firing OnHide.
+	local spellId = C.Nameplate.TotemIcons == true and identify(plate)
 
 	-- Filter: "important" hides every other totem entirely (FrostAtomUI).
 	if spellId and C.Nameplate.TotemFilter == "important" and not Data.IsImportant(spellId) then
@@ -408,7 +400,6 @@ function K.NameplateTotems_Update(plate)
 	end
 
 	enterIconMode(plate, spellId)
-	totem.icon:SetTexture(spells[spellId].icon or "")
 
 	-- Target bump: 1.2x while this totem is the target; 0.4s debounce
 	-- so a fast target-away does not blink the size at the 0.2s cadence.

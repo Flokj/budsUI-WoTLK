@@ -163,6 +163,54 @@ class TotemIconModeTests(unittest.TestCase):
         """)
         self.assertEqual(self.lua.execute("return Test.plate.totem.timer.shown"), False)
 
+    def test_visible_plate_reassigned_from_totem_restores_mob(self):
+        for name, icon_shown in (("Spell 2484", True), ("Spell 3599", False)):
+            with self.subTest(name=name):
+                make_plate(self.lua, name)
+                self.lua.execute("K.NameplateTotems_Update(Test.plate)")
+                state = "return Test.plate.totem:IsShown(), Test.plate.hp.alpha"
+                self.assertEqual(self.lua.execute(state), (icon_shown, 0))
+
+                self.lua.execute('Test.plate.hp.oldname:SetText("Wolf")')
+                self.lua.execute("K.NameplateTotems_Update(Test.plate)")  # No OnHide/OnShow.
+                self.assertEqual(self.lua.execute(state), (False, 1))
+                self.assertEqual(self.lua.execute("""
+                    local hit = Test.hitRectCalls[#Test.hitRectCalls]
+                    return hit.w, hit.h, hit.hidden
+                """), (120, 40, False))
+
+    def test_visible_plate_reassigned_to_another_totem_binds_its_timer(self):
+        make_plate(self.lua, "Spell 2484")
+        self.lua.execute("""
+            Fire("COMBAT_LOG_EVENT_UNFILTERED", GetTime(), "SPELL_SUMMON",
+                "CasterGUID", "Caster", 0, "earthbind", "Spell 2484", 64, 2484)
+            Fire("COMBAT_LOG_EVENT_UNFILTERED", GetTime(), "SPELL_SUMMON",
+                "CasterGUID", "Caster", 0, "mana-tide", "Spell 16190", 64, 16190)
+        """)
+        self.assertEqual(self.lua.eval("Test.plate.totemSummon"), "earthbind")
+
+        self.lua.execute('Test.plate.hp.oldname:SetText("Spell 16190")')
+        self.lua.execute("K.NameplateTotems_Update(Test.plate)")
+        self.lua.execute("""
+            Fire("COMBAT_LOG_EVENT_UNFILTERED", GetTime(), "UNIT_DESTROYED",
+                nil, nil, nil, "earthbind", "Spell 2484", 64)
+        """)
+        self.assertEqual(self.lua.execute("""
+            local p = Test.plate
+            return p.totem.icon:GetTexture(), p.totemSummon, p.totem.timer:IsShown(), p.totem.pulse:IsShown()
+        """), ("Icon 16190", "mana-tide", True, True))
+
+    def test_visible_rename_ignores_guid_bound_to_previous_name(self):
+        make_plate(self.lua, "Spell 2484")
+        self.lua.execute("""
+            local p = Test.plate
+            p.guid, p.boundName = "0xF130000A46000001", "Spell 2484"
+            K.NameplateTotems_Update(p)
+            p.hp.oldname:SetText("Wolf")
+            K.NameplateTotems_Update(p)
+        """)
+        self.assertEqual(self.lua.execute("return Test.plate.totem:IsShown(), Test.plate.hp.alpha"), (False, 1))
+
     def test_plate_hide_releases_the_claim_for_recycling(self):
         make_plate(self.lua, "Spell 2484")
         self.lua.execute("K.NameplateTotems_Update(Test.plate)")
